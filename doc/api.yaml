@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: WASAtext
+  description: |
+    This API allow multiple users to chat with each other,
+    directly or by creating group chat.
+  version: 0.0.1lella
+
+components:
+  parameters:
+    usr_id:
+      description: user ID
+      schema:
+        type: string
+        readOnly: true
+      name: usr_id
+      in: path
+      required: true
+      
+    chat_id:
+      description: chat id
+      schema:
+        type: integer
+        minimum: 0
+        readOnly: true
+      name: chat_id
+      in: path
+      required: true
+  
+  schemas:
+    user:
+      type: object
+      title: User
+      description: |
+        Contain information about an user of the app,
+        like its name, user id, and profile photo.
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: User id
+        name:
+          type: string
+          description: Username
+        photo:
+          #bisogna decidere come gestire la foto
+          description: User profile photo (propic)
+    
+    chat:
+      #capire come gestire la differenza tra
+      #chat private(2utenti) e chat di gruppo
+      #forse enum??
+      type: object
+      title: Chat
+      description: |
+        Contain information about a chat of two or more users,
+        like the name of the chat (if it's a group), the propic(if it's a grout)
+        the partecipants, its id.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: Chat id
+        name:
+          type: string
+          description: |
+            Chat name, if it's a private chat the name correspond
+            to the other username
+        photo:
+          #bisogna decidere come gestire la foto
+          description: |
+            Chat Photo, if it's a private chat is the propic of the other user,
+            else contain the group photo
+        chatType:
+          type: string
+          enum:
+          - private
+          - group
+          description: |
+            Used to distinguish group chat between private chat (only 2 people)
+        partecipants:
+          type: array
+          items:
+            $ref: "#/components/schemas/user"
+          description: Array containing the users of the chat
+
+paths:
+  #/users:                        Endpoint degli utenti dell'app
+  #/users/{usr_id}:               Endpoint del singolo utente
+  #/users/{usr_id}/propic:        Enpoint per la propic di un utente
+  
+  #forse meglio /users/{usr_id}/chats/.....
+  #/chats:                        Endpoint delle chat
+  #chats/{chat_id}:               Endpoint di una chat
+  #/chats/{chat_id}/users:        Endpoint di una chat riguardo i suoi utenti
+  
