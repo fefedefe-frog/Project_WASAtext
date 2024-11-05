@@ -9,7 +9,7 @@ info:
 components:
   parameters:
     usr_id:
-      description: user ID
+      description: unique user id
       schema:
         type: string
         readOnly: true
@@ -18,7 +18,7 @@ components:
       required: true
       
     chat_id:
-      description: chat id
+      description: unique chat id
       schema:
         type: integer
         minimum: 0
@@ -35,15 +35,19 @@ components:
         Contain information about an user of the app,
         like its name, user id, and profile photo.
       properties:
-        id:
+        user_id:
           type: string
+          example: "ofnarc754"
+          description: unique user id
           readOnly: true
-          description: User id
-        name:
+        user_name:
           type: string
+          example: "franco"
           description: Username
-        photo:
+        user_photo:
           #bisogna decidere come gestire la foto
+          type: string
+          format: uri
           description: User profile photo (propic)
     
     chat:
@@ -57,16 +61,16 @@ components:
         like the name of the chat (if it's a group), the propic(if it's a grout)
         the partecipants, its id.
       properties:
-        id:
+        chat_id:
           type: integer
           readOnly: true
-          description: Chat id
-        name:
+          description: unique chat id
+        chat_name:
           type: string
           description: |
             Chat name, if it's a private chat the name correspond
             to the other username
-        photo:
+        chat_photo:
           #bisogna decidere come gestire la foto
           description: |
             Chat Photo, if it's a private chat is the propic of the other user,
@@ -85,11 +89,130 @@ components:
           description: Array containing the users of the chat
 
 paths:
-  #/users:                        Endpoint degli utenti dell'app
-  #/users/{usr_id}:               Endpoint del singolo utente
-  #/users/{usr_id}/propic:        Enpoint per la propic di un utente
+  /session:
+    post:
+      tags: ["Login"]
+      summary: Logs in the user
+      description: |-
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Maria
+                  pattern: 'ˆ.*?$'
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        "201":
+          description: User log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    example: "ofnarc754"
+  
+  /users:                         #Endpoint degli utenti dell'app
+    get:
+      tags: ["List all users"]
+      operationId: showAllUsers
+      summary: List all users
+      responses:
+        "200":
+          description: Show an array that contain all the users of the WASAText
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/user"
+  
+  /users/{usr_id}:                #Endpoint del singolo utente
+    parameters:
+      - $ref: "#/components/parameters/usr_id"
+    patch:
+      #uso patch perché voglio modificare SOLO il nome dell'utente,
+      #quindi un aggiornamento parziale
+      tags: ["Change name"]
+      operationId: setMyUserName
+      summary: Change the username
+      description: |
+        Update only the username leaving invariated the id and photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_name:
+                  type: string
+                  description: New name
+              required:
+              - user_name
+      responses:
+        "200":
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        
+        "400":
+          description: unable to rename
+        
+        "404":
+          description: user not found
+      
+  /users/{usr_id}/propic:         #Enpoint per la propic di un utente
+    parameters:
+      - $ref: "#/components/parameters/usr_id"
+    patch:
+      tags: ["Change propic"]
+      operationId: setMyPhoto
+      summary: Change the propic
+      description: |
+        Update only the username leaving invariated the id and photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_photo:
+                  type: string
+                  description: New name
+              required:
+              - user_photo
+      responses:
+        "200":
+          description: photo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        
+        "400":
+          description: unable to change propic
+        
+        "404":
+          description: user or photo not found
   
   #forse meglio /users/{usr_id}/chats/.....
+  
   #/chats:                        Endpoint delle chat
   #chats/{chat_id}:               Endpoint di una chat
   #/chats/{chat_id}/users:        Endpoint di una chat riguardo i suoi utenti
