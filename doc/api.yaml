@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: WASAtext
-  description: |
+  description:  |
     This API allow multiple users to chat with each other,
     directly or by creating group chat.
   version: 0.0.2franco
@@ -9,18 +9,23 @@ info:
 components:
   parameters:
     usr_id:
-      description: |
+      description:  |
         Unique user id
       
       schema:
         type: string
+        pattern: "^[^\s]+$"
+        example: "ofnarc754"
+
+        minLength: 3
+        maxLength: 32
         readOnly: true
       name: usr_id
       in: path
       required: true
       
     chat_id:
-      description: |
+      description:  |
         Unique chat id
       
       schema:
@@ -30,22 +35,35 @@ components:
       name: chat_id
       in: path
       required: true
-  
+    
+    msg_id:
+      description: |
+        Unique message id
+      
+      schema:
+        type: integer
+        minimum: 0
+        readOnly: true
+      name: msg_id
+      in: path
+      required: true
+
+
   schemas:
     user:
-      description: |
+      description:  |
         Contain information about an user of the app,
         like its name, user id, and profile photo.
       
       type: object
       title: User
       properties:
-        user_id:
-          description: |
-            unique user id
+        usr_id:
+          description:  |
+            Unique user id
       
           type: string
-          pattern: 'ˆ.*?$'
+          pattern: "^(?!\s).+$"
           example: "ofnarc754"
           
           minLength: 3
@@ -53,39 +71,36 @@ components:
           readOnly: true
         
         user_name:
-          description: |
+          description:  |
             Username
           
           type: string
-          pattern: "ˆ.*?$"
+          pattern: "^(?!\s).+$"
           example: "franco"
           
           minLength: 3
           maxLength: 16
         
         user_photo:
-          description: |
+          description:  |
             User profile photo (propic) encoded in base64
           
           type: string
           format: binary
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
           
-          maxLength: 1398101 #Equivalente di 1MB di dati binari
+          maxLength: 1398101 #Equivalente di 1MB di dati binari in base64
     
     chat:
-      #capire come gestire la differenza tra
-      #chat private(2utenti) e chat di gruppo
-      #forse enum??
       type: object
       title: Chat
-      description: |
+      description:  |
         Contain information about a chat of two or more users,
         like the name of the chat (if it's a group), the propic(if it's a grout)
         the partecipants, its id.
       properties:
         chat_id:
-          description: |
+          description:  |
             Unique chat id
           
           type: integer
@@ -94,19 +109,19 @@ components:
           readOnly: true
         
         chat_name:
-          description: |
+          description:  |
             Chat name, if it's a private chat the name correspond
             to the other username
           
           type: string
-          pattern: "ˆ.*?$"
+          pattern: "^(?!\s).+$"
           example: "Chat Uni"
           
           minLength: 3
           maxLength: 16
           
         chat_photo:
-          description: |
+          description:  |
             Chat Photo, if it's a private chat is the propic of the other user,
             else contain the group photo
           
@@ -117,7 +132,7 @@ components:
           maxLength: 1398101 #Equivalente di 1MB di dati binari
         
         chatType:
-          description: |
+          description:  |
             Used to distinguish group chat between private chat (only 2 people)
             
           type: string
@@ -126,7 +141,7 @@ components:
           - group
         
         partecipants:
-          description: |
+          description:  |
             Array containing the users of the chat
           
           type: array
@@ -134,12 +149,78 @@ components:
           maxItems: 64
           items:
             $ref: "#/components/schemas/user"
+    
+    message:
+      type: object
+      title: message
+      description:  |
+        Contain the message content, and other parameter such as:<br>
+        msg_id, sender_id, message_content_type(if a photo or a text message), message_content, comment and like/dislike
+      
+      properties:
+        msg_id:
+          description:  |
+            Unique message id FOR that chat
+          
+          type: integer
+          minimum: 0
+          readOnly: true
+        
+        sender_id:
+          description:  |
+            Correspond to the usr_id of the user that sended the message
+          
+          type: string
+          pattern: "^[^\s]+$"
+          example: "ofnarc754"
+
+          minLength: 3
+          maxLength: 32
+          readOnly: true
+
+        message_content_type:
+          description:  |
+            Describe if the content of the message is a photo o a text
+          
+          type: string
+          enum:
+          - photo
+          - text
+        
+        message_content:
+          description:  |
+            Content of the message, can be a text or a photo
+          
+          oneOf:
+            - description:  |
+                Text  content
+              
+              type: string
+              pattern: "^(?!\s).+$"
+              minLength: 1
+              maxLength: 1024
+            - description:  |
+                Photo content
+
+              type: string
+              format: binary
+              example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+              
+              maxLength: 2787949
+
+              
+
+        
+
+
+        
+
   
   securitySchemes:
     BearerAuth:
-      description: |
+      description:  |
         Define the security scheme for the api, in this case we use Bearer Token,<br>
-        and the token correspond to the user_id
+        and the token correspond to the usr_id
       type: http
       scheme: bearer
       bearerFormat: plain
@@ -149,7 +230,7 @@ paths:
     post:
       tags: ["Login"]
       summary: Logs in the user
-      description: |-
+      description:  |
         If the user does not exist, it will be created,
         and an identifier is returned.
         If the user exists, the user identifier is returned.
@@ -165,7 +246,7 @@ paths:
                 name:
                   type: string
                   example: Maria
-                  pattern: "ˆ.*?$"
+                  pattern: "^(?!\s).+$"
                   minLength: 3
                   maxLength: 16
         required: true
@@ -177,17 +258,21 @@ paths:
               schema:
                 type: object
                 properties:
-                  user_id:
+                  usr_id:
                     type: string
                     example: "ofnarc754"
   
+  #-----------------
+  # USER ENDPOINTS
+  #-----------------
+
   /users:                         #Endpoint degli utenti dell'app
     get:
-      tags: ["List all users"]
+      tags: ["User operation"]
       operationId: showAllUsers
       summary: List all users
       security:
-      - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell user_id come token
+      - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell usr_id come token
       
       responses:
         "200":
@@ -204,16 +289,16 @@ paths:
     parameters:
       - $ref: "#/components/parameters/usr_id"
     patch:
-      description: |
+      description:  |
         Update only the username leaving invariated the id and photo
 
       #uso patch perché voglio modificare SOLO il nome dell'utente,
       #quindi un aggiornamento parziale
-      tags: ["Change name"]
+      tags: ["User operation"]
       operationId: setMyUserName
       summary: Change the username
       security:
-      - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell user_id come token
+      - BearerAuth: []
       
       requestBody:
         required: true
@@ -247,13 +332,13 @@ paths:
     parameters:
       - $ref: "#/components/parameters/usr_id"
     patch:
-      description: |
+      description:  |
         Update only the username leaving invariated the id and photo
-      tags: ["Change propic"]
+      tags: ["User operation"]
       operationId: setMyPhoto
       summary: Change the propic
       security:
-      - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell user_id come token
+      - BearerAuth: []
 
       requestBody:
         required: true
@@ -282,9 +367,32 @@ paths:
         "404":
           description: user or photo not found
   
-  #forse meglio /users/{usr_id}/chats/.....
+  #-----------------
+  # CHAT ENDPOINTS
+  #-----------------
+
+  /chats:                         #Endpoint delle chat
+    get:
+      description:  |
+        Get all the chats of the user
+      tags: ["Chat operation"]
+      security:
+      - BearerAuth: []
+      
+      responses:
+        "200":
+          description: Show an array that contain all the users of the WASAText
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/user"
+
+
+  #/chats/{chat_id}:                #Endpoint di una chat
+  #/chats/{chat_id}/users:         #Endpoint di una chat riguardo i suoi utenti
   
-  #/chats:                        Endpoint delle chat
-  #chats/{chat_id}:               Endpoint di una chat
-  #/chats/{chat_id}/users:        Endpoint di una chat riguardo i suoi utenti
-  
+  #-----------------
+  # MESSAGE
+  #-----------------
