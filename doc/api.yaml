@@ -4,7 +4,9 @@ info:
   description:  |
     This API allow multiple users to chat with each other,
     directly or by creating group chat.
-  version: 0.0.2franco
+  version: 0.1.6franco
+
+#capire come gestire i vari array di schemas, es utenti in chat, messaggi in chat, commenti dei messaggi
 
 components:
   parameters:
@@ -14,7 +16,7 @@ components:
       
       schema:
         type: string
-        pattern: "^[^\s]+$"
+        pattern: "^[^ ]+$"
         example: "ofnarc754"
 
         minLength: 3
@@ -57,13 +59,14 @@ components:
       
       type: object
       title: User
+
       properties:
         usr_id:
           description:  |
             Unique user id
       
           type: string
-          pattern: "^(?!\s).+$"
+          pattern: "^(?! ).+$"
           example: "ofnarc754"
           
           minLength: 3
@@ -75,7 +78,7 @@ components:
             Username
           
           type: string
-          pattern: "^(?!\s).+$"
+          pattern: "^(?! ).+$"
           example: "franco"
           
           minLength: 3
@@ -86,18 +89,20 @@ components:
             User profile photo (propic) encoded in base64
           
           type: string
-          format: binary
+          format: base64
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
           
           maxLength: 1398101 #Equivalente di 1MB di dati binari in base64
     
     chat:
-      type: object
-      title: Chat
       description:  |
         Contain information about a chat of two or more users,
         like the name of the chat (if it's a group), the propic(if it's a grout)
         the partecipants, its id.
+
+      type: object
+      title: Chat
+      
       properties:
         chat_id:
           description:  |
@@ -114,7 +119,7 @@ components:
             to the other username
           
           type: string
-          pattern: "^(?!\s).+$"
+          pattern: "^(?! ).+$"
           example: "Chat Uni"
           
           minLength: 3
@@ -126,7 +131,7 @@ components:
             else contain the group photo
           
           type: string
-          format: binary
+          format: base64
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
           
           maxLength: 1398101 #Equivalente di 1MB di dati binari
@@ -142,20 +147,33 @@ components:
         
         partecipants:
           description:  |
-            Array containing the users of the chat
+            Array containing the users id of the users in the chat
           
           type: array
           minItems: 2
           maxItems: 64
           items:
-            $ref: "#/components/schemas/user"
+            type: object
+            properties:
+              usr_id:
+                description:  |
+                  Unique user id
+                
+                type: string
+                example: "ofnarc754"
+                pattern: "^[^ ]+$"
+                
+                minLength: 3
+                maxLength: 32
     
     message:
-      type: object
-      title: message
       description:  |
         Contain the message content, and other parameter such as:<br>
-        msg_id, sender_id, message_content_type(if a photo or a text message), message_content, comment and like/dislike
+        msg_id, sender_id, message_content_type(if a photo or a text message),
+        message_content, delivery status, comment and like/dislike
+      
+      type: object
+      title: message
       
       properties:
         msg_id:
@@ -171,14 +189,14 @@ components:
             Correspond to the usr_id of the user that sended the message
           
           type: string
-          pattern: "^[^\s]+$"
+          pattern: "^[^ ]+$"
           example: "ofnarc754"
 
           minLength: 3
           maxLength: 32
           readOnly: true
 
-        message_content_type:
+        content_type:
           description:  |
             Describe if the content of the message is a photo o a text
           
@@ -187,35 +205,77 @@ components:
           - photo
           - text
         
-        message_content:
+        content:
           description:  |
             Content of the message, can be a text or a photo
           
           oneOf:
             - description:  |
-                Text  content
+                Text content
               
               type: string
-              pattern: "^(?!\s).+$"
+              pattern: "^(?! ).+$"
               minLength: 1
               maxLength: 1024
             - description:  |
                 Photo content
 
               type: string
-              format: binary
+              format: base64
               example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
               
               maxLength: 2787949
+        
+        delivery_status:
+          description:  |
+            Enum string used for set the status of a message:<br>
+              - 0: the receiver user isn't connected to the app<br>
+              - 1: the user received the message but he didn't read it<br>
+              - 2: read by the user
 
-              
+          type: integer
+          minimum: 0
+          maximum: 2
+
+        comments:
+          description:  |
+            Array of comments/reaction of a messsage,
+            a message can have maximumi 16 comments
+          
+          type: array
+          minItems: 0
+          maxItems: 16
+          items:
+            $ref: "#/components/schemas/comment"
+    
+    comment:
+      description:  |
+        Schema for the comment (reaction with emoji) section of a message
+        it have the content of the comment (one emoji) the user who leaved the
+        comment and a comment id that its connected to the message
+
+      type: object
+      title: comment
+
+      properties:
+        comment_id:
+          description:  |
+            Comment id of a comment of a message
+
+          type: integer
+          minimum: 0
+          readOnly: true
+        
+        content:
+          description:  |
+            Content of the comment, it's an emoji in utf-8
+          
+          type: string
+          pattern: "^[\u1F600-\u1F64F\u1F300-\u1F5FF\u1F680-\u1F6FF\u2600-\u26FF\u2700-\u27BF]$"
+          example: "🐱"
+                  
 
         
-
-
-        
-
-  
   securitySchemes:
     BearerAuth:
       description:  |
@@ -225,17 +285,20 @@ components:
       scheme: bearer
       bearerFormat: plain
 
+
+
 paths:
   /session:
     post:
-      tags: ["Login"]
-      summary: Logs in the user
       description:  |
         If the user does not exist, it will be created,
         and an identifier is returned.
         If the user exists, the user identifier is returned.
-      
+      summary: Logs in the user
+
+      tags: ["Login"]
       operationId: doLogin
+
       requestBody:
         description: User details
         content:
@@ -245,11 +308,12 @@ paths:
               properties:
                 name:
                   type: string
-                  example: Maria
-                  pattern: "^(?!\s).+$"
+                  example: "franco"
+                  pattern: "^(?! ).+$"
                   minLength: 3
                   maxLength: 16
         required: true
+      
       responses:
         "201":
           description: User log-in action successful
@@ -268,9 +332,14 @@ paths:
 
   /users:                         #Endpoint degli utenti dell'app
     get:
+      description:  |
+        Consent to show all the users of the WASAtext, usefull when an user
+        want to start a new conversation, or add another user to a group
+      summary: List all users
+
       tags: ["User operation"]
       operationId: showAllUsers
-      summary: List all users
+
       security:
       - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell usr_id come token
       
@@ -283,20 +352,63 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/user"
+                
+                minItems: 0
+                maxItems: 10000000
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
   
   
   /users/{usr_id}:                #Endpoint del singolo utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
-    patch:
+    
+    get:
       description:  |
-        Update only the username leaving invariated the id and photo
+        Retrive the photo and name of an user by its usr_id,
+        usefull for when an user wanna se info of other user in
+        a chat or group
+      summary: Get user info
 
+      tags: ["User operation"]
+      operationId: getUserInfo
+
+      security:
+      - BearerAuth: []
+
+      responses:
+        "200":
+          description:  |
+            Information retrived successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        
+        "400":
+          description:  |
+            Unable to retrive data
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+        
+        "404":
+          description:  |
+            user not found
+
+    
+    patch:
       #uso patch perché voglio modificare SOLO il nome dell'utente,
       #quindi un aggiornamento parziale
+      description:  |
+        Update only the username leaving invariated the id and photo
+      summary: Change the username
+
+      
       tags: ["User operation"]
       operationId: setMyUserName
-      summary: Change the username
+
       security:
       - BearerAuth: []
       
@@ -308,8 +420,14 @@ paths:
               type: object
               properties:
                 user_name:
+                  description: New username
+                  
                   type: string
-                  description: New name
+                  pattern: "^(?! ).+$"
+                  example: "franco"
+                  
+                  minLength: 3
+                  maxLength: 16
               required:
               - user_name
       
@@ -324,6 +442,9 @@ paths:
         "400":
           description: unable to rename
         
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+
         "404":
           description: user not found
       
@@ -331,12 +452,15 @@ paths:
   /users/{usr_id}/propic:         #Enpoint per la propic di un utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
+    
     patch:
       description:  |
         Update only the username leaving invariated the id and photo
+      summary: Change the propic
+
       tags: ["User operation"]
       operationId: setMyPhoto
-      summary: Change the propic
+      
       security:
       - BearerAuth: []
 
@@ -348,8 +472,13 @@ paths:
               type: object
               properties:
                 user_photo:
+                  description: New user photo
+
                   type: string
-                  description: New name
+                  format: base64
+                  example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  
+                  maxLength: 1398101
               required:
               - user_photo
       
@@ -362,10 +491,13 @@ paths:
                 $ref: "#/components/schemas/user"
         
         "400":
-          description: unable to change propic
+          description: Unable to change propic
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
         
         "404":
-          description: user or photo not found
+          description: User or photo not found
   
   #-----------------
   # CHAT ENDPOINTS
@@ -374,25 +506,311 @@ paths:
   /chats:                         #Endpoint delle chat
     get:
       description:  |
-        Get all the chats of the user
+        Return an array that contain all the chats of a single user
+      summary: List the chat of the user
+      
       tags: ["Chat operation"]
+      operationId: getMyConversations
+
       security:
       - BearerAuth: []
       
       responses:
         "200":
-          description: Show an array that contain all the users of the WASAText
+          description:  |
+            List of all the chat
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/user"
+                  $ref: "#/components/schemas/chat"
+        
+        "400":
+          description: Unable to retrive chats
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
 
+  /chats/{chat_id}:               #Endpoint di una chat
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
 
-  #/chats/{chat_id}:                #Endpoint di una chat
-  #/chats/{chat_id}/users:         #Endpoint di una chat riguardo i suoi utenti
+    delete:
+      description:  |
+        Delete a chat and it's content
+      summary: Delete a chat
+
+      tags: ["Chat operation"]
+      operationId: deleteChat
+
+      security:
+      - BearerAuth: []
+
+      responses:
+        "204":
+          description: Chat deleted successfully
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+        
+        "404":
+          description: Chat not found
+    
+    get:
+      description:  |
+        Retrive only the name and the image of a chat identified
+        by its chat_id. Usefull for when an user 
+      summary: Retrieve chat name and photo
+
+      tags: ["Chat operation"]
+      operationId: getChatInfo
+      
+      responses:
+        "200":
+          description:  |
+            Response with only the name and image of the chat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chat_name:
+                    description:  |
+                      Chat name
+                    
+                    type: string
+                    pattern: "^(?! ).+$"
+                    example: "Chat Uni"
+                    
+                    minLength: 3
+                    maxLength: 16
+                    
+                  chat_photo:
+                    description:  |
+                      Chat photo
+
+                    type: string
+                    format: base64
+                    example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    
+                    maxLength: 1398101
+        
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Chat not found"
+    
+    patch:
+      #uso patch perché voglio modificare SOLO il nome dell'utente,
+      #quindi un aggiornamento parziale
+      description:  |
+        Update only the group name leaving invariated the other properties
+      summary: Change the group chat name
+
+      
+      tags: ["Group chat operation"]
+      operationId: setGroupName
+
+      security:
+      - BearerAuth: []
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chat_name:
+                  description: New group name
+                  type: string
+                  pattern: "^(?! ).+$"
+                  example: "Chat Uni"
+                  
+                  minLength: 3
+                  maxLength: 16
+              required:
+              - chat_name
+      
+      responses:
+        "200":
+          description: Group chat updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        
+        "400":
+          description: Unable to rename
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+
+        "404":
+          description: Group chat not found
   
+  /chats/{chat_id}/propic:        #Endpoint della propic di una chat
+    parameters:
+      - $ref: "#/components/parameters/usr_id"
+    
+    patch:
+      description:  |
+        Update only the group chat leaving invariated the other properties
+      summary: Change the group chat photo
+
+      tags: ["Group chat operation"]
+      operationId: setGroupPhoto
+      
+      security:
+      - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chat_photo:
+                  description: New group photo
+
+                  type: string
+                  format: base64
+                  example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  
+                  maxLength: 1398101
+              required:
+              - chat_photo
+      
+      responses:
+        "200":
+          description: photo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        
+        "400":
+          description: unable to change propic
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+        
+        "404":
+          description: Group chat or photo not found
+
+  /chats/{chat_id}/users:         #Endpoint degli utenti di una chat
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
+    
+    post:
+      description:  |
+        Add an user to the chat, by inserting the usr_id
+        of the user in the array of partecipants
+      summary: Add an user to a group
+
+      tags: ["Group chat operation"]
+      operationId: addToGroup
+
+      security:
+      - BearerAuth: []
+
+      requestBody:
+        description:  |
+          usr_id of the user to be added to the chat
+        
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usr_id:
+                  type: string
+                  pattern: "^(?! ).+$"
+                  example: "ofnarc754"
+                  
+                  minLength: 3
+                  maxLength: 32
+      
+      responses:
+        "200":
+          description: User added successfully
+        
+        "204":
+          description: No content, user is already in the chat
+        
+        "400":
+          description: Invalid usr_id or chat_id
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+
+        "404":
+          description: Chat or user not found
+
+
+  /chats/{chat_id}/users/{usr_id}:
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
+      - $ref: "#/components/parameters/usr_id"
+    
+    delete:
+      description:  |
+        Remove an user from the chat, and from the users array of the chat, used for when a user leave a group
+      summary: Leave a group chat
+
+      tags: ["Group chat operation"]
+      operationId: leaveGroup
+
+      security:
+      - BearerAuth: []
+
+      responses:
+        "204":
+          description: User successfully leaved the chat
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+        
+        "404":
+          description: Chat  or user not found
+    
   #-----------------
   # MESSAGE
   #-----------------
+
+  /chats/{chat_id}/messages:
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
+    
+    get:
+      description:  |
+        Retrive most of the messages of the chat ordered from the newest to the oldest
+      summary: Get chat messages
+
+      tags: ["Chat operation"]
+      operationId: getConversation
+
+      security:
+      - BearerAuth: []
+
+      responses:
+        "200":
+          description:  |
+            Messages retrived successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/messages"
+                
+                minItems: 1
+                maxItems: 256
+        
+        "400":
+          description: Unable to retrive chats
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
