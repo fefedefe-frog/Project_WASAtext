@@ -10,6 +10,23 @@ info:
 
 #capire come gestire i vari array di schemas, es utenti in chat, messaggi in chat, commenti dei messaggi
 
+tags:
+  - name: Login 
+    description: Opeartions relative to the login of the user
+  
+  - name: User operation
+    description: Operations relative to the user, such as change or get name/propic, ecc
+  
+  - name: Chat operation
+    description: Operations relative to the chat, such retrive the user's chat, retrive a chat name, ecc
+  
+  - name: Group chat operation
+    description: Operations relative to the group chat
+  
+  - name: Message operation
+    description: Operations relative to the messages, such as send a message, change the status to read message, delete it, ecc
+
+
 components:
   parameters:
     usr_id:
@@ -91,7 +108,7 @@ components:
             User profile photo (propic) encoded in base64
           
           type: string
-          format: base64
+          format: binary
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
           
           maxLength: 1398101 #Equivalente di 1MB di dati binari in base64
@@ -133,7 +150,7 @@ components:
             else contain the group photo
           
           type: string
-          format: base64
+          format: binary
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
           
           maxLength: 1398101
@@ -218,7 +235,9 @@ components:
                 Text content
               
               type: string
-              pattern: '^.*$'
+              pattern: '^(?!\s*$).+'
+              example: "Ciao franco, come stai?"
+
               minLength: 1
               maxLength: 1024
 
@@ -226,9 +245,11 @@ components:
                 Photo content
 
               type: string
-              format: base64
+              format: binary
+              pattern: '^.*$'
               example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
               
+              minLength: 0
               maxLength: 2787949
         
         delivery_status:
@@ -248,6 +269,10 @@ components:
           
           type: string
           format: date-time
+          example: "2021-06-01T14:10:27Z"
+
+          minLength: 18
+          maxLength: 22
         
         comments:
           description:  |
@@ -283,11 +308,13 @@ components:
             Content of the comment, it's an emoji in utf-8
           
           type: string
-          pattern: ^[\u1F600-\u1F64F\u1F300-\u1F5FF\u1F680-\u1F6FF\u2600-\u26FF\u2700-\u27BF]$
-          example: "🐱"
+          pattern: '^[\u1F600-\u1F64F\u1F300-\u1F5FF\u1F680-\u1F6FF\u2600-\u26FF\u2700-\u27BF]+$'
+          example: "😀"
+
+          minLength: 1
+          maxLength: 1
                   
 
-        
   securitySchemes:
     BearerAuth:
       description:  |
@@ -316,12 +343,17 @@ paths:
         content:
           application/json:
             schema:
+              description:  |
+                Request the name of the user
               type: object
               properties:
-                name:
+                user_name:
+                  description:  |
+                    The name of the user can't be empty nor only space nor start/end with spaces
                   type: string
                   example: "franco"
                   pattern: '^[^\s].*[^\s]$'
+
                   minLength: 3
                   maxLength: 16
         required: true
@@ -332,12 +364,16 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  usr_id:
-                    type: string
-                    example: "ofnarc754"
-  
+                description:  |
+                  Responde with the unique user id
+                
+                type: string
+                example: "ofnarc754"
+                pattern: '^[^\s].*[^\s]$'
+              
+                minLength: 3
+                maxLength: 32
+
   #-----------------
   # USER ENDPOINTS
   #-----------------
@@ -361,13 +397,21 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/user"
+                description:  |
+                  Array of users
                 
-                minItems: 0
-                maxItems: 10000000
-        
+                type: object
+                properties:
+                  users:
+                    description:  |
+                      Array of all the users of the app
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/user"
+                    
+                    minItems: 0
+                    maxItems: 10000000
+            
         "401":
           description: Unauthorized - Authentication token is missing or invalid
   
@@ -410,9 +454,10 @@ paths:
             user not found
 
     
-    patch:
-      #uso patch perché voglio modificare SOLO il nome dell'utente,
-      #quindi un aggiornamento parziale
+    # patch:
+    #   #uso patch perché voglio modificare SOLO il nome dell'utente,
+    #   #quindi un aggiornamento parziale
+    put:
       description:  |
         Update only the username leaving invariated the id and photo
       summary: Change the username
@@ -429,6 +474,9 @@ paths:
         content:
           application/json:
             schema:
+              description:  |
+                The request body expects to receive the user_name field compatible
+                with the one described in the user schema 
               type: object
               properties:
                 user_name:
@@ -459,7 +507,6 @@ paths:
 
         "404":
           description: user not found
-      
   
   /users/{usr_id}/propic:               #Enpoint per la propic di un utente
     parameters:
@@ -479,17 +526,21 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          application/json-patch+json:
             schema:
+              description:  |
+                The request body expects to receive the user_photo field compatible
+                with the one described in the user schema  
               type: object
               properties:
                 user_photo:
                   description: New user photo
 
                   type: string
-                  format: base64
+                  format: binary
                   example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                   
+                  minLength: 1
                   maxLength: 1398101
               required:
               - user_photo
@@ -510,6 +561,55 @@ paths:
         
         "404":
           description: User or photo not found
+    # put:
+    #   description:  |
+    #     Update only the username leaving invariated the id and photo
+    #   summary: Change the propic
+
+    #   tags: ["User operation"]
+    #   operationId: setMyPhoto
+      
+    #   security:
+    #   - BearerAuth: []
+
+    #   requestBody:
+    #     required: true
+    #     content:
+    #       application/json:
+    #         schema:
+    #           description:  |
+    #             The request body expects to receive the user_photo field compatible
+    #             with the one described in the user schema  
+    #           type: object
+    #           properties:
+    #             user_photo:
+    #               description: New user photo
+
+    #               type: string
+    #               format: binary
+    #               example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  
+    #               minLength: 1
+    #               maxLength: 1398101
+    #           required:
+    #           - user_photo
+      
+    #   responses:
+    #     "200":
+    #       description: photo updated successfully
+    #       content:
+    #         application/json:
+    #           schema:
+    #             $ref: "#/components/schemas/user"
+        
+    #     "400":
+    #       description: Unable to change propic
+        
+    #     "401":
+    #       description: Unauthorized - Authentication token is missing or invalid
+        
+    #     "404":
+    #       description: User or photo not found
   
   #-----------------
   # CHAT ENDPOINTS
@@ -529,16 +629,24 @@ paths:
       
       responses:
         "200":
-          description: List of all the chat
+          description:  |
+            The response contain a json object composed by an array with all(32 for now) the user chat
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/chat"
-                
-                minItems: 0
-                maxItems: 32
+                description: List with all user chat
+
+                type: object
+                properties:
+                  chats:
+                    description: user chats
+
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/chat"
+                    
+                    minItems: 0
+                    maxItems: 32
         
         "400":
           description:  Unable to retrive chats
@@ -574,7 +682,7 @@ paths:
     get:
       description:  |
         Retrive only the name and the image of a chat identified
-        by its chat_id. Usefull for when an user 
+        by its chat_id. Usefull for something surely
       summary: Retrieve only chat name and photo
 
       tags: ["Chat operation"]
@@ -586,6 +694,9 @@ paths:
           content:
             application/json:
               schema:
+                description:  |
+                  Schema with the chat namme and photo
+                
                 type: object
                 properties:
                   chat_name:
@@ -604,7 +715,7 @@ paths:
                       Chat photo
 
                     type: string
-                    format: base64
+                    format: binary
                     example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     
                     maxLength: 1398101
@@ -618,9 +729,8 @@ paths:
         "404":
           description: Chat not found
     
-    patch:
-      #uso patch perché voglio modificare SOLO il nome dell'utente,
-      #quindi un aggiornamento parziale
+    #patch:
+    put:
       description:  |
         Update only the group name leaving invariated the other properties
       summary: Change the group chat name
@@ -637,6 +747,9 @@ paths:
         content:
           application/json:
             schema:
+              description:  |
+                Schema for the request that contain only the new group name
+              
               type: object
               properties:
                 chat_name:
@@ -667,7 +780,8 @@ paths:
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
-    patch:
+    #patch:
+    put:
       description:  |
         Update only the group chat leaving invariated the other properties
       summary: Change the group chat photo
@@ -683,15 +797,19 @@ paths:
         content:
           application/json:
             schema:
+              description:  |
+                  Schema for the request that contain only the new group photo
+              
               type: object
               properties:
                 chat_photo:
                   description: New group photo
 
                   type: string
-                  format: base64
+                  format: binary
                   example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                   
+                  minLength: 0
                   maxLength: 1398101
               required:
               - chat_photo
@@ -732,9 +850,15 @@ paths:
         content:
           application/json:
             schema:
+              description:  |
+                schema for the user id
+
               type: object
               properties:
                 usr_id:
+                  description:  |
+                    usr_id
+
                   type: string
                   pattern: ^[^\s].*[^\s]$
                   example: "ofnarc754"
@@ -743,30 +867,47 @@ paths:
                   maxLength: 32
       
       responses:
-        "200":
+        "201":
           description: User added successfully, return the list of partecipant refreshed
           content:
             application/json:
               schema:
-                type: array
-                items:
-                    type: object
-                    properties:
-                      user_name:
-                        type: string
-                        pattern: '^[^\s].*[^\s]$'
-                        example: franco
+                description:  |
+                  List with the partecipants of the chat included the new added
+                
+                type: object
+                properties:
+                  users:
+                    description: Users of the chat
 
-                        minLength: 3
-                        maxLength: 16
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                          user_name:
+                            description:  |
+                              user name
+                            
+                            type: string
+                            pattern: '^[^\s].*[^\s]$'
+                            example: franco
 
-                      user_photo:
-                        type: string
-                        format: base64
+                            minLength: 3
+                            maxLength: 16
 
-                        example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  
-                        maxLength: 1398101
+                          user_photo:
+                            description:  |
+                              user photo
+                            
+                            type: string
+                            format: binary
+
+                            example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                      
+                            maxLength: 1398101
+              
+                    minItems: 1
+                    maxItems: 32
 
         
         "204":
@@ -833,12 +974,20 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/message"
-                
-                minItems: 1
-                maxItems: 256
+                description:  |
+                  Array of message composed by id, sender_id, timestamp and content of the message
+                type: object
+                properties:
+                  messages:
+                    description:  |
+                      chat message maximum 256
+
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/message"
+                    
+                    minItems: 1
+                    maxItems: 256
         
         "400":
           description: Unable to retrive chat messages
@@ -850,6 +999,7 @@ paths:
       description:  |
         Send a message in the chat, the user is identified by the auth token.
         summary: Send a message
+      summary: Send message
 
       tags: ["Message operation"]
       operationId: sendMessage
@@ -870,7 +1020,7 @@ paths:
               $ref: "#/components/schemas/message"
         
       responses:
-        "200":
+        "201":
           description: Message sent succesfully
         
         "400":
