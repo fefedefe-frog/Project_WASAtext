@@ -331,7 +331,7 @@ components:
 
 
 paths:
-  /session:                             #Endpoint per il login
+  /session:                                                       #Endpoint per il login
     post:
       description:  |
         If the user does not exist, it will be created,
@@ -382,7 +382,7 @@ paths:
   # USER ENDPOINTS
   #-----------------
 
-  /users:                               #Endpoint degli utenti dell'app
+  /users:                                                         #Endpoint degli utenti dell'app
     get:
       description:  |
         Consent to show all the users of the WASAtext, usefull when an user
@@ -393,7 +393,8 @@ paths:
       operationId: showAllUsers
 
       security:
-      - BearerAuth: []  #indica che l'endpoint ha bisogno dell dell usr_id come token
+        - BearerAuth: []
+        #indica che l'endpoint ha bisogno dell dell usr_id come token
       
       responses:
         "200":
@@ -420,7 +421,7 @@ paths:
           description: Unauthorized - Authentication token is missing or invalid
   
   
-  /users/{usr_id}:                      #Endpoint di un utente specifico
+  /users/{usr_id}:                                                #Endpoint di un utente
 
     parameters:
       - $ref: "#/components/parameters/usr_id"
@@ -436,8 +437,8 @@ paths:
       operationId: getUserInfo
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       responses:
         "200":
           description:  |
@@ -477,8 +478,8 @@ paths:
       operationId: setMyUserName
 
       security:
-      - BearerAuth: []
-      
+        - BearerAuth: []
+
       requestBody:
         required: true
         content:
@@ -527,7 +528,7 @@ paths:
         "404":
           description: user not found
   
-  /users/{usr_id}/propic:               #Enpoint per la propic di un utente
+  /users/{usr_id}/propic:                                         #Enpoint per la propic di un utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
     
@@ -540,8 +541,8 @@ paths:
       operationId: setMyPhoto
       
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         required: true
         content:
@@ -595,7 +596,7 @@ paths:
   # CHAT ENDPOINTS
   #-----------------
 
-  /chats:                               #Endpoint delle chat
+  /chats:                                                         #Endpoint delle chat
     get:
       description:  |
         Return an array that contain all the chats of a single user
@@ -605,8 +606,8 @@ paths:
       operationId: getMyConversations
 
       security:
-      - BearerAuth: []
-      
+        - BearerAuth: []
+
       responses:
         "200":
           description:  |
@@ -634,7 +635,7 @@ paths:
         "401":
           description: Unauthorized - Authentication token is missing or invalid
 
-  /chats/{chat_id}:                     #Endpoint di una specifica chat
+  /chats/{chat_id}:                                               #Endpoint di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
 
@@ -647,7 +648,7 @@ paths:
       operationId: deleteChat
 
       security:
-      - BearerAuth: []
+        - BearerAuth: []
 
       responses:
         "204":
@@ -719,8 +720,8 @@ paths:
       operationId: setGroupName
 
       security:
-      - BearerAuth: []
-      
+        - BearerAuth: []
+
       requestBody:
         required: true
         content:
@@ -769,7 +770,7 @@ paths:
         "404":
           description: Group chat not found
   
-  /chats/{chat_id}/propic:              #Endpoint della propic di una chat
+  /chats/{chat_id}/propic:                                        #Endpoint della propic di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
@@ -782,8 +783,8 @@ paths:
       operationId: setGroupPhoto
       
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         required: true
         content:
@@ -833,7 +834,7 @@ paths:
         "404":
           description: Group chat or photo not found
 
-  /chats/{chat_id}/users:               #Endpoint degli utenti di una specifica chat
+  /chats/{chat_id}/users:                                         #Endpoint degli utenti di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
@@ -847,8 +848,8 @@ paths:
       operationId: addToGroup
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         description:  |
           usr_id of the user to be added to the chat
@@ -928,7 +929,7 @@ paths:
         "404":
           description: Chat or user not found
 
-  /chats/{chat_id}/users/{usr_id}:      #Endpoint di uno specifico utente di una chat
+  /chats/{chat_id}/users/{usr_id}:                                #Endpoint di un utente di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/usr_id"
@@ -942,8 +943,8 @@ paths:
       operationId: leaveGroup
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       responses:
         "200":
           description: User successfully leaved the chat
@@ -958,7 +959,7 @@ paths:
   # MESSAGE
   #-----------------
 
-  /chats/{chat_id}/messages:            #Endpoint dei messaggi di una specifica chat
+  /chats/{chat_id}/messages:                                      #Endpoint dei messaggi di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
@@ -971,8 +972,8 @@ paths:
       operationId: getConversation
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       responses:
         "200":
           description:  |
@@ -1010,8 +1011,8 @@ paths:
       operationId: sendMessage
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         description:  |
           The message that the user want to send, in the request are present: <br>
@@ -1037,10 +1038,17 @@ paths:
         "404":
           description: Chat not found
     
-  /chats/{chat_id}/messages/{msg_id}:   #Endpoint di uno specifico messaggio di una chat
+  /chats/{chat_id}/messages/{msg_id}:                             #Endpoint di un messaggio di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/msg_id"
+      - name: chat_to_forward
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+        description: The id of the chat where the message is forwarded
     
     delete:
       description: Delete a specific message from the chat by it msg_id.
@@ -1052,18 +1060,64 @@ paths:
       security:
         - BearerAuth: []
       
-      
       responses:
         "204":
           description: Message deleted successfully
         "400":
-          description: Invalid request (e.g., invalid message_id)
+          description: Invalid request
         "401":
           description: Unauthorized - Authentication token is missing or invalid
         "404":
           description: Message or chat not found
+    
+    post:
+      description:  |
+        Forward a message to the chat that its id is passed in the query in the value "forward_to_chat"
+      summary: Forward a message
 
-  /chats/{chat_id}/messages/{msg_id}/comments:
+      tags: ["Message operation"]
+      operationId: forwardMessage
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description:  |
+                The request body want the id of the user that is forwarding the message
+              type: object
+              properties:
+                forwarder_id:
+                  description:  |
+                    Unique usr_id
+                  
+                  type: string
+                  pattern: "^[^ ]+$"
+                  example: "ofnarc754"
+
+                  minLength: 3
+                  maxLength: 32
+                  readOnly: true
+
+      responses:
+        "200":
+          description: Message forwarded correctly
+        
+        "400":
+          description: Invalid request
+        
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+        
+        "404":
+          description: Message or chats not found
+
+
+
+
+  /chats/{chat_id}/messages/{msg_id}/comments:                    #Endpoint dei commenti di un messaggio
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/msg_id"
@@ -1077,8 +1131,8 @@ paths:
       operationId: getMessageComment
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       responses:
         "200":
           description:  |
@@ -1121,8 +1175,8 @@ paths:
       operationId: commentMessage
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         description:  |
           The comment that the user want to
@@ -1149,7 +1203,7 @@ paths:
         "404":
           description: Comment or message not found
 
-  /chats/{chat_id}/messages/{msg_id}/comments/{commenter_id}:
+  /chats/{chat_id}/messages/{msg_id}/comments/{commenter_id}:     #Endpoint di un commento di un messaggio
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/msg_id"
@@ -1176,8 +1230,8 @@ paths:
       operationId: uncommentMessage
 
       security:
-      - BearerAuth: []
-
+        - BearerAuth: []
+      
       requestBody:
         required: true
         content:
