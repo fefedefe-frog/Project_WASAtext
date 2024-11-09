@@ -194,7 +194,7 @@ components:
         message_content, delivery status, comment and like/dislike
       
       type: object
-      title: message
+      title: Message
       
       properties:
         msg_id:
@@ -292,7 +292,7 @@ components:
         comment and a comment id that its connected to the message
 
       type: object
-      title: comment
+      title: Comment
 
       properties:
         commenter_id:
