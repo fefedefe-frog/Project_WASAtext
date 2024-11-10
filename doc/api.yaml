@@ -6,7 +6,7 @@ info:
     one-to-one or by creating group chat, an user can start
     new conversation by searching other user, or add them to
     an existing chat to create a group.
-  version: 0.1.6osvald
+  version: 0.2.1fray
 
 #capire come gestire i vari array di schemas, es utenti in chat, messaggi in chat, commenti dei messaggi
 
