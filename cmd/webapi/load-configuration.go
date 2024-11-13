@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ardanlabs/conf"
+	"gopkg.in/yaml.v2"
 	"io"
 	"os"
-	"time"
 )
 
 // WebAPIConfiguration describes the web API configuration. This structure is automatically parsed by
