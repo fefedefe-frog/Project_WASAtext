@@ -39,9 +39,29 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
-	GetName() (string, error)
-	SetName(name string) error
 
+	//User operations
+	GetUsrIdByName(userName string) (string, error)   	//Ottiene l'usrId dal nome dell'user
+	SetUserName(usrId string, newName string) error   	//Imposta un nuovo username di un user, dal suo usrId
+	SetUserPhoto(usrId string, newPhoto string) error	//Imposta una nuova foto di un user, dal suo usrId
+	GetUserInfo(usrId string) (string, error)         	//Ottiene le informazioni di un user, capire come gestire le info user
+
+	GetUsers() ([]string, error)              			//Ottiene un array di tutti gli users
+	GetUserChats(usrId string) ([]int, error)			//Ottiene le chat di un user dal suo usrId
+
+
+	//Chat operations
+
+
+
+	//Group operations
+
+
+
+	//Message operations
+
+
+	//DB operations
 	Ping() error
 }
 
@@ -56,11 +76,72 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, errors.New("database is required when building a AppDatabase")
 	}
 
-	// Check if table exists. If not, the database is empty, and we need to create the structure
+	// Check if users_table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
-	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='example_table';`).Scan(&tableName)
+	err := db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='users_table';").Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE example_table (id INTEGER NOT NULL PRIMARY KEY, name TEXT);`
+		sqlStmt := "" +
+			"CREATE TABLE users_table (" +
+			"usrId TEXT PRIMARY KEY, " +
+			"user_name TEXT, " +
+			"user_photo BLOB" +
+			");"
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			return nil, fmt.Errorf("error creating database structure: %w", err)
+		}
+	}
+
+	// Check for chats_table
+	tableName = ""
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='chats_table';").Scan(&tableName)
+	if errors.Is(err, sql.ErrNoRows) {
+		sqlStmt := "" +
+			"CREATE TABLE chats_table (" +
+			"chatId INTEGER PRIMARY KEY, " +
+			"usrId TEXT, " +
+			"chat_type TEXT, " +
+			"chat_photo BLOB" +
+			");"
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			return nil, fmt.Errorf("error creating database structure: %w", err)
+		}
+	}
+
+	//Check for chat_partecipants_table
+	tableName = ""
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_partecipants_table';").Scan(&tableName)
+	if errors.Is(err, sql.ErrNoRows) {
+		sqlStmt := "" +
+			"CREATE TABLE chat_partecipants_table (" +
+			"chatId INTEGER, " +
+			"usrId TEXT," +
+			"FOREIGN KEY (chat_id) REFERENCES chats_table(chat_id), " +
+			"FOREIGN KEY (usrId) REFERENCES users_table(usrId), " +
+			"PRIMARY KEY (chat_id, usrId)" +
+			");"
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			return nil, fmt.Errorf("error creating database structure: %w", err)
+		}
+	}
+
+	//Check for chat_messages_table
+	tableName = ""
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_messages_table';").Scan(&tableName)
+	if errors.Is(err, sql.ErrNoRows) {
+		sqlStmt := "" +
+			"CREATE TABLE chat_messages_table (" +
+			"msgId INTEGER PRIMARY KEY, " +
+			"usrId TEXT, " +
+			"chatId INTEGER, " +
+			"msg_type TEXT, " +
+			"msg_content BLOB, " +
+			"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+			"FOREIGN KEY (usrId) REFERENCES users_table(usrId), " +
+			"FOREIGN KEY (chat_id) REFERENCES chats_table(chatId)" +
+			");"
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
 			return nil, fmt.Errorf("error creating database structure: %w", err)
