@@ -37,34 +37,33 @@ import (
 	"fmt"
 )
 
-
 type User struct{
-	usrId string
-	userName string
-	userPhoto string
+	UsrId string `json:"usrId"`
+	UserName string `json:"userName"`
+	UserPhoto string `json:"userPhoto"`
 }
 
 type Chat struct{
-	chatId int
-	chatName string
-	chatPhoto string
-	chatType ["one_to_one", "group"]
-	partecipants []string
+	ChatId int `json:"chatId"`
+	ChatName string `json:"chatName"`
+	ChatPhoto string `json:"chatPhoto"`
+	ChatType bool `json:"chatYype"`
+	Cartecipants []string `json:"partecipants"`
 }
 
 type Message struct{
-	msgId int
-	senderId string
-	contentType ["photo", "text"]
-	content string
-	deliveryStatus int
-	timestamp string
-	comments []Comment
+	MsgId int `json:"msgId"`
+	SenderId string `json:"senderId"`
+	ContentType bool `json:"contentType"`
+	Content string `json:"content"`
+	DeliveryStatus int `json:"deliveryStatus"`
+	Timestamp string `json:"timestamp"`
+	Comments []Comment `json:"comments"`
 }
 
 type Comment struct{
-	commenterId string
-	content string
+	CommenterId string `json:"commenterId"`
+	Content string `json:"content"`
 }
 
 
@@ -76,7 +75,7 @@ type AppDatabase interface{
 	GetUsrIdByName(userName string) (string, error)   		//Ottiene l'usrId dal nome dell'user
 	SetUserName(usrId string, newName string) error   		//Imposta un nuovo username di un user, dal suo usrId
 	SetUserPhoto(usrId string, newPhoto string) error		//Imposta una nuova foto di un user, dal suo usrId
-	GetUserInfo(usrId string) (string, error)         		//Ottiene le informazioni di un user, capire come gestire le info user
+	GetUserInfo(usrId string) (User, error)         		//Ottiene le informazioni di un user, capire come gestire le info user
 
 	GetUsers() ([]User, error)              				//Ottiene un array di tutti gli users, capire come gestire il ritorno  di tutti gli utenti
 
@@ -126,8 +125,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 		sqlStmt := "" +
 			"CREATE TABLE users_table (" +
 			"usrId TEXT PRIMARY KEY, " +
-			"user_name TEXT, " +
-			"user_photo BLOB" +
+			"userName TEXT, " +
+			"userPhoto BLOB" +
 			");"
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -143,8 +142,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 			"CREATE TABLE chats_table (" +
 			"chatId INTEGER PRIMARY KEY, " +
 			"usrId TEXT, " +
-			"chat_type TEXT, " +
-			"chat_photo BLOB" +
+			"chatType TEXT, " +
+			"chatPhoto BLOB" +
 			");"
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -160,9 +159,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 			"CREATE TABLE chat_partecipants_table (" +
 			"chatId INTEGER, " +
 			"usrId TEXT," +
-			"FOREIGN KEY (chat_id) REFERENCES chats_table(chat_id), " +
+			"FOREIGN KEY (chatId) REFERENCES chats_table(chatId), " +
 			"FOREIGN KEY (usrId) REFERENCES users_table(usrId), " +
-			"PRIMARY KEY (chat_id, usrId)" +
+			"PRIMARY KEY (chatId, usrId)" +
 			");"
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -179,11 +178,11 @@ func New(db *sql.DB) (AppDatabase, error) {
 			"msgId INTEGER PRIMARY KEY, " +
 			"usrId TEXT, " +
 			"chatId INTEGER, " +
-			"msg_type TEXT, " +
-			"msg_content BLOB, " +
+			"contentType TEXT, " +
+			"content BLOB, " +
 			"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, " +
 			"FOREIGN KEY (usrId) REFERENCES users_table(usrId), " +
-			"FOREIGN KEY (chat_id) REFERENCES chats_table(chatId)" +
+			"FOREIGN KEY (chatId) REFERENCES chats_table(chatId)" +
 			");"
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
