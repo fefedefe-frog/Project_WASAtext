@@ -23,9 +23,9 @@ type WebAPIConfiguration struct {
 		WriteTimeout    time.Duration `conf:"default:5s"`
 		ShutdownTimeout time.Duration `conf:"default:5s"`
 	}
-	Debug bool
+	Debug bool `conf:"default:true"`
 	DB    struct {
-		Filename string `conf:"default:/tmp/WASAtext.db"`
+		Filename string `conf:"default:./demo/WASAtext.db"`
 	}
 }
 
