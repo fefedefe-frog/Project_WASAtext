@@ -37,28 +37,71 @@ import (
 	"fmt"
 )
 
+
+type User struct{
+	usrId string
+	userName string
+	userPhoto string
+}
+
+type Chat struct{
+	chatId int
+	chatName string
+	chatPhoto string
+	chatType ["one_to_one", "group"]
+	partecipants []string
+}
+
+type Message struct{
+	msgId int
+	senderId string
+	contentType ["photo", "text"]
+	content string
+	deliveryStatus int
+	timestamp string
+	comments []Comment
+}
+
+type Comment struct{
+	commenterId string
+	content string
+}
+
+
 // AppDatabase is the high level interface for the DB
-type AppDatabase interface {
+type AppDatabase interface{
 
 	//User operations
-	GetUsrIdByName(userName string) (string, error)   	//Ottiene l'usrId dal nome dell'user
-	SetUserName(usrId string, newName string) error   	//Imposta un nuovo username di un user, dal suo usrId
-	SetUserPhoto(usrId string, newPhoto string) error	//Imposta una nuova foto di un user, dal suo usrId
-	GetUserInfo(usrId string) (string, error)         	//Ottiene le informazioni di un user, capire come gestire le info user
+	InsertNewUser(userName string) (User, error)			//Aggiunge un nuovo utente al database
+	GetUsrIdByName(userName string) (string, error)   		//Ottiene l'usrId dal nome dell'user
+	SetUserName(usrId string, newName string) error   		//Imposta un nuovo username di un user, dal suo usrId
+	SetUserPhoto(usrId string, newPhoto string) error		//Imposta una nuova foto di un user, dal suo usrId
+	GetUserInfo(usrId string) (string, error)         		//Ottiene le informazioni di un user, capire come gestire le info user
 
-	GetUsers() ([]string, error)              			//Ottiene un array di tutti gli users
-	GetUserChats(usrId string) ([]int, error)			//Ottiene le chat di un user dal suo usrId
+	GetUsers() ([]User, error)              				//Ottiene un array di tutti gli users, capire come gestire il ritorno  di tutti gli utenti
 
 
 	//Chat operations
-
+	GetUserChats(usrId string) ([]Chat, error)				//Ottiene le chat di un utente
+	DeleteChat(chatId int) error							//Elimina una chat dal database
+	GetChatInfo(chatId int)	(Chat, error)					//Ottiene le info di una chat
+	GetChatMessages(chatId int) ([]Message, error)			//Ottiene una lista di messaggi della chat
 
 
 	//Group operations
-
+	SetGroupName(chatId int, newName string) error			//Imposta un nuovo nome al gruppo
+	SetGroupPhoto(chatId int, newPhoto string) error		//Imposta una nuova foto per il gruppo
+	AddUserToGroup(chatId int, usrId string) error			//Aggiunge un nuovo utente al gruppo
+	RemoveUserFromGroup(chatId int, usrId string) error		//Rimuove un utente da un gruppo
 
 
 	//Message operations
+	InsertMessage(message Message, chatId int) error		//Aggiunge un messaggio e le sue relative informazioni
+	RemoveMessage(msgId int, chatId int) error				//Rimuove un messaggio e le sue relative informazioni
+	ForwardMessage(msgId int, chatIdToForwatd int) error	//Inoltra un messaggio esistente da una chat ad un'altra
+	GetMessageComments(msgId int) ([]Comment, error)		//Ottiene i commenti di un messaggio
+	CommentMessage(msgId int, comment Comment) error		//Inserisce il commento di un messaggio
+	UncommentMessage(msgId int, commentId int) error		//Rimuove il commento di un messaggio
 
 
 	//DB operations
