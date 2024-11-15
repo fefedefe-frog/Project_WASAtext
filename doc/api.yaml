@@ -395,15 +395,12 @@ paths:
                     maxItems: 256
           
               example:
-                users:
-                  - User1:
-                      usr_id: "franco245"
-                      userName: "franco"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  - User2:
-                      usr_id: "maria34"
-                      userName: "maria"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                - usr_id: "franco245"
+                  userName: "franco"
+                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                - usr_id: "maria34"
+                  userName: "maria"
+                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "401":
           description: Unauthorized - Authentication token is missing or invalid
