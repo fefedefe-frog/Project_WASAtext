@@ -12,24 +12,25 @@ func (rt *_router) Handler() http.Handler {
 	//rt.router.GET("/context", rt.wrap(rt.getContextReply))
 
 	//Login operation
-	rt.router.POST("/session", rt.wrap(rt.postSession))
+	rt.router.POST("/session", rt.wrap(rt.postSession))										//fatto
 
 	//User operations
-	rt.router.GET("/users", rt.wrap(rt.getUsers))
-	rt.router.GET("/users/:usr_id", rt.wrap(rt.getUserInfo))
-	rt.router.PATCH("/users/:usr_id", rt.wrap(rt.patchChangeUserName))
-	rt.router.GET("/users/:usr_id/propic", rt.wrap(rt.patchChangeUserPhoto))
+	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))								//fatto
+	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))					//fatto
+	rt.router.PATCH("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.patchChangeUserName)))
+	rt.router.GET("/users/:usr_id/propic", rt.wrap(rt.BearerAuth(rt.patchChangeUserPhoto)))	//TODO
 
 	//Chat operations
-	rt.router.GET("/chats", rt.wrap(rt.getUserChat))
-	rt.router.DELETE("/chats/:chat_id", rt.wrap(rt.leaveChat))
-	rt.router.GET("/chats/:chat_id", rt.wrap(rt.getChatNameAndPhoto))
-	rt.router.GET("/chats/:chat_id/messages", rt.wrap(rt.getChatMessages))
+	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getUserChat)))							//TODO
+	rt.router.DELETE("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.leaveChat)))
+	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatNameAndPhoto)))			//TODO
+	rt.router.GET("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getChatMessages)))		//TODO
 
 	//Group operations
+	//TODO
 
 	//Message operations
-
+	//TODO
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)
