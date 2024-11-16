@@ -65,9 +65,13 @@ func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 
 	//Creo la risposta http contentente il token di autorizzazione e l'usrId (in questo caso entrambi sono la stessa cosa
 	response := map[string]string{
-		"token": usrId,
 		"usrId": usrId,
 	}
+
+	//Scrivo nell'header della risposta il token bearer che in questo caso corrisponde all'usrId
+	writer.Header().Set("Authorization", "Bearer "+usrId)
+
+	//Scrivo nella risposta l'usrId
 	writer.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(writer).Encode(response)
 	if err != nil {
