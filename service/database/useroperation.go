@@ -26,21 +26,21 @@ func (db *appdbimpl) InsertNewUser(userName string) (User, error){
 	user.UserPhoto= ""
 
 	//Eseguo l'inserimento nel database
-	_, err := db.c.Exec("INSERT INTO users_table (usrId, userName, userPhoto) VALUES (?, ?, ?)",user.UsrId,user.UserName,user.UserPhoto)
+	_, err := db.c.Exec(`INSERT INTO users_table (usrId, userName, userPhoto) VALUES (?, ?, ?)`,user.UsrId,user.UserName,user.UserPhoto)
 	return user, err
 }
 
 func (db *appdbimpl) GetUsrIdByName(userName string) (string, error){
 	var usrId string
 
-	err := db.c.QueryRow("SELECT usrId FROM users_table WHERE userName = ?", userName).Scan(&usrId)
+	err := db.c.QueryRow(`SELECT usrId FROM users_table WHERE userName = ?`, userName).Scan(&usrId)
 
 	return usrId, err
 }
 
 func (db *appdbimpl) SetUserName(usrId string, newName string) error{
 
-	stmt, err := db.c.Prepare("UPDATE users_table SET userName = ? WHERE usrId=?")
+	stmt, err := db.c.Prepare(`UPDATE users_table SET userName = ? WHERE usrId=?`)
 	if err != nil {
 		log.Fatal("errore nella preparazione della query:", err)
 	}
@@ -55,15 +55,15 @@ func (db *appdbimpl) SetUserName(usrId string, newName string) error{
 
 func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error{
 
-	stmt, err := db.c.Prepare("UPDATE users_table SET userPhoto = ? WHERE usrId=?")
+	stmt, err := db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?`)
 	if err != nil {
-		log.Fatal("errore nella preparazione della query:", err)	//usare logger giusto
+		return err //log.Fatal("errore nella preparazione della query:", err)	//usare logger giusto, ritorno errore che viene gestito quando la funzione è chiamata
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(newPhoto, usrId)
 	if err != nil {
-		log.Fatal("errore nell'esecuzione della  query:", err)
+		return err //log.Fatal("errore nell'esecuzione della  query:", err)
 	}
 	return err
 }
@@ -71,7 +71,10 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error{
 func (db *appdbimpl) GetUserInfo(usrId string) (User, error){
 	var user User
 
-	err := db.c.QueryRow("SELECT userName, userPhoto FROM users_table WHERE usrId=?", usrId).Scan(&user.UserName, &user.UserPhoto)
+	err := db.c.QueryRow(`SELECT userName, userPhoto FROM users_table WHERE usrId=?`, usrId).Scan(&user.UserName, &user.UserPhoto)
+	if err != nil{
+		return user, err
+	}
 	user.UsrId = usrId
 	return user, err
 }
@@ -79,8 +82,8 @@ func (db *appdbimpl) GetUserInfo(usrId string) (User, error){
 func (db *appdbimpl) GetUsers() ([]User, error){
 	var users []User
 
-	rows, err := db.c.Query("SELECT usrId, userName, userPhoto FROM users_table")
-	if err != nil {
+	rows, err := db.c.Query(`SELECT usrId, userName, userPhoto FROM users_table`)
+	if err != nil{
 		return nil, err
 	}
 	defer rows.Close()
@@ -90,7 +93,7 @@ func (db *appdbimpl) GetUsers() ([]User, error){
 		var user User
 
 		err := rows.Scan(&user.UsrId, &user.UserName, &user.UserPhoto)
-		if err != nil {
+		if err != nil{
 			return nil, err
 		}
 
@@ -99,4 +102,14 @@ func (db *appdbimpl) GetUsers() ([]User, error){
 	}
 
 	return users, err
+}
+
+func (db *appdbimpl) UsrIdExist(usrId string) (bool, error){
+
+	var exist bool
+	err := db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM users_table WHERE usrId=?)`, usrId).Scan(&exist)
+	if err != nil{
+		return false, fmt.Errorf("error checking user existance: %w", err)
+	}
+	return exist, nil
 }
