@@ -1,0 +1,21 @@
+### POST request for login
+POST http://localhost:3000/session
+Content-Type: application/json
+
+{"userName": "franco"}
+
+> {% client.global.set("client_token", response.headers.valueOf("Authorization").split(' ')[1])  %}
+
+
+### GET request for listing all the users
+GET http://localhost:3000/users
+Authorization: Bearer {{client_token}}
+
+
+> {% console.log(response.body); client.global.set("id_amico", response.body[1]["usrId"]); console.log("id amico: ", client.global.get("id_amico")) %}
+
+### GET request for listing the user info
+GET http://localhost:3000/users/{{id_amico}}
+Authorization: Bearer {{client_token}}
+
+> {% console.log("nome: "+ response.body["userName"] +"\nfoto: "+ response.body["userPhoto"] +"\nid: "+ response.body["usrId"]) %}
