@@ -432,10 +432,9 @@ paths:
                 $ref: "#/components/schemas/User"
               
               example:
-                User:
-                  usrId: "ofnarc754"
-                  userName: "franco"
-                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                usrId: "ofnarc754"
+                userName: "franco"
+                userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "400":
           description:  |
