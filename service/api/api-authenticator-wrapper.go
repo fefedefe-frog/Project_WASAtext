@@ -28,7 +28,7 @@ func (rt *_router) BearerAuth(h httpRouterHandler) httpRouterHandler{
 		//Verifico se il token corrisponde ad un usrId di un utente già registrato
 		exist, err := rt.db.UsrIdExist(token)
 		if err != nil {
-			ctx.Logger.WithError(err).Error("Error checking user id existence")
+			ctx.Logger.WithError(err).Warn("Error checking user id existence")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
