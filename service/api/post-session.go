@@ -10,17 +10,17 @@ import (
 	"net/http"
 )
 
-type requestJson struct {
-	UserName string `json:"userName"`
-}
+
 
 func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext) {
+	context.Logger.Info("Richiesta dall'endpoint /session")
 
-	var session requestJson
+	var requestJson= struct {
+		UserName string `json:"userName"`
+	}{}
 
 	//Decodifica il corpo della richiesta JSON
-	err := json.NewDecoder(request.Body).Decode(&session)
-	rt.baseLogger.Info(fmt.Sprintf("Richiesta dall'endpoint /session arrivata utente: %s", session.UserName))
+	err := json.NewDecoder(request.Body).Decode(&requestJson)
 
 	if err != nil {
 		http.Error(writer, "Invalid JSON format" , http.StatusBadRequest)
@@ -28,7 +28,8 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	usrId, err := rt.db.GetUsrIdByName(session.UserName)
+	context.Logger.Info(fmt.Sprintf("Tentativo di login da user: %s", requestJson.UserName))
+	usrId, err := rt.db.GetUsrIdByName(requestJson.UserName)
 
 	//Controllo se l'utente esiste ed è presente nel database se non è presente lo creo e provo ad inserirlo nel database
 	//in caso di riuscita preparo la rosposta http e la invio
@@ -37,8 +38,8 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 			rt.baseLogger.WithField("db error", err).Debug("utente non presente nel database")
 
-			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", session.UserName))
-			user, err:= rt.db.InsertNewUser(session.UserName)
+			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", requestJson.UserName))
+			user, err:= rt.db.InsertNewUser(requestJson.UserName)
 
 			if err != nil {
 				rt.baseLogger.WithError(err).Error("Impossibile aggiungere nuovo user al database")
@@ -57,8 +58,6 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	rt.sendJsonResponse(writer, usrId)
 	return
-
-	//TODO check if is ok
 }
 
 func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
@@ -77,5 +76,6 @@ func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 	if err != nil {
 		rt.baseLogger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 }
