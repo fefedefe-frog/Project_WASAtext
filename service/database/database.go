@@ -47,14 +47,14 @@ type Chat struct{
 	ChatId int `json:"chatId"`
 	ChatName string `json:"chatName"`
 	ChatPhoto string `json:"chatPhoto"`
-	ChatType bool `json:"chatYype"`
+	ChatType string `json:"chatYype"`
 	Cartecipants []string `json:"partecipants"`
 }
 
 type Message struct{
 	MsgId int `json:"msgId"`
 	SenderId string `json:"senderId"`
-	ContentType bool `json:"contentType"`
+	ContentType string `json:"contentType"`
 	Content string `json:"content"`
 	DeliveryStatus int `json:"deliveryStatus"`
 	Timestamp string `json:"timestamp"`
@@ -71,37 +71,38 @@ type Comment struct{
 type AppDatabase interface{
 
 	//User operations
-	InsertNewUser(userName string) (User, error)			//Aggiunge un nuovo utente al database
-	GetUsrIdByName(userName string) (string, error)   		//Ottiene l'usrId dal nome dell'user
-	SetUserName(usrId string, newName string) error   		//Imposta un nuovo username di un user, dal suo usrId
-	SetUserPhoto(usrId string, newPhoto string) error		//Imposta una nuova foto di un user, dal suo usrId
-	GetUserInfo(usrId string) (User, error)         		//Ottiene le informazioni di un user, capire come gestire le info user
-	UsrIdExist(usrId string) (bool, error)					//Controlla se un user esiste dal suo usrId
+	InsertNewUser(userName string) (User, error)				//Aggiunge un nuovo utente al database
+	GetUsrIdByName(userName string) (string, error)   			//Ottiene l'usrId dal nome dell'user
+	SetUserName(usrId string, newName string) error   			//Imposta un nuovo username di un user, dal suo usrId
+	SetUserPhoto(usrId string, newPhoto string) error			//Imposta una nuova foto di un user, dal suo usrId
+	GetUserInfo(usrId string) (User, error)         			//Ottiene le informazioni di un user, capire come gestire le info user
+	UsrIdExist(usrId string) (bool, error)						//Controlla se un user esiste dal suo usrId
 
-	GetUsers() ([]User, error)              				//Ottiene un array di tutti gli users, capire come gestire il ritorno  di tutti gli utenti
+	GetUsers() ([]User, error)              					//Ottiene un array di tutti gli users, capire come gestire il ritorno  di tutti gli utenti
 
 
 	//Chat operations
-	GetUserChats(usrId string) ([]Chat, error)				//Ottiene le chat di un utente
-	DeleteChat(chatId int) error							//Elimina una chat dal database
-	GetChatInfo(chatId int)	(Chat, error)					//Ottiene le info di una chat
-	GetChatMessages(chatId int) ([]Message, error)			//Ottiene una lista di messaggi della chat
+	GetUserChats(usrId string) ([]Chat, error)					//Ottiene le chat di un utente
+	InsertNewChat(chatId int, usersId []string) (Chat, error)	//Aggiunge una nuova chat al database
+	DeleteChat(chatId int) error								//Elimina una chat dal database
+	GetChatInfo(chatId int)	(Chat, error)						//Ottiene le info di una chat
+	GetChatMessages(chatId int) ([]Message, error)				//Ottiene una lista di messaggi della chat
+	RemoveUserFromChat(usrId string, chatId int) error			//Rimuove l'associazione tra un utente ed una chat
+	GetChatPartecipants(chatId int) ([]string, error)			//Ottiene una lista di utenti di una chat
 
 
 	//Group operations
-	SetGroupName(chatId int, newName string) error			//Imposta un nuovo nome al gruppo
-	SetGroupPhoto(chatId int, newPhoto string) error		//Imposta una nuova foto per il gruppo
-	AddUserToGroup(chatId int, usrId string) error			//Aggiunge un nuovo utente al gruppo
-	RemoveUserFromGroup(chatId int, usrId string) error		//Rimuove un utente da un gruppo
+	SetGroupName(chatId int, newName string) error				//Imposta un nuovo nome al gruppo
+	SetGroupPhoto(chatId int, newPhoto string) error			//Imposta una nuova foto per il gruppo
 
 
 	//Message operations
-	InsertMessage(message Message, chatId int) error		//Aggiunge un messaggio e le sue relative informazioni
-	RemoveMessage(msgId int, chatId int) error				//Rimuove un messaggio e le sue relative informazioni
-	ForwardMessage(msgId int, chatIdToForwatd int) error	//Inoltra un messaggio esistente da una chat ad un'altra
-	GetMessageComments(msgId int) ([]Comment, error)		//Ottiene i commenti di un messaggio
-	CommentMessage(msgId int, comment Comment) error		//Inserisce il commento di un messaggio
-	UncommentMessage(msgId int, commentId int) error		//Rimuove il commento di un messaggio
+	InsertMessage(message Message, chatId int) error			//Aggiunge un messaggio e le sue relative informazioni
+	RemoveMessage(msgId int, chatId int) error					//Rimuove un messaggio e le sue relative informazioni
+	ForwardMessage(msgId int, chatIdToForwatd int) error		//Inoltra un messaggio esistente da una chat ad un'altra
+	GetMessageComments(msgId int) ([]Comment, error)			//Ottiene i commenti di un messaggio
+	CommentMessage(msgId int, comment Comment) error			//Inserisce il commento di un messaggio
+	UncommentMessage(msgId int, commentId int) error			//Rimuove il commento di un messaggio
 
 
 	//DB operations
@@ -139,8 +140,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='chats_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE chats_table(
-    			chatId INTEGER PRIMARY KEY, 
-    			usrId TEXT, 
+    			chatId INTEGER PRIMARY KEY,
+    			chatName TEXT, 
     			chatType TEXT, 
     			chatPhoto BLOB
         );`
@@ -173,12 +174,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE chat_messages_table(
     			msgId INTEGER PRIMARY KEY, 
-    			usrId TEXT, 
+    			senderId TEXT, 
     			chatId INTEGER, 
     			contentType TEXT, 
-    			content BLOB, 
+    			content BLOB,
+				deliveryStatus TEXT,
     			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, 
-    			FOREIGN KEY (usrId) REFERENCES users_table(usrId), 
+    			FOREIGN KEY (senderId) REFERENCES users_table(usrId), 
     			FOREIGN KEY (chatId) REFERENCES chats_table(chatId)
         );`
 		_, err = db.Exec(sqlStmt)
