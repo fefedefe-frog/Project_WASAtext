@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"regexp"
+	"unicode/utf8"
 )
 
 
@@ -29,6 +31,23 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 	}
 
 	context.Logger.Info(fmt.Sprintf("Tentativo di login da user: %s", requestJson.UserName))
+	//Controllo che rispetti i regex richiesti e la lunghezza minima e massima
+	if !regexp.MustCompile(`^\S.*\S$`).MatchString(requestJson.UserName){
+		http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
+		rt.baseLogger.Debug("Invalid name format")
+		return
+	}
+	if utf8.RuneCountInString(requestJson.UserName)<3{	//Deve essere lungo almeno 3 caratteri
+		http.Error(writer, fmt.Sprintf("%s", "the name must be at least 3 character long"), http.StatusBadRequest)
+		rt.baseLogger.Debug("login name to short")
+		return
+	}
+	if utf8.RuneCountInString(requestJson.UserName)>16{	//Deve essere lungo massimo 16 caratteri
+		http.Error(writer, fmt.Sprintf("%s", "the name can be max 16 character long"), http.StatusBadRequest)
+		rt.baseLogger.Debug("login name to long")
+		return
+	}
+
 	usrId, err := rt.db.GetUsrIdByName(requestJson.UserName)
 
 	//Controllo se l'utente esiste ed è presente nel database se non è presente lo creo e provo ad inserirlo nel database
