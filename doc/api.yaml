@@ -121,7 +121,7 @@ components:
           
           minimum: 0
           readOnly: true
-        
+
         chatName:
           description:  |
             Chat name, if it's a one-to-one chat the name
@@ -133,7 +133,7 @@ components:
           
           minLength: 3
           maxLength: 16
-          
+
         chatPhoto:
           description:  |
             Chat Photo, if it's a one-to-one chat is the propic of the other user,
@@ -142,9 +142,10 @@ components:
           type: string
           format: binary
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-          
+
+          minLength: 0
           maxLength: 1398101
-        
+
         chatType:
           description:  |
             Used to distinguish group chat between one-to-one chat_id.(not really usefull for now)
@@ -155,7 +156,7 @@ components:
           enum:
           - one_to_one
           - group
-          
+
         partecipants:
           description:  |
             Array containing the users id of the users in the chat
@@ -395,12 +396,13 @@ paths:
                     maxItems: 256
           
               example:
-                - usr_id: "franco245"
-                  userName: "franco"
-                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                - usr_id: "maria34"
-                  userName: "maria"
-                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                users:
+                  - usr_id: "franco245"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usr_id: "maria34"
+                    userName: "maria"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "401":
           description: Unauthorized - Authentication token is missing or invalid
@@ -477,23 +479,23 @@ paths:
               
               type: object
               properties:
-                op:
+#                op:
+#                  description:  |
+#                    Operation required by patch, rename in this case
+#
+#                  type: string
+#                  enum: ["replace"]
+#
+#                path:
+#                  description:  |
+#                    Json path of the key to rename
+#
+#                  type: string
+#                  enum: ["/userName"]
+#
+                newUserName:
                   description:  |
-                    Operation required by patch, rename in this case
-
-                  type: string
-                  enum: ["replace"]
-                
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/userName"]
-                
-                value:
-                  description:  |
-                    New value of the key, the new name in this case
+                    New user name
 
                   type: string
                   pattern: '^[^\s].*[^\s]$'
@@ -554,21 +556,21 @@ paths:
               
               type: object
               properties:
-                op:
-                  description:  |
-                    Operation required by patch, rename in this case
-
-                  type: string
-                  enum: ["replace"]
+#                op:
+#                  description:  |
+#                    Operation required by patch, rename in this case
+#
+#                  type: string
+#                  enum: ["replace"]
+#
+#                path:
+#                  description:  |
+#                    Json path of the key to rename
+#
+#                  type: string
+#                  enum: ["/userPhoto"]
                 
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/userPhoto"]
-                
-                value:
+                newUserPhoto:
                   description:  |
                     New value of the key, the new photo in this case
 
@@ -643,23 +645,82 @@ paths:
               
               example:
                 chats:
-                  - Chat1:
-                      chat_id: 234
-                      chatName: "Chat Uni"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      partecipants: ["ofnarc754", "arima53", "odfn34"]
-                  - Chat2:
-                      chat_id: 254
-                      chatName: "Robero"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      partecipants: ["ofnarc754", "ordigro293"]
-                  
-        
+                  - chat_id: 234
+                    chatName: "Chat Uni"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    chatType: "group"
+                    partecipants: ["ofnarc754", "arima53", "odfn34"]
+
+                  - chat_id: 254
+                    chatName: "Robero"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    chatType: "group"
+                    partecipants: ["ofnarc754", "ordigro293"]
+
         "400":
           description:  Unable to retrive chats
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
+
+    post:
+      description:  |
+        Consent the user to start a new chat with one or more user/s
+      summary: Start new chat
+
+      tags: ["Chat operation"]
+      operationId: startNewChat
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description:  |
+                The request body expect to retrive the chat type, (name and photo if it's a group
+                if isn't a group they can be empty) and it's partecipants minus the user that is starting the chat
+
+              type: object
+              properties:
+                chatName:
+                  $ref: "#/components/schemas/Chat/properties/chatName"
+
+                chatPhoto:
+                  $ref: "#/components/schemas/Chat/properties/chatPhoto"
+
+                chatType:
+                  $ref: "#/components/schemas/Chat/properties/chatType"
+
+                partecipants:
+                  $ref: "#/components/schemas/Chat/properties/partecipants"
+              required:
+                - chatType
+                - partecipants
+
+      responses:
+        "201":
+          description: Response with the chat info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+              example:
+                chatId: 123
+                chatName: "Chat Uni"
+                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                chatType: "group"
+                partecipants: ["ofnarc754", "arima53", "odfn34"]
+
+
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+
+        "400":
+          description: Unable to make a chat
 
   /chats/{chat_id}:                                               #Endpoint di una chat
     parameters:
@@ -766,21 +827,21 @@ paths:
               
               type: object
               properties:
-                op:
-                  description:  |
-                    Operation required by patch, rename in this case
-
-                  type: string
-                  enum: ["replace"]
+#                op:
+#                  description:  |
+#                    Operation required by patch, rename in this case
+#
+#                  type: string
+#                  enum: ["replace"]
+#
+#                path:
+#                  description:  |
+#                    Json path of the key to rename
+#
+#                  type: string
+#                  enum: ["/chatName"]
                 
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/chatName"]
-                
-                value:
+                newGroupName:
                   description:  |
                     New value of the key, the new name in this case
 
