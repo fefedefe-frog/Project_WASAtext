@@ -90,7 +90,7 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	//Itero su tutte le righe della tabella degli user
 	for rows.Next() {
 		var message Message
