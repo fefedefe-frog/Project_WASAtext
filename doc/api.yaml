@@ -11,18 +11,18 @@ info:
 #capire come gestire i vari array di schemas, es utenti in chat, messaggi in chat, commenti dei messaggi
 
 tags:
-  - name: Login 
+  - name: Login
     description: Opeartions relative to the login of the user
-  
+
   - name: User operation
     description: Operations relative to the user, such as change or get name/propic, ecc
-  
+
   - name: Chat operation
     description: Operations relative to the chat, such retrive the user's chat, retrive a chat name, ecc
-  
+
   - name: Group chat operation
     description: Operations relative to the group chat
-  
+
   - name: Message operation
     description: Operations relative to the messages, such as send a message, change the status to read message, delete it, ecc
 
@@ -38,7 +38,7 @@ components:
       name: usr_id
       in: path
       required: true
-      
+
     chat_id:
       description:  |
         Unique chat id
@@ -58,7 +58,7 @@ components:
       name: msg_id
       in: path
       required: true
-    
+
 
   schemas:
     User:
@@ -73,7 +73,7 @@ components:
         usrId:
           description:  |
             Unique user id
-      
+
           type: string
           pattern: '^[^\s].*[^\s]$'
           example: "ofnarc754"
@@ -121,45 +121,46 @@ components:
           
           minimum: 0
           readOnly: true
-        
+
         chatName:
           description:  |
             Chat name, if it's a one-to-one chat the name
             correspond to the other username
-          
+
           type: string
           pattern: '^[^\s].*[^\s]$'
           example: "Chat Uni"
-          
+
           minLength: 3
           maxLength: 16
-          
+
         chatPhoto:
           description:  |
             Chat Photo, if it's a one-to-one chat is the propic of the other user,
             else contain the group photo
-          
+
           type: string
           format: binary
           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-          
+
+          minLength: 0
           maxLength: 1398101
-        
+
         chatType:
           description:  |
             Used to distinguish group chat between one-to-one chat_id.(not really usefull for now)
             1to1: one-to-one chat with only 2 users
             group: chat with more than 2 users
-            
+
           type: string
           enum:
-          - one_to_one
-          - group
-          
+            - one_to_one
+            - group
+
         partecipants:
           description:  |
             Array containing the users id of the users in the chat
-          
+
           type: array
           minItems: 2
           maxItems: 64
@@ -169,29 +170,29 @@ components:
               usrId:
                 $ref: "#/components/schemas/User/properties/usrId"
 
-    
+
     Message:
       description:  |
         Contain the message content, and other parameter such as:<br>
         msg_id, senderId, contentType(if a photo or a text message),
         message_content, delivery status, comment and like/dislike
-      
+
       type: object
       title: Message
-      
+
       properties:
         msgId:
           description:  |
             Unique message id
-          
+
           type: integer
           minimum: 0
           readOnly: true
-        
+
         senderId:
           description:  |
             Correspond to the usr_id of the user that sended the message
-          
+
           type: string
           pattern: '^[^\s].*[^\s]$'
           example: "ofnarc754"
@@ -203,20 +204,20 @@ components:
         contentType:
           description:  |
             Describe if the content of the message is a photo o a text
-          
+
           type: string
           enum:
-          - photo
-          - text
-        
+            - photo
+            - text
+
         content:
           description:  |
             Content of the message, can be a text OR a photo
-          
+
           oneOf:
             - description:  |
                 Text content
-              
+
               type: string
               pattern: '^(?!\s*$).+'
               example: "Ciao franco, come stai?"
@@ -231,43 +232,43 @@ components:
               format: binary
               pattern: '^.*$'
               example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-              
+
               minLength: 0
               maxLength: 2787949
-        
+
         deliveryStatus:
           description:  |
             Enum string used for set the status of a message:<br>
               - 0: the receiver user isn't connected to the app<br>
               - 1: the user received the message but he didn't read it<br>
               - 2: read by the user
-          
+
           type: integer
           minimum: 0
           maximum: 2
-        
+
         timestamp:
           description:  |
             Define the time of when the message was sent
-          
+
           type: string
           format: date-time
           example: "2021-06-01T14:10:27Z"
 
           minLength: 18
           maxLength: 22
-        
+
         comments:
           description:  |
             Array of comments/reaction of a messsage,
             a message can have maximum 16 comments
-          
+
           type: array
           minItems: 0
           maxItems: 16
           items:
             $ref: "#/components/schemas/Comment"
-    
+
     Comment:
       description:  |
         Schema for the comment (reaction with emoji) section of a message
@@ -293,14 +294,14 @@ components:
         content:
           description:  |
             Content of the comment, it's an emoji in utf-8
-          
+
           type: string
           pattern: '^.*$'
           example: "😀"
 
           minLength: 1
           maxLength: 1
-                  
+
 
   securitySchemes:
     BearerAuth:
@@ -337,7 +338,7 @@ paths:
                 userName:
                   $ref: "#/components/schemas/User/properties/userName"
         required: true
-      
+
       responses:
         "201":
           description: User log-in action successful
@@ -345,16 +346,16 @@ paths:
             application/json:
               schema:
                 description:  |
-                    Responde with the unique user id
+                  Responde with the unique user id
 
                 type: object
                 properties:
-                  usrId: 
+                  usrId:
                     $ref: "#/components/schemas/User/properties/usrId"
-              
+
               example:
                 usrId: "ofnarc754"
-                
+
 
   #-----------------
   # USER ENDPOINTS
@@ -372,7 +373,7 @@ paths:
 
       security:
         - BearerAuth: []
-      
+
       responses:
         "200":
           description: Show an array that contain all the users of the WASAText
@@ -381,7 +382,7 @@ paths:
               schema:
                 description:  |
                   Array of users
-                
+
                 type: object
                 properties:
                   users:
@@ -390,28 +391,26 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/User"
-                    
+
                     minItems: 0
                     maxItems: 256
-          
+
               example:
                 users:
-                  - User1:
-                      usr_id: "franco245"
-                      userName: "franco"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  - User2:
-                      usr_id: "maria34"
-                      userName: "maria"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
+                  - usr_id: "franco245"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usr_id: "maria34"
+                    userName: "maria"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
-  
+
   /users/{usr_id}:                                                #Endpoint di un utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
-    
+
     get:
       description:  |
         Retrive the photo and name of an user by its usr_id,
@@ -424,7 +423,7 @@ paths:
 
       security:
         - BearerAuth: []
-      
+
       responses:
         "200":
           description:  |
@@ -433,25 +432,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-              
+
               example:
-                User:
-                  usrId: "ofnarc754"
-                  userName: "franco"
-                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
+                usrId: "ofnarc754"
+                userName: "franco"
+                userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+
         "400":
           description:  |
             Unable to retrive data
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
-        
+
         "404":
           description:  |
             user not found
-
     
+
     patch:
       #uso patch perché voglio modificare SOLO il nome dell'utente,
       #quindi un aggiornamento parziale di un elemento già esistente
@@ -463,7 +461,7 @@ paths:
         option: i want that its able to rename only the "userName" value of the user schemas
         so i put it also in an enum.
       summary: Change the username
-      
+
       tags: ["User operation"]
       operationId: setMyUserName
 
@@ -478,33 +476,33 @@ paths:
               description:  |
                 The request body expects to receive the userName field compatible
                 with the one described in the user schema 
-              
+
               type: object
               properties:
-                op:
+                #                op:
+                #                  description:  |
+                #                    Operation required by patch, rename in this case
+                #
+                #                  type: string
+                #                  enum: ["replace"]
+                #
+                #                path:
+                #                  description:  |
+                #                    Json path of the key to rename
+                #
+                #                  type: string
+                #                  enum: ["/userName"]
+                #
+                newUserName:
                   description:  |
-                    Operation required by patch, rename in this case
-
-                  type: string
-                  enum: ["replace"]
-                
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/userName"]
-                
-                value:
-                  description:  |
-                    New value of the key, the new name in this case
+                    New user name
 
                   type: string
                   pattern: '^[^\s].*[^\s]$'
 
                   minLength: 3
                   maxLength: 16
-      
+
       responses:
         "202":
           description: Username updated successfully
@@ -513,29 +511,29 @@ paths:
               schema:
                 description:  |
                   Return the username updated
-                
+
                 type: object
                 properties:
                   userName:
                     $ref: "#/components/schemas/User/properties/userName"
-              
+
               example:
                 userName: "francofronco"
 
-        
+
         "400":
           description: Unable to rename
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
 
         "404":
           description: User not found
-  
+
   /users/{usr_id}/propic:                                         #Enpoint per la propic di un utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
-    
+
     patch:
       description:  |
         Update only the photo leaving invariated the id and the name
@@ -543,10 +541,10 @@ paths:
 
       tags: ["User operation"]
       operationId: setMyPhoto
-      
+
       security:
         - BearerAuth: []
-      
+
       requestBody:
         required: true
         content:
@@ -555,34 +553,34 @@ paths:
               description:  |
                 The request body expects to receive the photo field compatible
                 with the one described in the user schema 
-              
+
               type: object
               properties:
-                op:
-                  description:  |
-                    Operation required by patch, rename in this case
+                #                op:
+                #                  description:  |
+                #                    Operation required by patch, rename in this case
+                #
+                #                  type: string
+                #                  enum: ["replace"]
+                #
+                #                path:
+                #                  description:  |
+                #                    Json path of the key to rename
+                #
+                #                  type: string
+                #                  enum: ["/userPhoto"]
 
-                  type: string
-                  enum: ["replace"]
-                
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/userPhoto"]
-                
-                value:
+                newUserPhoto:
                   description:  |
                     New value of the key, the new photo in this case
 
                   type: string
                   format: binary
                   example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  
+
                   minLength: 0
                   maxLength: 1398101
-      
+
       responses:
         "202":
           description: Photo updated successfully
@@ -591,24 +589,24 @@ paths:
               schema:
                 description:  |
                   Return the propic updated
-                
+
                 type: object
                 properties:
                   userPhoto:
                     $ref: "#/components/schemas/User/properties/userPhoto"
-              
+
               example:
                 userPhoto: "iVBORw0KGgoAAAANSUhUEgAUAAAA..."
-        
+
         "400":
           description: Unable to change propic
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
-        
+
         "404":
           description: User not found
-  
+
   #-----------------
   # CHAT ENDPOINTS
   #-----------------
@@ -618,7 +616,7 @@ paths:
       description:  |
         Return an array that contain all the chats of a single user
       summary: List the chat of the user
-      
+
       tags: ["Chat operation"]
       operationId: getMyConversations
 
@@ -641,29 +639,88 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Chat"
-                    
+
                     minItems: 0
                     maxItems: 32
-              
+
               example:
                 chats:
-                  - Chat1:
-                      chat_id: 234
-                      chatName: "Chat Uni"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      partecipants: ["ofnarc754", "arima53", "odfn34"]
-                  - Chat2:
-                      chat_id: 254
-                      chatName: "Robero"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      partecipants: ["ofnarc754", "ordigro293"]
-                  
-        
+                  - chat_id: 234
+                    chatName: "Chat Uni"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    chatType: "group"
+                    partecipants: ["ofnarc754", "arima53", "odfn34"]
+
+                  - chat_id: 254
+                    chatName: "Robero"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    chatType: "group"
+                    partecipants: ["ofnarc754", "ordigro293"]
+
         "400":
           description:  Unable to retrive chats
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
+
+    post:
+      description:  |
+        Consent the user to start a new chat with one or more user/s
+      summary: Start new chat
+
+      tags: ["Chat operation"]
+      operationId: startNewChat
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description:  |
+                The request body expect to retrive the chat type, (name and photo if it's a group
+                if isn't a group they can be empty) and it's partecipants minus the user that is starting the chat
+
+              type: object
+              properties:
+                chatName:
+                  $ref: "#/components/schemas/Chat/properties/chatName"
+
+                chatPhoto:
+                  $ref: "#/components/schemas/Chat/properties/chatPhoto"
+
+                chatType:
+                  $ref: "#/components/schemas/Chat/properties/chatType"
+
+                partecipants:
+                  $ref: "#/components/schemas/Chat/properties/partecipants"
+              required:
+                - chatType
+                - partecipants
+
+      responses:
+        "201":
+          description: Response with the chat info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+              example:
+                chatId: 123
+                chatName: "Chat Uni"
+                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                chatType: "group"
+                partecipants: ["ofnarc754", "arima53", "odfn34"]
+
+
+        "401":
+          description: Unauthorized - Authentication token is missing or invalid
+
+        "400":
+          description: Unable to make a chat
 
   /chats/{chat_id}:                                               #Endpoint di una chat
     parameters:
@@ -683,13 +740,13 @@ paths:
       responses:
         "202":
           description: Chat deleted successfully
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
-        
+
         "404":
           description: Chat not found
-    
+
     get:
       description:  |
         Retrive only the name and the image of a chat identified
@@ -700,8 +757,8 @@ paths:
       operationId: getChatInfo
 
       security:
-      - BearerAuth: []
-      
+        - BearerAuth: []
+
       responses:
         "200":
           description: Response with only the name and image of the chat
@@ -710,20 +767,20 @@ paths:
               schema:
                 description:  |
                   Schema with the chat name and photo
-                
+
                 type: object
                 properties:
                   chatName:
                     description:  |
                       Chat name
-                    
+
                     type: string
                     pattern: '^[^\s].*[^\s]$'
                     example: "Chat Uni"
-                    
+
                     minLength: 3
                     maxLength: 16
-                    
+
                   chatPhoto:
                     description:  |
                       Chat photo
@@ -731,28 +788,28 @@ paths:
                     type: string
                     format: binary
                     example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                    
+
                     maxLength: 1398101
-              
+
               example:
                 chatName: "Chat Uni"
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
+
         "400":
           description: Invalid request
-        
+
         "401":
           description: Unauthorized - Authentication token is missing or invalid
-        
+
         "404":
           description: Chat not found
-    
+
     patch:
       description:  |
         Update only the group name leaving invariated the other properties
       summary: Change the group chat name
 
-      
+
       tags: ["Group chat operation"]
       operationId: setGroupName
 
@@ -767,24 +824,24 @@ paths:
               description:  |
                 The request body expects to receive the chatName field compatible
                 with the one described in the chat schema 
-              
+
               type: object
               properties:
-                op:
-                  description:  |
-                    Operation required by patch, rename in this case
+                #                op:
+                #                  description:  |
+                #                    Operation required by patch, rename in this case
+                #
+                #                  type: string
+                #                  enum: ["replace"]
+                #
+                #                path:
+                #                  description:  |
+                #                    Json path of the key to rename
+                #
+                #                  type: string
+                #                  enum: ["/chatName"]
 
-                  type: string
-                  enum: ["replace"]
-                
-                path:
-                  description:  |
-                    Json path of the key to rename
-                  
-                  type: string
-                  enum: ["/chatName"]
-                
-                value:
+                newGroupName:
                   description:  |
                     New value of the key, the new name in this case
 
@@ -944,8 +1001,8 @@ paths:
 
                     type: array
                     items:
-                        $ref: "#/components/schemas/User"
-              
+                      $ref: "#/components/schemas/User"
+
                     minItems: 1
                     maxItems: 32
               
@@ -997,7 +1054,7 @@ paths:
         
         "404":
           description: Chat or user not found
-    
+
   #-----------------
   # MESSAGE
   #-----------------
@@ -1089,11 +1146,11 @@ paths:
           - the content type of the message
           - the content of the message
           - timestamp
-        content: 
+        content:
           application/json:
             schema:
               $ref: "#/components/schemas/Message"
-        
+
       responses:
         "204":
           description: Message sent succesfully
@@ -1248,11 +1305,11 @@ paths:
         description:  |
           The comment that the user want to
         
-        content: 
+        content:
           application/json:
             schema:
               $ref: "#/components/schemas/Comment"
-        
+
       responses:
         "204":
           description: Message commented succesfully
