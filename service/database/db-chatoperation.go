@@ -60,7 +60,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	return userChats, nil
 }
 
-func (db *appdbimpl) InsertNewChat(cN string, cP string, cT string, ps []string) (string, error) {
+func (db *appdbimpl) InsertNewChat(usersId []string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
