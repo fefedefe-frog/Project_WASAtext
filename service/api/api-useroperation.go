@@ -7,14 +7,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
-	"strings"
 )
 
 // List all the user of the app
-func (rt *_router) getUsers(w http.ResponseWriter, r *http.Request, ps httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) getUsers(w http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, _ string) {
 	context.Logger.Info("Richiesta all'endpoint /users")
 
 	users, err := rt.db.GetUsers()
@@ -44,14 +42,20 @@ func (rt *_router) getUsers(w http.ResponseWriter, r *http.Request, ps httproute
 		rt.baseLogger.WithError(err).Error("Errore nella codifica JSON")
 		return
 	}
+	return
 }
 
 // Retrive the info (name and propic) of a user, by its user id
-func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, _ string) {
 	context.Logger.Info("richiesta all'endpoint /users")
 
 	//Recupero l'user id dell'user interessato
 	usrId := params.ByName("usr_id")
+	if err := utilitytool.UsrIdIsValid(usrId); err != nil{
+		rt.baseLogger.Infof("Invalid usrId : %v", err)
+		http.Error(writer, "Invalid usrId", http.StatusBadRequest)
+		return
+	}
 
 	//Tento di recuperare le informazioni di quell'user dal database
 	user, err := rt.db.GetUserInfo(usrId)
@@ -61,7 +65,7 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 			http.NotFound(writer, request)
 			return
 		}
-		rt.baseLogger.WithError(err).Errorf("Error getting user(%s) info", usrId)
+		rt.baseLogger.WithError(err).Errorf("Error getting %s info", usrId)
 		http.Error(writer, "Unable to retrive info", http.StatusBadRequest)
 		return
 	}
@@ -79,10 +83,11 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	return
 }
 
 // Change username
-func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("Richiesta all'enpoint /users/{usr_id}")
 
 	var requestJson = struct {
@@ -90,9 +95,8 @@ func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http
 	}{}
 
 	//Controllo che la richiesta arrivata dall'utente corrisponda alla modifica del suo nome, e non del nome di altri utenti
-	usrToken := strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer ")
-	if usrToken != params.ByName("usr_id") {
-		context.Logger.Warnf("user: %s tried to change username of users: %s", usrToken, params.ByName("usr_id"))
+	if token != params.ByName("usr_id") {
+		context.Logger.Warnf("user: %s tried to change username of users: %s", token, params.ByName("usr_id"))
 		http.Error(writer, "Unauthorized - can't change the name of another user", http.StatusUnauthorized)
 		return
 	}
@@ -105,19 +109,30 @@ func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http
 		return
 	}
 
-	context.Logger.Infof("Richiesta di cambio nome da parte dell'user: %s || nuovo nome: %s", usrToken, requestJson.NewUserName)
+	context.Logger.Infof("Richiesta di cambio nome da parte dell'user: %s || nuovo nome: %s", token, requestJson.NewUserName)
 
 	//Controllo se il nome è valido secondo i requisiti richiesti
-	if _, err := utilitytool.UserNameIsValid(requestJson.NewUserName); err != nil {
-		rt.baseLogger.WithField("not valid for", err).Info("nuovo nome non valido")
-		http.Error(writer, fmt.Sprintf("Nuovo nome non valido: %s", err), http.StatusBadRequest)
+	if err := utilitytool.UserNameIsValid(requestJson.NewUserName); err != nil {
+		switch {
+		case errors.Is(err, utilitytool.ErrInvalidRegex):
+			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
+			rt.baseLogger.Debug("Invalid name format")
+
+		case errors.Is(err, utilitytool.ErrNameShort):
+			http.Error(writer, "the name must be at least 3 character long", http.StatusBadRequest)
+			rt.baseLogger.Debug("login name to short")
+
+		case errors.Is(err, utilitytool.ErrNameLong):
+			http.Error(writer, "the name can be max 16 character long", http.StatusBadRequest)
+			rt.baseLogger.Debug("login name to long")
+		}
 		return
 	}
 
 	//Aggiorno l'username nel database
-	if err := rt.db.SetUserName(usrToken, requestJson.NewUserName); err != nil {
+	if err := rt.db.SetUserName(token, requestJson.NewUserName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithError(err).Errorf("User: %s not found in database", usrToken)
+			rt.baseLogger.WithError(err).Errorf("User: %s not found in database", token)
 			http.Error(writer, "User not found", http.StatusNotFound)
 			return
 		}
@@ -137,20 +152,26 @@ func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	return
 }
 
 // Change user propic
-func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("Richiesta all'enpoint /users/{usr_id}/propic")
 
 	var requestJson = struct {
 		NewUserPhoto string `json:"newUserPhoto"`
 	}{}
 
+	if err := utilitytool.UsrIdIsValid(params.ByName("usr_id")); err != nil{
+		rt.baseLogger.Infof("Invalid usrId : %v", err)
+		http.Error(writer, "Invalid usrId", http.StatusBadRequest)
+		return
+	}
+
 	//Controllo che la richiesta arrivata dall'utente corrisponda alla modifica della sua propic, e non della propic di altri utenti
-	usrToken := strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer ")
-	if usrToken != params.ByName("usr_id") {
-		context.Logger.Warnf("user: %s tried to change propic of users: %s", usrToken, params.ByName("usr_id"))
+	if token != params.ByName("usr_id"){
+		context.Logger.Warnf("user: %s tried to change propic of users: %s", token, params.ByName("usr_id"))
 		http.Error(writer, "Unauthorized - can't change the propic of another user", http.StatusUnauthorized)
 		return
 	}
@@ -163,11 +184,11 @@ func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *htt
 		return
 	}
 
-	context.Logger.Infof("Richiesta di cambio propic da parte dell'user: %s || nuova propic: %s...", usrToken, requestJson.NewUserPhoto[:10])
+	context.Logger.Infof("Richiesta di cambio propic da parte dell'user: %s || nuova propic: %s...", token, requestJson.NewUserPhoto[:10])
 	//Aggiorno la propic nel database
-	if err := rt.db.SetUserPhoto(usrToken, requestJson.NewUserPhoto); err != nil {
+	if err := rt.db.SetUserPhoto(token, requestJson.NewUserPhoto); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithError(err).Errorf("User: %s not found in database", usrToken)
+			rt.baseLogger.WithError(err).Errorf("User: %s not found in database", token)
 			http.Error(writer, "User not found", http.StatusNotFound)
 			return
 		}
@@ -187,4 +208,5 @@ func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *htt
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	return
 }
