@@ -2,19 +2,18 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
+	"Project_WASAtext/service/utilitytool"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
-	"regexp"
-	"unicode/utf8"
 )
 
 
 
-func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
 	context.Logger.Info("Richiesta dall'endpoint /session")
 
 	var requestJson= struct {
@@ -32,19 +31,20 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	context.Logger.Info(fmt.Sprintf("Tentativo di login da user: %s", requestJson.UserName))
 	//Controllo che rispetti i regex richiesti e la lunghezza minima e massima
-	if !regexp.MustCompile(`^\S.*\S$`).MatchString(requestJson.UserName){
-		http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
-		rt.baseLogger.Debug("Invalid name format")
-		return
-	}
-	if utf8.RuneCountInString(requestJson.UserName)<3{	//Deve essere lungo almeno 3 caratteri
-		http.Error(writer, fmt.Sprintf("%s", "the name must be at least 3 character long"), http.StatusBadRequest)
-		rt.baseLogger.Debug("login name to short")
-		return
-	}
-	if utf8.RuneCountInString(requestJson.UserName)>16{	//Deve essere lungo massimo 16 caratteri
-		http.Error(writer, fmt.Sprintf("%s", "the name can be max 16 character long"), http.StatusBadRequest)
-		rt.baseLogger.Debug("login name to long")
+	if err := utilitytool.UserNameIsValid(requestJson.UserName); err != nil{
+		switch {
+			case errors.Is(err, utilitytool.ErrInvalidRegex):
+				http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
+				rt.baseLogger.Debug("Invalid name format")
+
+			case errors.Is(err, utilitytool.ErrNameShort):
+				http.Error(writer, "the name must be at least 3 character long", http.StatusBadRequest)
+				rt.baseLogger.Debug("login name to short")
+
+			case errors.Is(err, utilitytool.ErrNameLong):
+				http.Error(writer, "the name can be max 16 character long", http.StatusBadRequest)
+				rt.baseLogger.Debug("login name to long")
+		}
 		return
 	}
 
@@ -54,7 +54,6 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 	//in caso di riuscita preparo la rosposta http e la invio
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-
 			rt.baseLogger.WithField("db error", err).Debug("utente non presente nel database")
 
 			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", requestJson.UserName))
@@ -97,4 +96,5 @@ func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	return
 }
