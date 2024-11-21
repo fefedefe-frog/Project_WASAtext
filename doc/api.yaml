@@ -10,7 +10,7 @@ info:
 
 tags:
   - name: Login 
-    description: Opeartions relative to the login of the user
+    description: Operations relative to the login of the user
   
   - name: User operation
     description: Operations relative to the user, such as change or get name/propic, ecc
@@ -160,10 +160,7 @@ components:
           minItems: 2
           maxItems: 64
           items:
-            type: object
-            properties:
-              usrId:
-                $ref: "#/components/schemas/User/properties/usrId"
+            $ref: "#/components/schemas/User/properties/usrId"
 
     Message:
       description:  |
@@ -297,7 +294,66 @@ components:
 
           minLength: 1
           maxLength: 1
-                  
+
+    Error:
+      description: Personalizable error
+      type: object
+      properties:
+        content:
+          description: Short description of the error
+
+          type: string
+          pattern: "^.*$"
+
+          minLength: 3
+          maxLength: 40
+          example: "token expired"
+
+        code:
+          description: Error code
+
+          type: string
+          pattern: "^[A-Z0-9 ]+$"
+
+          minLength: 3
+          maxLength: 20
+          example: "TOKEN NOT VALID"
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    InternalError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    BadRequestError:
+      description: Bad request - requestBody not valid or empty
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    OperationNotAllowed:
+      description: Forbidden - the operation is not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFoundError:
+      description: Not found - the content requested was not found in the database
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   securitySchemes:
     BearerAuth:
@@ -323,7 +379,8 @@ paths:
       operationId: doLogin
 
       requestBody:
-        description: User details
+        description: Username required for loggin in
+        required: true
         content:
           application/json:
             schema:
@@ -333,8 +390,10 @@ paths:
               properties:
                 userName:
                   $ref: "#/components/schemas/User/properties/userName"
-        required: true
-      
+
+            example:
+              userName: "franco"
+
       responses:
         "201":
           description: User log-in action successful
@@ -351,9 +410,11 @@ paths:
               
               example:
                 usrId: "ofnarc754"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   #-----------------
   # USER ENDPOINTS
@@ -401,12 +462,15 @@ paths:
                   - usr_id: "maria34"
                     userName: "maria"
                     userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+         $ref: "#/components/responses/UnauthorizedError"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
   
   /users/{usr_id}:                                                #Endpoint di un utente
     parameters:
@@ -440,16 +504,16 @@ paths:
                 userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "400":
-          description: Unable to retrive data
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
     
     patch:
@@ -478,20 +542,6 @@ paths:
               
               type: object
               properties:
-#                op:
-#                  description:  |
-#                    Operation required by patch, rename in this case
-#
-#                  type: string
-#                  enum: ["replace"]
-#
-#                path:
-#                  description:  |
-#                    Json path of the key to rename
-#
-#                  type: string
-#                  enum: ["/userName"]
-#
                 newUserName:
                   description:  |
                     New user name
@@ -519,18 +569,20 @@ paths:
               example:
                 userName: "francofronco"
 
-        
         "400":
-          description: Unable to rename
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
 
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
   
   /users/{usr_id}/propic:                                         #Enpoint per la propic di un utente
     parameters:
@@ -558,20 +610,6 @@ paths:
               
               type: object
               properties:
-#                op:
-#                  description:  |
-#                    Operation required by patch, rename in this case
-#
-#                  type: string
-#                  enum: ["replace"]
-#
-#                path:
-#                  description:  |
-#                    Json path of the key to rename
-#
-#                  type: string
-#                  enum: ["/userPhoto"]
-                
                 newUserPhoto:
                   description:  |
                     New value of the key, the new photo in this case
@@ -601,16 +639,19 @@ paths:
                 userPhoto: "iVBORw0KGgoAAAANSUhUEgAUAAAA..."
         
         "400":
-          description: Unable to change propic
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
   
   #-----------------
   # CHAT ENDPOINTS
@@ -653,23 +694,23 @@ paths:
                   - chat_id: 234
                     chatName: "Chat Uni"
                     chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                    chatType: "group"
+                    isGroup: true
                     participants: ["ofnarc754", "arima53", "odfn34"]
 
                   - chat_id: 254
-                    chatName: "Robero"
+                    chatName: "Roberto"
                     chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                    chatType: "group"
+                    isGroup: false
                     participants: ["ofnarc754", "ordigro293"]
 
-        "400":
-          description:  Unable to retrive chats
-
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
     post:
       description:  |
@@ -688,7 +729,7 @@ paths:
           application/json:
             schema:
               description:  |
-                The request body expect to retrive the chat type, (name and photo if it's a group
+                The request body expect to retrieve the chat type, (name and photo if it's a group
                 if isn't a group they can be empty) and it's participants minus the user that is starting the chat
 
               type: object
@@ -704,9 +745,6 @@ paths:
 
                 participants:
                   $ref: "#/components/schemas/Chat/properties/participants"
-              required:
-                - isGroup
-                - participants
 
       responses:
         "201":
@@ -720,18 +758,18 @@ paths:
                 chatId: 123
                 chatName: "Chat Uni"
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                chatType: "group"
+                isGroup: true
                 participants: ["ofnarc754", "arima53", "odfn34"]
 
 
-        "401":
-          description: Unauthorized - Authentication token is missing or invalid
-
         "400":
-          description: Unable to make a chat
+          $ref: "#/components/responses/BadRequestError"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   /chats/{chat_id}:                                               #Endpoint di una chat
     parameters:
@@ -752,14 +790,20 @@ paths:
         "202":
           description: Chat deleted successfully
         
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Chat not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
     
     get:
       description:  |
@@ -795,16 +839,16 @@ paths:
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "400":
-          description: Unable to retrive data
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
         "404":
-          description: Chat not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal serrer error
+          $ref: "#/components/responses/InternalError"
     
     patch:
       description:  |
@@ -829,20 +873,6 @@ paths:
               
               type: object
               properties:
-#                op:
-#                  description:  |
-#                    Operation required by patch, rename in this case
-#
-#                  type: string
-#                  enum: ["replace"]
-#
-#                path:
-#                  description:  |
-#                    Json path of the key to rename
-#
-#                  type: string
-#                  enum: ["/chatName"]
-                
                 newGroupName:
                   $ref: "#/components/schemas/Chat/properties/chatName"
       
@@ -864,16 +894,19 @@ paths:
                 chatName: "Chat belli"
         
         "400":
-          description: Unable to rename
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
 
         "404":
-          description: Group chat not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
   
   /chats/{chat_id}/propic:                                        #Endpoint della propic di una chat
     parameters:
@@ -901,20 +934,6 @@ paths:
               
               type: object
               properties:
-#                op:
-#                  description:  |
-#                    Operation required by patch, rename in this case
-#
-#                  type: string
-#                  enum: ["replace"]
-#
-#                path:
-#                  description:  |
-#                    Json path of the key to rename
-#
-#                  type: string
-#                  enum: ["/chatPhoto"]
-                
                 newGroupPhoto:
                   $ref: "#/components/schemas/Chat/properties/chatPhoto"
       
@@ -935,16 +954,19 @@ paths:
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "400":
-          description: Unable to change propic
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Group chat or photo not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   /chats/{chat_id}/users:                                         #Endpoint degli utenti di una chat
     parameters:
@@ -1013,16 +1035,19 @@ paths:
           description: No content, user is already in the chat
         
         "400":
-          description: Invalid usr_id or chat_id
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
 
         "404":
-          description: Chat or user not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   /chats/{chat_id}/users/{usr_id}:                                #Endpoint di un utente di una chat
     parameters:
@@ -1031,7 +1056,7 @@ paths:
     
     delete:
       description:  |
-        Remove an user from the chat, and from the users array of the chat, used for when a user leave a group
+        The user leave the chat, so the user is removed from the users array of the chat
       summary: Leave a group chat
 
       tags: ["Group chat operation"]
@@ -1044,14 +1069,20 @@ paths:
         "204":
           description: User successfully leaved the chat
         
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Chat or user not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
     
   #-----------------
   # MESSAGE
@@ -1063,7 +1094,7 @@ paths:
     
     get:
       description:  |
-        Retrive most of the messages of the chat ordered from the newest to the oldest
+        Retrieve most of the messages of the chat ordered from the newest to the oldest
       summary: Get chat messages
 
       tags: ["Chat operation"]
@@ -1075,7 +1106,7 @@ paths:
       responses:
         "200":
           description:  |
-            Messages retrived successfully
+            Messages retrieved successfully
           content:
             application/json:
               schema:
@@ -1121,13 +1152,19 @@ paths:
                       comments: ["😊", "😒"]
         
         "400":
-          description: Unable to retrive chat messages
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
     post:
       description:  |
@@ -1157,16 +1194,19 @@ paths:
           description: Message sent succesfully
         
         "400":
-          description: Unable to retrive the message
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Chat not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
   
   /chats/{chat_id}/messages/{msg_id}:                             #Endpoint di un messaggio di una chat
     parameters:
@@ -1188,16 +1228,19 @@ paths:
           description: Message deleted successfully
 
         "400":
-          description: Unable to remove the message
+          $ref: "#/components/responses/BadRequestError"
 
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
 
         "404":
-          description: Message or chat not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
     
     post:
       description:  |
@@ -1226,16 +1269,19 @@ paths:
           description: Message forwarded correctly
         
         "400":
-          description: Invalid request
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Message or chats not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   /chats/{chat_id}/messages/{msg_id}/comments:                    #Endpoint dei commenti di un messaggio
     parameters:
@@ -1290,16 +1336,19 @@ paths:
           description: No comments for the message
 
         "400":
-          description: Unable to retrive comments of the message
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Comments or message not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
     
     post:
       description:  |
@@ -1326,16 +1375,19 @@ paths:
           description: Message commented succesfully
         
         "400":
-          description: Unable to retrieve the comment data
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Chat or message not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
 
   /chats/{chat_id}/messages/{msg_id}/comments/{commenter_id}:     #Endpoint di un commento di un messaggio
     parameters:
@@ -1367,17 +1419,20 @@ paths:
         - BearerAuth: []
       
       responses:
-        "202":
+        "204":
           description: Successfully uncommented the message
         
         "400":
-          description: Unable to uncommented
-        
+          $ref: "#/components/responses/BadRequestError"
+
         "401":
-          description: Unauthorized - Authentication token is missing or invalid
-        
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
         "404":
-          description: Comment or message not found
+          $ref: "#/components/responses/NotFoundError"
 
         "500":
-          description: Internal server error
+          $ref: "#/components/responses/InternalError"
