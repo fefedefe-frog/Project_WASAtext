@@ -1,4 +1,4 @@
 .vscode
 .idea
 .idea/*
-spectral.js
+.lint_config/*
