@@ -8,6 +8,10 @@ info:
     an existing chat to create a group.
   version: 0.2.1fray
 
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
 tags:
   - name: Login 
     description: Operations relative to the login of the user
@@ -771,84 +775,84 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /chats/{chat_id}:                                               #Endpoint di una chat
-    parameters:
-      - $ref: "#/components/parameters/chat_id"
-
-    delete:
-      description:  |
-        Delete a chat and it's content
-      summary: Delete a chat
-
-      tags: ["Chat operation"]
-      operationId: deleteChat
-
-      security:
-        - BearerAuth: []
-
-      responses:
-        "202":
-          description: Chat deleted successfully
-        
-        "400":
-          $ref: "#/components/responses/BadRequestError"
-
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-        "403":
-          $ref: "#/components/responses/OperationNotAllowed"
-
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-
-        "500":
-          $ref: "#/components/responses/InternalError"
-    
-    get:
-      description:  |
-        Retrive only the name and the image of a chat identified
-        by its chat_id. Usefull for something surely
-      summary: Retrieve only chat name and photo
-
-      tags: ["Chat operation"]
-      operationId: getChatInfo
-
-      security:
-      - BearerAuth: []
-      
-      responses:
-        "200":
-          description: Response with only the name and image of the chat
-          content:
-            application/json:
-              schema:
-                description:  |
-                  Schema with the chat name and photo
-
-                type: object
-                properties:
-                  chatName:
-                    $ref: "#/components/schemas/Chat/properties/chatName"
-
-                  chatPhoto:
-                    $ref: "#/components/schemas/Chat/properties/chatPhoto"
-              
-              example:
-                chatName: "Chat Uni"
-                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
-        "400":
-          $ref: "#/components/responses/BadRequestError"
-
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-
-        "500":
-          $ref: "#/components/responses/InternalError"
+#  /chats/{chat_id}:                                               #Endpoint di una chat
+#    parameters:
+#      - $ref: "#/components/parameters/chat_id"
+#
+#    delete:
+#      description:  |
+#        Delete a chat and it's content
+#      summary: Delete a chat
+#
+#      tags: ["Chat operation"]
+#      operationId: deleteChat
+#
+#      security:
+#        - BearerAuth: []
+#
+#      responses:
+#        "202":
+#          description: Chat deleted successfully
+#
+#        "400":
+#          $ref: "#/components/responses/BadRequestError"
+#
+#        "401":
+#          $ref: "#/components/responses/UnauthorizedError"
+#
+#        "403":
+#          $ref: "#/components/responses/OperationNotAllowed"
+#
+#        "404":
+#          $ref: "#/components/responses/NotFoundError"
+#
+#        "500":
+#          $ref: "#/components/responses/InternalError"
+#
+#    get:
+#      description:  |
+#        Retrive only the name and the image of a chat identified
+#        by its chat_id. Usefull for something surely
+#      summary: Retrieve only chat name and photo
+#
+#      tags: ["Chat operation"]
+#      operationId: getChatInfo
+#
+#      security:
+#      - BearerAuth: []
+#
+#      responses:
+#        "200":
+#          description: Response with only the name and image of the chat
+#          content:
+#            application/json:
+#              schema:
+#                description:  |
+#                  Schema with the chat name and photo
+#
+#                type: object
+#                properties:
+#                  chatName:
+#                    $ref: "#/components/schemas/Chat/properties/chatName"
+#
+#                  chatPhoto:
+#                    $ref: "#/components/schemas/Chat/properties/chatPhoto"
+#
+#              example:
+#                chatName: "Chat Uni"
+#                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+#
+#        "400":
+#          $ref: "#/components/responses/BadRequestError"
+#
+#        "401":
+#          $ref: "#/components/responses/UnauthorizedError"
+#
+#        "404":
+#          $ref: "#/components/responses/NotFoundError"
+#
+#        "500":
+#          $ref: "#/components/responses/InternalError"
     
     patch:
       description:  |
@@ -907,7 +911,53 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalError"
-  
+
+  /chat/{chat_id}:
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
+
+    get:
+      description:  |
+        Retrive all the info of the chat
+      summary: Get chat info
+
+      tags: ["Chat operation"]
+      operationId: getChatInfo
+
+      security:
+        - BearerAuth: []
+
+      responses:
+        "200":
+          description: |
+            Information retrived successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+
+              example:
+                chat_id: 344
+                chatName: "Franco"
+                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                isGroup: false
+                participants: ["ofnarc754", "arima53"]
+
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /chats/{chat_id}/propic:                                        #Endpoint della propic di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
@@ -1056,7 +1106,8 @@ paths:
     
     delete:
       description:  |
-        The user leave the chat, so the user is removed from the users array of the chat
+        The user leave the chat, so the user is removed from the users of the chat
+        and all its message will be removed from the history
       summary: Leave a group chat
 
       tags: ["Group chat operation"]
