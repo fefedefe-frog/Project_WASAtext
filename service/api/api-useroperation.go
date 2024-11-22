@@ -71,15 +71,16 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 	}
 
 	//Preparo la risposta
-	response := map[string]string{
-		"usrId":     user.UsrId,
-		"userName":  user.UserName,
-		"userPhoto": user.UserPhoto,
+	responseUserJSON, err := json.Marshal(user)
+	if err != nil{
+		rt.baseLogger.WithError(err).Errorf("Failed to marshal the user")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
+
+	if _, err := writer.Write(responseUserJSON);err != nil {
+		rt.baseLogger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -96,8 +97,8 @@ func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http
 
 	//Controllo che la richiesta arrivata dall'utente corrisponda alla modifica del suo nome, e non del nome di altri utenti
 	if token != params.ByName("usr_id") {
-		context.Logger.Warnf("user: %s tried to change username of users: %s", token, params.ByName("usr_id"))
-		http.Error(writer, "Unauthorized - can't change the name of another user", http.StatusUnauthorized)
+		context.Logger.WithField("usrId", token).Warnf("tried to change username of users: %s", params.ByName("usr_id"))
+		http.Error(writer, "Forbidden - can't change the name of another user", http.StatusForbidden)
 		return
 	}
 
@@ -171,8 +172,8 @@ func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *htt
 
 	//Controllo che la richiesta arrivata dall'utente corrisponda alla modifica della sua propic, e non della propic di altri utenti
 	if token != params.ByName("usr_id"){
-		context.Logger.Warnf("user: %s tried to change propic of users: %s", token, params.ByName("usr_id"))
-		http.Error(writer, "Unauthorized - can't change the propic of another user", http.StatusUnauthorized)
+		context.Logger.WithField("usrId", token).Warnf("tried to change propic of users: %s", params.ByName("usr_id"))
+		http.Error(writer, "Forbidden - can't change the propic of another user", http.StatusForbidden)
 		return
 	}
 
