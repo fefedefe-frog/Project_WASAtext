@@ -20,10 +20,10 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getUserChats)))							//TODO
 	rt.router.GET("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getChatMessages)))		//TODO
 	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))					//TODO
-	rt.router.DELETE("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.leaveChat)))					//TODO
 
 	//Group operations
 	//TODO
+	rt.router.DELETE("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.leaveGroup)))					//TODO
 
 	//Message operations
 	//TODO

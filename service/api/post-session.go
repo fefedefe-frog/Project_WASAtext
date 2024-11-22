@@ -29,7 +29,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	context.Logger.Info(fmt.Sprintf("Tentativo di login da user: %s", requestJson.UserName))
+	context.Logger.Infof("Tentativo di login da user: %s", requestJson.UserName)
 	//Controllo che rispetti i regex richiesti e la lunghezza minima e massima
 	if err := utilitytool.UserNameIsValid(requestJson.UserName); err != nil{
 		switch {
@@ -74,6 +74,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		}
 	}
 
+	context.Logger.WithField("usrId", usrId).Info("login effettuato")
 	rt.sendJsonResponse(writer, usrId)
 	return
 }
