@@ -85,10 +85,10 @@ type AppDatabase interface {
 	SetUserPhoto(usrId string, newPhoto string) error
 	// GetUserInfo User, search in the database a user with the usrId passed in the fuction, and retrive it info
 	GetUserInfo(usrId string) (User, error)
-	// UsrIdExist bool, check if a user in present in the db by its user id
-	UsrIdExist(usrId string) (bool, error)
 	// GetUsers User, get an array of all the users present in the db
 	GetUsers() ([]User, error)
+	// UsrIdExist bool, check if a user in present in the db by its user id
+	UsrIdExist(usrId string) (bool, error)
 
 
 	//Chat operations
@@ -107,7 +107,8 @@ type AppDatabase interface {
 	RemoveUserFromChat(usrId string, chatId int) error
 	// GetChatPartecipants string, retrive all the user id of all the users in a chat
 	GetChatPartecipants(chatId int) ([]string, error)
-
+	// CheckIfUserIsParticipant bool, check if exist the relation between the chatId and usrId given in input
+	CheckIfUserIsParticipant(chatId int, userId string) (bool, error)
 	//SetGroupName error, update the name of a group chat
 	SetGroupName(chatId int, newName string) error
 	//SetGroupPhoto error, update the group photo
