@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strings"
@@ -12,7 +13,7 @@ import (
 func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	var userChats []Chat
 
-	//Recupero gli id delle chat dalla chat_participants_table
+	//Recupero gli id delle chat associate all'usrId dalla chat_participants_table
 	rows, err := db.c.Query(`SELECT chatId FROM chat_participants_table WHERE usrId = ?`, usrId)
 	if err != nil {
 		return nil, err
@@ -43,8 +44,8 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		return userChats, err
 	}
 
+	//Recupero tutte le informazioni delle chat passando la lista di chatId ottenute in precedenza
 	query := "SELECT chatName, chatType, chatPhoto FROM chats_table WHERE chatId IN (" + strings.Repeat("?", len(userChatsId)-1) + "?)"
-
 	chatRows, err := db.c.Query(query, toInterfaceSlice(userChatsId)...)
 	if err != nil {
 		return nil, err
@@ -67,15 +68,39 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		if err := chatRows.Scan(&chat.ChatId, &chat.ChatName, &chat.IsGroup, &chatPropicBytes); err != nil{
 			return nil, err
 		}
-		chat.ChatPhoto = base64.StdEncoding.EncodeToString(chatPropicBytes)
 
+		//Ottengo gli id dei partecipanti della chat
 		participants, participantsErr := db.GetChatPartecipants(chat.ChatId)
-
 		if participantsErr != nil{
 			return nil, participantsErr
 		}
-
 		chat.Participants = participants
+
+		/*
+		Controllo se la chat è un gruppo o meno, se la chat è un gruppo
+		salvo i valori di chatName e chatPhoto nella struct chat,
+		sennò recupero le informazioni dei singoli utenti
+		*/
+		if chat.IsGroup{
+			chat.ChatPhoto = base64.StdEncoding.EncodeToString(chatPropicBytes)
+		}else{
+			var secondParticipantId string
+			if len(participants) == 2{
+				for _, participant := range participants{
+					if participant != usrId{
+						secondParticipantId= participant
+					}
+				}
+			}else{
+				return nil, fmt.Errorf("PARTICIPANTS_NUMBERO_NOT_VALID_FOR_1TO1_CHAT")
+			}
+			user, err := db.GetUserInfo(secondParticipantId)
+			if err != nil{
+				return nil, err
+			}
+			chat.ChatName= user.UserName
+			chat.ChatPhoto= user.UserPhoto
+		}
 
 		//Aggiungo la chat allo slice di chats
 		userChats = append(userChats, chat)
@@ -196,7 +221,6 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 
 
 	//Rimuovo le info della chat da chats_table
-
 	if _, err := tx.Exec("DELETE FROM chats_table WHERE chatId = ?", chatId); err != nil{
 		return err
 	}
@@ -227,10 +251,6 @@ func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 	return chat, err
 }
 
-/*
-	GetChatMessages Message, from a chatId received in input the function search in the messages table all the messages
-	with that chatId then save it in a variable and procede to elaborate the data for returning a slice of messages
-*/
 func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 	var messages []Message
 
@@ -292,7 +312,6 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 	//TODO rimuove tutti i messaggi inviati dall'utente lui inviati
 }
 
-// GetChatPartecipants The function retrive all the partecipants ID of a chat by its chatId gived in input
 func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 
 	//Recupero gli id delle chat dalla chat_participants_table
@@ -326,6 +345,19 @@ func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 	}
 
 	return partecipants, nil
+}
+
+func (db *appdbimpl) CheckIfUserIsParticipant(chatId int, usrId string) (bool, error){
+
+	//Faccio una query per controllare se esiste una riga che ha l'associazione usrId <-> chatId, controllando se restituisce l'errore di NoRow
+	err := db.c.QueryRow(`SELECT 1 FROM chat_participants_table WHERE chatId = ? AND usrId = ?`, chatId, usrId).Scan(new(int))
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+
 }
 
 func (db *appdbimpl) SetGroupName(chatId int, newName string) error {
@@ -391,6 +423,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 	}
 	return err
 }
+
 
 func toInterfaceSlice(ids []int) []interface{} {
 	out := make([]interface{}, len(ids))
