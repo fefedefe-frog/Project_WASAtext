@@ -32,7 +32,7 @@ func (db *appdbimpl) InsertNewUser(userName string) (User, error){
 
 	// Decodifica la stringa Base64 in byte
 	defaultPropicBytes, errProp := base64.StdEncoding.DecodeString(defaultPropicBase64)
-	if errProp != nil {
+	if errProp != nil{
 		return user, errProp
 	}
 
@@ -52,10 +52,10 @@ func (db *appdbimpl) GetUsrIdByName(userName string) (string, error){
 func (db *appdbimpl) SetUserName(usrId string, newName string) error{
 
 	stmt, err := db.c.Prepare(`UPDATE users_table SET userName = ? WHERE usrId=?`)
-	if err != nil {
+	if err != nil{
 		return err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := stmt.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -66,7 +66,7 @@ func (db *appdbimpl) SetUserName(usrId string, newName string) error{
 	}()
 
 	_, err = stmt.Exec(newName, usrId)
-	if err != nil {
+	if err != nil{
 		return err
 	}
 	return err
@@ -83,22 +83,22 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error{
 	//Semplice controllo della stringa base64 per assicurarsi
 	//che la stringa contenga solo caratteri usati dalla codifica base64
 	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(newPhoto) {
+	if !re.MatchString(newPhoto){
 		return errors .New("la stringa base64 non rappresenta un'immagine valida")
 	}
 
 	// Decodifica la stringa base64
 	data, errPropic := base64.StdEncoding.DecodeString(newPhoto)
-	if errPropic != nil {
+	if errPropic != nil{
 		return errPropic
 	}
 
 
 	stmt, err := db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?`)
-	if err != nil {
+	if err != nil{
 		return err //log.Fatal("errore nella preparazione della query:", err)	//usare logger giusto, ritorno errore che viene gestito quando la funzione è chiamata
 	}
-	defer func() {
+	defer func(){
 		if closeErr := stmt.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -109,7 +109,7 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error{
 	}()
 
 	_, err = stmt.Exec(data, usrId)
-	if err != nil {
+	if err != nil{
 		return err //log.Fatal("errore nell'esecuzione della  query:", err)
 	}
 	return err
@@ -130,7 +130,7 @@ func (db *appdbimpl) GetUserInfo(usrId string) (User, error){
 	//Controllo se sia presente la foto nel database
 	if len(propicByte) > 0{
 		user.UserPhoto = base64.StdEncoding.EncodeToString(propicByte)
-	} else {
+	}else{
 		user.UserPhoto = ""  //se non è presente assegno la stringa vuota
 	}
 
@@ -144,7 +144,7 @@ func (db *appdbimpl) GetUsers() ([]User, error){
 	if err != nil{
 		return nil, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := rows.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -155,12 +155,11 @@ func (db *appdbimpl) GetUsers() ([]User, error){
 	}()
 
 	//Itero su tutte le righe della tabella degli user
-	for rows.Next() {
+	for rows.Next(){
 		var user User
 
 		var propicBytes []byte
-		err := rows.Scan(&user.UsrId, &user.UserName, &propicBytes)
-		if err != nil{
+		if err := rows.Scan(&user.UsrId, &user.UserName, &propicBytes); err != nil{
 			return nil, err
 		}
 		user.UserPhoto = base64.StdEncoding.EncodeToString(propicBytes)
@@ -169,7 +168,7 @@ func (db *appdbimpl) GetUsers() ([]User, error){
 		users = append(users, user)
 	}
 
-	if rows.Err() != nil {
+	if rows.Err() != nil{
 		return nil, err
 	}
 

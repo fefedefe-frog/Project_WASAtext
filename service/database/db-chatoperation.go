@@ -15,10 +15,10 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 
 	//Recupero gli id delle chat associate all'usrId dalla chat_participants_table
 	rows, err := db.c.Query(`SELECT chatId FROM chat_participants_table WHERE usrId = ?`, usrId)
-	if err != nil {
+	if err != nil{
 		return nil, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := rows.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -30,27 +30,31 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 
 	//Inserisco i vari id trovati in un array
 	var userChatsId []int
-	for rows.Next() {
+	for rows.Next(){
 		var chatId int
 
-		if err := rows.Scan(&chatId); err != nil {
+		if err := rows.Scan(&chatId); err != nil{
 			return nil, err
 		}
 		userChatsId = append(userChatsId, chatId)
 	}
 
 	//Controllo se ci sono stati errori sulle righe
-	if err := rows.Err(); err != nil {
+	if err := rows.Err(); err != nil{
 		return userChats, err
+	}
+
+	if len(userChatsId) == 0{
+		return userChats, errors.New("NO_USER_CHATS")
 	}
 
 	//Recupero tutte le informazioni delle chat passando la lista di chatId ottenute in precedenza
 	query := "SELECT chatName, chatType, chatPhoto FROM chats_table WHERE chatId IN (" + strings.Repeat("?", len(userChatsId)-1) + "?)"
 	chatRows, err := db.c.Query(query, toInterfaceSlice(userChatsId)...)
-	if err != nil {
+	if err != nil{
 		return nil, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := chatRows.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -61,7 +65,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	}()
 
 	//Aggiungo le chat dell'utente allo slice userChats
-	for chatRows.Next() {
+	for chatRows.Next(){
 		var chat Chat
 		var chatPropicBytes []byte
 
@@ -106,7 +110,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		userChats = append(userChats, chat)
 	}
 
-	if err := chatRows.Err(); err != nil {
+	if err := chatRows.Err(); err != nil{
 		return nil, err
 	}
 	return userChats, nil
@@ -131,8 +135,8 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 
 	var errProp error
 	// Decodifica la stringa Base64 in byte
-	groupPhotoBytes, errProp = base64.StdEncoding.DecodeString(chat.ChatPhoto)
-	if errProp != nil {
+	groupPhotoBytes, errProp= base64.StdEncoding.DecodeString(chat.ChatPhoto)
+	if errProp != nil{
 		return chat, errProp
 	}
 
@@ -151,65 +155,65 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 	if  err != nil{
 		return chat, err
 	}
-	defer func(err error) {
+	defer func(){
 		if err != nil{
 			if rbErr := tx.Rollback(); rbErr != nil {
 				// Se il rollback fallisce, logghiamo l'errore di rollback
 				logrus.WithError(rbErr).Error("Errore durante il rollback")
 			}
 		}
-	}(err)
+	}()
 
 	//Eseguo l'inserimento nel database
-	_, execErr := tx.Exec(`INSERT INTO chats_table (chatId, chatName, isGroup, chatPhoto) VALUES (?, ?, ?, ?)`, chat.ChatId, chat.ChatName, chat.IsGroup, groupPhotoBytes)
-	if execErr != nil{
-		return chat, execErr
+	_, err= tx.Exec(`INSERT INTO chats_table (chatId, chatName, isGroup, chatPhoto) VALUES (?, ?, ?, ?)`, chat.ChatId, chat.ChatName, chat.IsGroup, groupPhotoBytes)
+	if err != nil{
+		return chat, err
 	}
 
 	//Ora devo creare le associazioni usrId <-> chatId nella chat_participants_table
-	stmt, prepErr := tx.Prepare("INSERT INTO chat_participants_table (chatId, usrId) VALUES (?, ?)")
-	if prepErr != nil{
-		return chat, prepErr
+	var stmt *sql.Stmt
+	stmt, err= tx.Prepare("INSERT INTO chat_participants_table (chatId, usrId) VALUES (?, ?)")
+	if err != nil{
+		return chat, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := stmt.Close(); closeErr != nil{
 			if err == nil{
-				err = closeErr
+				err= closeErr
 			}else{
 				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
 			}
 		}
 	}()
 
-	for _, usrId := range participants {
-		_, err := stmt.Exec(chat.ChatId, usrId)
-		if err != nil {
+	for _, usrId := range participants{
+		if _, err := stmt.Exec(chat.ChatId, usrId); err != nil{
 			return chat, err // Interrompe l'inserimento se c'è un errore
 		}
 	}
 
 
-	if txErr := tx.Commit();  txErr != nil{
-		err= txErr
+	if err := tx.Commit();  err != nil{
 		return chat, err
 	}
 	return chat, nil
 }
 
 func (db *appdbimpl) DeleteChat(chatId int) error {
+
 	//Inizializzo una transizione nel db, in quanto tutte queste operazioni al db sono considerate come una operazione atomica
 	tx, err := db.c.Begin()
 	if err != nil{
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err != nil{
-			if rbErr := tx.Rollback(); rbErr != nil {
+			if rbErr := tx.Rollback(); rbErr != nil{
 				// Se il rollback fallisce, logghiamo l'errore di rollback
 				logrus.WithError(rbErr).Error("Errore durante il rollback")
 			}
 		}
-	}(err)
+	}()
 
 	//Rimuovo ogni associazione usrId <-> chatId da chat_participants_table
 	_, delPartErr := tx.Exec("DELETE FROM chat_participants_table WHERE chatId = ?", chatId)
@@ -244,7 +248,7 @@ func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 	//Controllo se sia presente la foto nel database
 	if len(groupPropicByte) > 0{
 		chat.ChatPhoto = base64.StdEncoding.EncodeToString(groupPropicByte)
-	} else {
+	}else{
 		chat.ChatPhoto = ""  //se non è presente assegno la stringa vuota
 	}
 
@@ -256,10 +260,10 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, timestamp FROM chat_messages_table WHERE chatId = ?`, chatId)
-	if err != nil {
+	if err != nil{
 		return nil, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := rows.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -270,12 +274,12 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 	}()
 
 	//Itero su tutte le righe ottenute precedentemente
-	for rows.Next() {
+	for rows.Next(){
 		var message Message
 
 		var contentRaw []byte
 		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.Timestamp)
-		if err != nil {
+		if err != nil{
 			return nil, err
 		}
 
@@ -293,7 +297,7 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 		messages = append(messages, message)
 	}
 
-	if rows.Err() != nil {
+	if rows.Err() != nil{
 		return nil, err
 	}
 
@@ -308,7 +312,6 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 	}
 
 	return nil
-
 	//TODO rimuove tutti i messaggi inviati dall'utente lui inviati
 }
 
@@ -316,10 +319,10 @@ func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 
 	//Recupero gli id delle chat dalla chat_participants_table
 	rows, err := db.c.Query(`SELECT usrId FROM chat_participants_table WHERE chatId = ?`, chatId)
-	if err != nil {
+	if err != nil{
 		return nil, err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := rows.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -331,16 +334,16 @@ func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 
 	//Inserisco i vari id trovati in un array
 	var partecipants []string
-	for rows.Next() {
+	for rows.Next(){
 		var usrId string
 
-		if err := rows.Scan(&usrId); err != nil {
+		if err := rows.Scan(&usrId); err != nil{
 			return nil, err
 		}
 		partecipants = append(partecipants, usrId)
 	}
 
-	if err := rows.Err(); err != nil {
+	if err := rows.Err(); err != nil{
 		return nil, err
 	}
 
@@ -351,9 +354,9 @@ func (db *appdbimpl) CheckIfUserIsParticipant(chatId int, usrId string) (bool, e
 
 	//Faccio una query per controllare se esiste una riga che ha l'associazione usrId <-> chatId, controllando se restituisce l'errore di NoRow
 	err := db.c.QueryRow(`SELECT 1 FROM chat_participants_table WHERE chatId = ? AND usrId = ?`, chatId, usrId).Scan(new(int))
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows){
 		return false, nil
-	} else if err != nil {
+	} else if err != nil{
 		return false, err
 	}
 	return true, nil
@@ -362,10 +365,10 @@ func (db *appdbimpl) CheckIfUserIsParticipant(chatId int, usrId string) (bool, e
 
 func (db *appdbimpl) SetGroupName(chatId int, newName string) error {
 	stmt, err := db.c.Prepare(`UPDATE chats_table SET chatName = ? WHERE chatId=?`)
-	if err != nil {
+	if err != nil{
 		return err
 	}
-	defer func() {
+	defer func(){
 		if closeErr := stmt.Close(); closeErr != nil{
 			if err == nil{
 				err = closeErr
@@ -392,25 +395,25 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 	//Semplice controllo della stringa base64 per assicurarsi
 	//che la stringa contenga solo caratteri usati dalla codifica base64
 	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(newPhoto) {
+	if !re.MatchString(newPhoto){
 		return errors.New("la stringa base64 non rappresenta un'immagine valida")
 	}
 
 	// Decodifica la stringa base64
 	data, errPropic := base64.StdEncoding.DecodeString(newPhoto)
-	if errPropic != nil {
+	if errPropic != nil{
 		return errPropic
 	}
 
-
-	stmt, err := db.c.Prepare(`UPDATE chats_table SET chatPhoto = ? WHERE chatId=?`)
-	if err != nil {
-		return err //log.Fatal("errore nella preparazione della query:", err)	//usare logger giusto, ritorno errore che viene gestito quando la funzione è chiamata
+	var stmt *sql.Stmt
+	stmt, err= db.c.Prepare(`UPDATE chats_table SET chatPhoto = ? WHERE chatId=?`)
+	if err != nil{
+		return err
 	}
 	defer func() {
 		if closeErr := stmt.Close(); closeErr != nil{
 			if err == nil{
-				err = closeErr
+				err= closeErr
 			}else{
 				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
 			}
@@ -418,7 +421,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 	}()
 
 	_, err = stmt.Exec(data, chatId)
-	if err != nil {
+	if err != nil{
 		return err //log.Fatal("errore nell'esecuzione della  query:", err)
 	}
 	return err
@@ -427,7 +430,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 
 func toInterfaceSlice(ids []int) []interface{} {
 	out := make([]interface{}, len(ids))
-	for i, id := range ids {
+	for i, id := range ids{
 		out[i] = id
 	}
 	return out
