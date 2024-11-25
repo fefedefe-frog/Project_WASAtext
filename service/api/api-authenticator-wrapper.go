@@ -35,7 +35,7 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 		//Estraggo il toked dall header(rimuovo "Bearer " dall'header)
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		if err := utilitytool.UsrIdIsValid(token); err != nil{
-			ctx.Logger.WithError(err).Warn("Invalid token")
+			ctx.Logger.WithError(err).Warnf("Invalid token: <%s>", token)
 			http.Error(w, "Unauthorized - invalid token", http.StatusUnauthorized)
 			return
 		}
@@ -45,7 +45,7 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 		exist, err := rt.db.UsrIdExist(token)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				ctx.Logger.WithError(err).Warn("Token does not exist")
+				ctx.Logger.WithError(err).Warnf("Token: <%s> does not exist", token)
 				http.Error(w, "Unauthorized - token not valid or deprecated", http.StatusInternalServerError)
 				return
 			}
