@@ -2,7 +2,6 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
-	"Project_WASAtext/service/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -11,15 +10,15 @@ import (
 	"strconv"
 )
 
-func (rt *_router) getUserChats(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("Richiesta all'endpoint /chats")
 
 	//Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetUserChats(token)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) || err.Error() == "NO_USER_CHATS"{
 			rt.baseLogger.Info("User doesn't have chat")
-			http.NotFound(writer, request)
+			http.Error(writer, "The user doesn't have any chat", http.StatusNotFound)
 			return
 		}
 		rt.baseLogger.WithError(err).Errorf("Error getting user %s chats", token)
@@ -28,15 +27,15 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, request *http.Reques
 	}
 
 	//Preparo la risposta contentente tutte le info delle chats
-	response := struct {
-		Chats []database.Chat `json:"chats"`
-	}{
-		Chats: chats,
+	responseChatsJSON, marshalErr := json.Marshal(map[string]interface{}{"chats": chats})
+	if marshalErr != nil{
+		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chats")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	//Scrivo la risposta json
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
+	if err := json.NewEncoder(writer).Encode(responseChatsJSON); err != nil {
 		rt.baseLogger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
@@ -89,15 +88,15 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 	}
 
 	//Se tutti i controlli vanno a buon fine procedo a preparare la risposta e inviarla
-	response := struct{
-		Messages []database.Message `json:"messages"`
-	}{
-		Messages: chatMessages,
+	responseMessagesJSON, marshalErr := json.Marshal(map[string]interface{}{"messages": chatMessages})
+	if marshalErr != nil{
+		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	//Scrivo la risposta
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
+	if err := json.NewEncoder(writer).Encode(responseMessagesJSON); err != nil {
 		rt.baseLogger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
@@ -125,6 +124,17 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 		}
 	}
 
+	//Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare le informazioni
+	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil{
+		rt.baseLogger.WithError(err).Error("Error checking if user is participant")
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		return
+	}else if !exist{
+		context.Logger.WithField("usrId", token).Warn("User is not a participant")
+		http.Error(writer, "Forbidden - The user logged in is not a participant of the chat", http.StatusForbidden)
+		return
+	}
+
 	chat, dbErr := rt.db.GetChatInfo(chatId)
 	if dbErr != nil{
 		if errors.Is(dbErr, sql.ErrNoRows){
@@ -137,7 +147,7 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	}
 
 	//Preparo la risposta
-	responseUserJSON, marshalErr := json.Marshal(chat)
+	responseChatJSON, marshalErr := json.Marshal(chat)
 	if marshalErr != nil{
 		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
@@ -145,14 +155,13 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 
 	writer.Header().Set("Content-Type", "application/json")
 
-	if _, err := writer.Write(responseUserJSON);err != nil {
+	if _, err := writer.Write(responseChatJSON);err != nil {
 		rt.baseLogger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	return
 }
-
 
 /*
 func convertChatIdParam(chatIdIn string) (int, error){
@@ -161,13 +170,7 @@ func convertChatIdParam(chatIdIn string) (int, error){
 	if err != nil {
 		var numErr *strconv.NumError
 		if errors.As(err, &numErr){
-			if errors.Is(numErr.Err, strconv.ErrSyntax){
-				return 0, fmt.Errorf("the param chat_id is not a valid number")
-			}else if errors.Is(numErr.Err, strconv.ErrRange){
-				return 0, fmt.Errorf("the param chat_id range is out of range")
-			}else{
-				return 0, fmt.Errorf("error parsing param chat_id")
-			}
+			return 0, numErr.Err
 		}
 	}
 	return chatIdOut, nil
