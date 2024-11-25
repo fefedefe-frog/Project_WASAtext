@@ -49,6 +49,7 @@ type Chat struct {
 	DeliveryStatus indicate the status of the message, if sent, read, or in waiting to be received,
 	Timestamp is the date when the message is sent by the user,
 	Comments array of Comment is the array of reaction of the message leaved by other users
+	IsForwarded boolean value that indicate if the message is forwarded or not
 */
 type Message struct {
 	MsgId          int			`json:"msgId"`			//Unique message id
@@ -58,6 +59,7 @@ type Message struct {
 	DeliveryStatus int			`json:"deliveryStatus"`	//Indicate the status of the message
 	Timestamp      string		`json:"timestamp"`		//Date when the message is sent
 	Comments       []Comment	`json:"comments"`		//Array of Comment that store the reaction of other users
+	IsForwarded	   bool			`json:"isForwarded"`	//Bool value that say if the message is forwarded or not
 }
 
 /*
@@ -109,15 +111,18 @@ type AppDatabase interface {
 	GetChatPartecipants(chatId int) ([]string, error)
 	// CheckIfUserIsParticipant bool, check if exist the relation between the chatId and usrId given in input
 	CheckIfUserIsParticipant(chatId int, userId string) (bool, error)
-	//SetGroupName error, update the name of a group chat
+	// SetGroupName error, update the name of a group chat
 	SetGroupName(chatId int, newName string) error
-	//SetGroupPhoto error, update the group photo
+	// SetGroupPhoto error, update the group photo
 	SetGroupPhoto(chatId int, newPhoto string) error
 
+
 	//Message operations	TODO
-	InsertMessage(message Message, chatId int) error     //Aggiunge un messaggio e le sue relative informazioni
+
+	// InsertMessage error, insert a message in the database
+	InsertMessage(message Message, chatId int) error
 	RemoveMessage(msgId int, chatId int) error           //Rimuove un messaggio e le sue relative informazioni
-	ForwardMessage(msgId int, chatIdToForwatd int) error //Inoltra un messaggio esistente da una chat ad un'altra
+	ForwardMessage(forwarderId string, msgId int, chatIdToForwatd int) error //Inoltra un messaggio esistente da una chat ad un'altra
 	GetMessageComments(msgId int) ([]Comment, error)     //Ottiene i commenti di un messaggio
 	CommentMessage(msgId int, comment Comment) error     //Inserisce il commento di un messaggio
 	UncommentMessage(msgId int, commentId int) error     //Rimuove il commento di un messaggio
@@ -196,7 +201,8 @@ func New(db *sql.DB) (AppDatabase, error) {
     			contentType TEXT NOT NULL CHECK (contentType IN ('text', 'photo')), 
     			content BLOB,
 				deliveryStatus TEXT NOT NULL CHECK (deliveryStatus IN ('sent', 'received', 'read')),
-    			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, 
+    			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    			isForwarded INTEGER NOT NULL CHECK (isForwarded IN (0, 1)),
     			FOREIGN KEY (senderId) REFERENCES users_table(usrId), 
     			FOREIGN KEY (chatId) REFERENCES chats_table(chatId)
         );`
