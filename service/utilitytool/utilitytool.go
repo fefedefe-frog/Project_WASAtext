@@ -14,7 +14,7 @@ var (
 	ErrIdLong		= errors.New("ID LONG")
 )
 
-func UserNameIsValid (userName string) error{
+func NameIsValid(userName string) error{
 
 	//Controllo che rispetti i regex richiesti
 	if !regexp.MustCompile(`^\S.*\S$`).MatchString(userName){
