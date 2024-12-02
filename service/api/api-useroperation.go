@@ -113,7 +113,7 @@ func (rt *_router) patchChangeUserName(writer http.ResponseWriter, request *http
 	context.Logger.Infof("Richiesta di cambio nome da parte dell'user: %s || nuovo nome: %s", token, requestJson.NewUserName)
 
 	//Controllo se il nome è valido secondo i requisiti richiesti
-	if err := utilitytool.UserNameIsValid(requestJson.NewUserName); err != nil {
+	if err := utilitytool.NameIsValid(requestJson.NewUserName); err != nil {
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
 			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)

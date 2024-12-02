@@ -31,7 +31,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	context.Logger.Infof("Tentativo di login da user: %s", requestJson.UserName)
 	//Controllo che rispetti i regex richiesti e la lunghezza minima e massima
-	if err := utilitytool.UserNameIsValid(requestJson.UserName); err != nil{
+	if err := utilitytool.NameIsValid(requestJson.UserName); err != nil{
 		switch {
 			case errors.Is(err, utilitytool.ErrInvalidRegex):
 				http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
