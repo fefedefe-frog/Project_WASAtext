@@ -56,7 +56,7 @@ type Message struct {
 	SenderId       string		`json:"senderId"`		//User id of the user that send the message
 	ContentType    string		`json:"contentType"`	//Define the type of the content if text OR photo
 	Content        string		`json:"content"`		//Content of the message which can be text or a photo as a string in base64
-	DeliveryStatus int			`json:"deliveryStatus"`	//Indicate the status of the message
+	DeliveryStatus string		`json:"deliveryStatus"`	//Indicate the status of the message
 	Timestamp      string		`json:"timestamp"`		//Date when the message is sent
 	Comments       []Comment	`json:"comments"`		//Array of Comment that store the reaction of other users
 	IsForwarded	   bool			`json:"isForwarded"`	//Bool value that say if the message is forwarded or not
@@ -107,6 +107,8 @@ type AppDatabase interface {
 	GetChatMessages(chatId int) ([]Message, error)
 	// RemoveUserFromChat error, remove the associations betwheen a user and a chat
 	RemoveUserFromChat(usrId string, chatId int) error
+	// InsertUserInChat error, make the relation usrId <-> chatId
+	InsertUserInChat(usrId string, chatId int) error
 	// GetChatPartecipants string, retrive all the user id of all the users in a chat
 	GetChatPartecipants(chatId int) ([]string, error)
 	// CheckIfUserIsParticipant bool, check if exist the relation between the chatId and usrId given in input
@@ -115,7 +117,8 @@ type AppDatabase interface {
 	SetGroupName(chatId int, newName string) error
 	// SetGroupPhoto error, update the group photo
 	SetGroupPhoto(chatId int, newPhoto string) error
-
+	// IsAGroup bool, check if the chat is a group chat or not
+	IsAGroup(chatId int) (bool, error)
 
 	//Message operations	TODO
 
