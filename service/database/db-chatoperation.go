@@ -164,8 +164,15 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 		}
 	}()
 
+	//Converto il valore bool in int
+	isGroupVal:= 0
+	chat.IsGroup = isGroup
+	if isGroup{
+		isGroupVal= 1
+	}
+
 	//Eseguo l'inserimento nel database
-	_, err= tx.Exec(`INSERT INTO chats_table (chatId, chatName, isGroup, chatPhoto) VALUES (?, ?, ?, ?)`, chat.ChatId, chat.ChatName, chat.IsGroup, groupPhotoBytes)
+	_, err= tx.Exec(`INSERT INTO chats_table (chatId, chatName, isGroup, chatPhoto) VALUES (?, ?, ?, ?)`, chat.ChatId, chat.ChatName, isGroupVal, groupPhotoBytes)
 	if err != nil{
 		return chat, err
 	}
@@ -221,8 +228,11 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 		return delPartErr
 	}
 
-	//TODO rimuove ogni messaggio associato a quella chat da chat_messages_table
-
+	//Rimuovo tutti i messaggi mandati in quella chat
+	_, err= tx.Exec("DELETE FROM chat_messages_table WHERE chatId= ?", chatId)
+	if err != nil{
+		return err
+	}
 
 	//Rimuovo le info della chat da chats_table
 	if _, err := tx.Exec("DELETE FROM chats_table WHERE chatId = ?", chatId); err != nil{
@@ -305,14 +315,47 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 }
 
 func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
-	//TODO usare db.c.Begin()
-	_, err := db.c.Exec("DELETE FROM chat_participants_table WHERE chatId = ? AND usrId = ?", chatId, usrId)
+
+	tx, err := db.c.Begin()
+	if err != nil{
+		return err
+	}
+	defer func() {
+		if err != nil{
+			if rbErr := tx.Rollback(); rbErr != nil{
+				// Se il rollback fallisce, logghiamo l'errore di rollback
+				logrus.WithError(rbErr).Error("Errore durante il rollback")
+			}
+		}
+	}()
+
+	//Elimino la relazione tra chatId <-> usrId
+	_, err= tx.Exec("DELETE FROM chat_participants_table WHERE chatId= ? AND usrId= ?", chatId, usrId)
 	if err != nil{
 		return err
 	}
 
+	//Rimuovo tutti i messaggi mandati dall'utente in quella chat
+	_, err= tx.Exec("DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ?", usrId, chatId)
+	if err != nil{
+		return err
+	}
+
+
+	//Applico le modifiche al db
+	if err := tx.Commit();  err != nil{
+		return err
+	}
 	return nil
-	//TODO rimuove tutti i messaggi inviati dall'utente lui inviati
+}
+
+func (db *appdbimpl) InsertUserInChat(usrId string, chatId int) error {
+
+	_, err := db.c.Exec(`INSERT INTO chat_participants_table(chatId, usrId) VALUES (?, ?)`, chatId, usrId)
+	if err != nil{
+		return err
+	}
+	return nil
 }
 
 func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
@@ -427,6 +470,15 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 	return err
 }
 
+func (db *appdbimpl) IsAGroup(chatId int) (bool, error)  {
+
+	var isGroup int
+	err:= db.c.QueryRow(`SELECT isGroup FROM chats_table WHERE chatId=?`, chatId).Scan(&isGroup)
+	if err != nil{
+		return false, err
+	}
+	return isGroup == 1, nil
+}
 
 func toInterfaceSlice(ids []int) []interface{} {
 	out := make([]interface{}, len(ids))
