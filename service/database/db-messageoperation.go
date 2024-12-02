@@ -33,7 +33,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		}
 	}()
 
-	query := `INSERT INTO chat_messages_table (msgId, senderId, chatId, contentType, content, deliveryStatus, timestamp, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO chat_messages_table (msgId, senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?, )`
 
 	//Controllo il tipo di contenuto che ha il messaggio
 	var messageContent interface{}
@@ -46,7 +46,11 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		messageContent = message.Content
 	}
 
-	if _, err := tx.Exec(query, message.MsgId, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, message.Timestamp, 0); err != nil {
+	var isForwarded= 0
+	if message.IsForwarded{
+		isForwarded = 1
+	}
+	if _, err := tx.Exec(query, message.MsgId, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded); err != nil {
 		return err
 	}
 
@@ -57,8 +61,12 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 }
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
-	//TODO implement me
-	panic("implement me")
+
+	 _, err:= db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?`, msgId, chatId)
+	 if err != nil{
+		 return err
+	 }
+	 return nil
 }
 
 func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwatd int) error {
