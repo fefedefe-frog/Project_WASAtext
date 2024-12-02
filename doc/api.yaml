@@ -775,91 +775,15 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-#  /chats/{chat_id}:                                               #Endpoint di una chat
-#    parameters:
-#      - $ref: "#/components/parameters/chat_id"
-#
-#    delete:
-#      description:  |
-#        Delete a chat and it's content
-#      summary: Delete a chat
-#
-#      tags: ["Chat operation"]
-#      operationId: deleteChat
-#
-#      security:
-#        - BearerAuth: []
-#
-#      responses:
-#        "202":
-#          description: Chat deleted successfully
-#
-#        "400":
-#          $ref: "#/components/responses/BadRequestError"
-#
-#        "401":
-#          $ref: "#/components/responses/UnauthorizedError"
-#
-#        "403":
-#          $ref: "#/components/responses/OperationNotAllowed"
-#
-#        "404":
-#          $ref: "#/components/responses/NotFoundError"
-#
-#        "500":
-#          $ref: "#/components/responses/InternalError"
-#
-#    get:
-#      description:  |
-#        Retrive only the name and the image of a chat identified
-#        by its chat_id. Usefull for something surely
-#      summary: Retrieve only chat name and photo
-#
-#      tags: ["Chat operation"]
-#      operationId: getChatInfo
-#
-#      security:
-#      - BearerAuth: []
-#
-#      responses:
-#        "200":
-#          description: Response with only the name and image of the chat
-#          content:
-#            application/json:
-#              schema:
-#                description:  |
-#                  Schema with the chat name and photo
-#
-#                type: object
-#                properties:
-#                  chatName:
-#                    $ref: "#/components/schemas/Chat/properties/chatName"
-#
-#                  chatPhoto:
-#                    $ref: "#/components/schemas/Chat/properties/chatPhoto"
-#
-#              example:
-#                chatName: "Chat Uni"
-#                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-#
-#        "400":
-#          $ref: "#/components/responses/BadRequestError"
-#
-#        "401":
-#          $ref: "#/components/responses/UnauthorizedError"
-#
-#        "404":
-#          $ref: "#/components/responses/NotFoundError"
-#
-#        "500":
-#          $ref: "#/components/responses/InternalError"
+  /chats/{chat_id}:                                               #Endpoint di una chat
+    parameters:
+      - $ref: "#/components/parameters/chat_id"
     
     patch:
       description:  |
-        Update only the group name leaving invariated the other properties
-      summary: Change the group chat name
+        Change group name
+      summary: Change Group name
 
-      
       tags: ["Group chat operation"]
       operationId: setGroupName
 
@@ -874,12 +798,12 @@ paths:
               description:  |
                 The request body expects to receive the chatName field compatible
                 with the one described in the chat schema 
-              
+
               type: object
               properties:
                 newGroupName:
                   $ref: "#/components/schemas/Chat/properties/chatName"
-      
+
       responses:
         "202":
           description: Group chat name updated successfully
@@ -888,15 +812,15 @@ paths:
               schema:
                 description:  |
                   Return the updated chat name
-                
+
                 type: object
                 properties:
                   chatName:
                     $ref: "#/components/schemas/Chat/properties/chatName"
-              
+
               example:
                 chatName: "Chat belli"
-        
+
         "400":
           $ref: "#/components/responses/BadRequestError"
 
@@ -911,10 +835,6 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalError"
-
-  /chat/{chat_id}:
-    parameters:
-      - $ref: "#/components/parameters/chat_id"
 
     get:
       description:  |
@@ -972,7 +892,7 @@ paths:
       
       security:
         - BearerAuth: []
-      
+
       requestBody:
         required: true
         content:
@@ -1035,18 +955,16 @@ paths:
         - BearerAuth: []
       
       requestBody:
-        description:  |
-          usr_id of the user to be added to the chat
-        
+        required: true
         content:
           application/json:
             schema:
-              description:  |
-                schema for the user id
+              description: |
+                usrId of the user to be added to the chat
 
               type: object
               properties:
-                usrId:
+                usrIdToAdd:
                   $ref: "#/components/schemas/User/properties/usrId"
       
       responses:
@@ -1065,21 +983,13 @@ paths:
 
                     type: array
                     items:
-                        $ref: "#/components/schemas/User"
+                        $ref: "#/components/schemas/User/properties/usrId"
               
                     minItems: 1
                     maxItems: 32
               
               example:
-                users:
-                  - User1:
-                      usr_id: "franco245"
-                      userName: "franco"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  - User2:
-                      usr_id: "maria34"
-                      userName: "maria"
-                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                users: ["franco245", "maria34"]
         
         "204":
           description: No content, user is already in the chat
@@ -1099,15 +1009,10 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /chats/{chat_id}/users/{usr_id}:                                #Endpoint di un utente di una chat
-    parameters:
-      - $ref: "#/components/parameters/chat_id"
-      - $ref: "#/components/parameters/usr_id"
-    
     delete:
       description:  |
         The user leave the chat, so the user is removed from the users of the chat
-        and all its message will be removed from the history
+        and all its message will be removed from the history, the user is idenfied by it's token
       summary: Leave a group chat
 
       tags: ["Group chat operation"]
@@ -1238,7 +1143,15 @@ paths:
         content: 
           application/json:
             schema:
-              $ref: "#/components/schemas/Message"
+              description:  |
+                  The request body contain the content type and the content of the message
+              type: object
+              properties:
+                contentType:
+                  $ref: "#/components/schemas/Message/properties/contentType"
+                content:
+                  $ref: "#/components/schemas/Message/properties/content"
+
         
       responses:
         "204":
@@ -1414,15 +1327,20 @@ paths:
       
       requestBody:
         description:  |
-          The comment that the user want to
+          The comment of the user
         
         content: 
           application/json:
             schema:
-              $ref: "#/components/schemas/Comment"
+              description: Content of the comment
+              type: object
+
+              properties:
+                content:
+                  $ref: "#/components/schemas/Comment/properties/content"
         
       responses:
-        "204":
+        "202":
           description: Message commented succesfully
         
         "400":
@@ -1471,8 +1389,8 @@ paths:
       
       responses:
         "204":
-          description: Successfully uncommented the message
-        
+          description: Message uncommented succesfully
+
         "400":
           $ref: "#/components/responses/BadRequestError"
 
