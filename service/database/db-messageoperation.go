@@ -46,8 +46,8 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		messageContent = message.Content
 	}
 
-	var isForwarded= 0
-	if message.IsForwarded{
+	var isForwarded = 0
+	if message.IsForwarded {
 		isForwarded = 1
 	}
 	if _, err := tx.Exec(query, message.MsgId, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded); err != nil {
@@ -62,11 +62,11 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
 
-	 _, err:= db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?`, msgId, chatId)
-	 if err != nil{
-		 return err
-	 }
-	 return nil
+	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?`, msgId, chatId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwatd int) error {
@@ -97,6 +97,42 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	return nil
 }
 
+func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
+	var message Message
+	var rawContent []byte
+	var isForwarded int
+	query := `SELECT senderId, contentType, content, deliveryStatus, timestamp, comments, isForwarded FROM chat_messages_table WHERE msgId= ?`
+	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
+	if err != nil {
+		return message, err
+	}
+
+	//Controllo se il contenuto è una foto e la elaboro
+	switch message.ContentType {
+	case "photo":
+		message.Content = base64.StdEncoding.EncodeToString(rawContent)
+	case "text":
+		message.Content = string(rawContent)
+	default:
+		message.Content = string(rawContent)
+	}
+
+	//Converto il valore di isForwarded
+	message.IsForwarded = isForwarded != 0
+
+	return message, nil
+}
+
+func (db *appdbimpl) GetSenderIdByMsgId(msgId int) (string, error) {
+
+	var senderId string
+	err := db.c.QueryRow(`SELECT senderId FROM chat_messages_table WHERE msgId= ?`, msgId).Scan(&senderId)
+	if err != nil {
+		return "", err
+	}
+	return senderId, nil
+}
+
 func (db *appdbimpl) GetMessageComments(msgId int) ([]Comment, error) {
 	//TODO implement me
 	panic("implement me")
@@ -107,7 +143,7 @@ func (db *appdbimpl) CommentMessage(msgId int, comment Comment) error {
 	panic("implement me")
 }
 
-func (db *appdbimpl) UncommentMessage(msgId int, commentId int) error {
+func (db *appdbimpl) UncommentMessage(msgId int, commenterId string) error {
 	//TODO implement me
 	panic("implement me")
 }
