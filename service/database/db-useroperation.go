@@ -45,8 +45,10 @@ func (db *appdbimpl) GetUsrIdByName(userName string) (string, error){
 	var usrId string
 
 	err := db.c.QueryRow(`SELECT usrId FROM users_table WHERE userName = ?`, userName).Scan(&usrId)
-
-	return usrId, err
+	if err != nil{
+		return "", err
+	}
+	return usrId, nil
 }
 
 func (db *appdbimpl) SetUserName(usrId string, newName string) error{

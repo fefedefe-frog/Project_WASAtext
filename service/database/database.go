@@ -132,7 +132,7 @@ type AppDatabase interface {
 	// CommentMessage error, comment a message
 	CommentMessage(msgId int, comment Comment) error //TODO
 	// UncommentMessage error, remove a comment from a message by the commenterId of the message
-	UncommentMessage(msgId int, commenterId int) error //TODO
+	UncommentMessage(msgId int, commenterId string) error //TODO
 	// GetMessageById Message, retrive a message from the database by its msgId
 	GetMessageById(msgId int) (Message, error)
 	// GetSenderIdByMsgId string, retrive the user id of the sender of the message by its msgId

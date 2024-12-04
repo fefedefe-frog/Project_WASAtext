@@ -15,6 +15,8 @@ import (
 func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("POST request to endpoint /chats/{chat_id}")
 
+	//Preparo la variabile che conterrà i valori della richiesta http
+	//che mi aspetto di ricevere per questo metodo dell'endpoint
 	requestJson := struct {
 		ContentType string `json:"contentType"`
 		Content     string `json:"content"`
