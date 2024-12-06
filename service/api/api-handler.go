@@ -11,13 +11,13 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/session", rt.wrap(rt.postSession)) //fatto
 
 	//User operations
-	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))                              //fatto
-	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))                   //fatto
-	rt.router.PATCH("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.patchChangeUserName)))         //fatto
-	rt.router.PATCH("/users/:usr_id/propic", rt.wrap(rt.BearerAuth(rt.patchChangeUserPhoto))) //fatto
+	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))                        //fatto
+	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))             //fatto
+	rt.router.PATCH("/profile", rt.wrap(rt.BearerAuth(rt.patchChangeUserName)))         //fatto
+	rt.router.PATCH("/profile/propic", rt.wrap(rt.BearerAuth(rt.patchChangeUserPhoto))) //fatto
 
 	//Chat operations
-	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                     //TODO
+	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                     //fatto
 	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getUserChats)))                      //fatto
 	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))              //fatto
 	rt.router.GET("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getChatMessages))) //fatto

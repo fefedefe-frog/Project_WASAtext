@@ -519,7 +519,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-    
+  /profile:
     patch:
       #uso patch perché voglio modificare SOLO il nome dell'utente,
       #quindi un aggiornamento parziale di un elemento già esistente
@@ -588,7 +588,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
   
-  /users/{usr_id}/propic:                                         #Enpoint per la propic di un utente
+  /profile/propic:                                         #Enpoint per la propic di un utente
     parameters:
       - $ref: "#/components/parameters/usr_id"
     
