@@ -11,28 +11,73 @@ import (
 	"strconv"
 )
 
-func (rt *_router) startNewChat(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	requestJson= struct {
-		ChatName string `json:"chatName"`
-		ChatPhoto string `json:"chatPhoto"`
-		IsGroup bool `json:"isGroup"`
-		
+func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+	context.Logger.Info("POST request to endpoint /chats")
+
+	requestJson := struct {
+		ChatName     string   `json:"chatName"`
+		ChatPhoto    string   `json:"chatPhoto"`
+		IsGroup      bool     `json:"isGroup"`
+		Participants []string `json:"participants"`
 	}{}
-	rt.db.InsertNewChat()
+
+	err := json.NewDecoder(request.Body).Decode(&requestJson)
+	if err != nil {
+		context.Logger.WithError(err).Error("error while decoding body request")
+		http.Error(writer, "Bad Request - invalid json format", http.StatusBadRequest)
+		return
+	}
+
+	//aggiungo l'utente che effettua la richiesta alla lista dei partecipanti
+	requestJson.Participants = append(requestJson.Participants, token)
+	var newChatId int
+	newChatId, err = rt.db.InsertNewChat(requestJson.Participants, requestJson.ChatName, requestJson.ChatPhoto, requestJson.IsGroup)
+	if err != nil {
+		context.Logger.WithError(err).Error("unable to insert a new chat in the db")
+		http.Error(writer, "Internal server error - unable to create the chat", http.StatusInternalServerError)
+		return
+	}
+
+	context.Logger.WithField("chatId", newChatId).Info("chat created successfully")
+
+	//preparo la risposta
+	var newChatInfo database.Chat
+	newChatInfo, err = rt.db.GetChatInfo(newChatId)
+	if err != nil {
+		context.Logger.WithError(err).Error("unable to get the chat info")
+		http.Error(writer, "Internal server error - unable to retrieve the info of the chat just created", http.StatusInternalServerError)
+		return
+	}
+
+	var responseJSON []byte
+	responseJSON, err = json.Marshal(newChatInfo)
+	if err != nil {
+		context.Logger.WithError(err).Error("unable to marshal the chat info")
+		http.Error(writer, "Internal server error - failed json conversion while preparing the response", http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(writer).Encode(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Json encoding error")
+		http.Error(writer, "Internal server error - failed to send the response", http.StatusInternalServerError)
+		return
+	}
+	return
 }
 
 func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("Richiesta all'endpoint /chats")
+	context.Logger.Info("GET request to endpoint /chats")
 
 	//Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetUserChats(token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || err.Error() == "NO_USER_CHATS" {
-			rt.baseLogger.Info("User doesn't have chat")
+			context.Logger.Info("User doesn't have chat")
 			http.Error(writer, "The user doesn't have any chat", http.StatusNotFound)
 			return
 		}
-		rt.baseLogger.WithError(err).Errorf("Error getting user %s chats", token)
+		context.Logger.WithError(err).Errorf("Error getting user %s chats", token)
 		http.Error(writer, "Unable to retrive info", http.StatusInternalServerError)
 		return
 	}
@@ -40,14 +85,14 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 	//Preparo la risposta contentente tutte le info delle chats
 	responseChatsJSON, marshalErr := json.Marshal(map[string]interface{}{"chats": chats})
 	if marshalErr != nil {
-		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chats")
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chats")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	//Scrivo la risposta json
 	writer.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(writer).Encode(responseChatsJSON); err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
+		context.Logger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -63,11 +108,11 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 		var numErr *strconv.NumError
 		if errors.As(err, &numErr) {
 			if errors.Is(numErr.Err, strconv.ErrSyntax) {
-				rt.baseLogger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
+				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
 			} else if errors.Is(numErr.Err, strconv.ErrRange) {
-				rt.baseLogger.WithError(numErr.Err).Error("the param chat_id range is out of range")
+				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
 			} else {
-				rt.baseLogger.WithError(err).Error("Error parsing param chat_id")
+				context.Logger.WithError(err).Error("Error parsing param chat_id")
 			}
 			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
 			return
@@ -76,7 +121,7 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 
 	//Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare le informazioni
 	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil {
-		rt.baseLogger.WithError(err).Error("Error checking if user is participant")
+		context.Logger.WithError(err).Error("Error checking if user is participant")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if !exist {
@@ -88,25 +133,25 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	chat, dbErr := rt.db.GetChatInfo(chatId)
 	if dbErr != nil {
 		if errors.Is(dbErr, sql.ErrNoRows) {
-			rt.baseLogger.WithError(dbErr).Warn("The chat doesn't exist, in the db")
+			context.Logger.WithError(dbErr).Warn("The chat doesn't exist, in the db")
 			http.Error(writer, "Not found - chat not exist", http.StatusNotFound)
 			return
 		}
-		rt.baseLogger.WithError(dbErr).Error("Error getting chat info")
+		context.Logger.WithError(dbErr).Error("Error getting chat info")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 	}
 
 	//Preparo la risposta
 	responseChatJSON, marshalErr := json.Marshal(chat)
 	if marshalErr != nil {
-		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat")
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chat")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 
 	if _, err := writer.Write(responseChatJSON); err != nil {
-		rt.baseLogger.WithError(err).Error("Errore preaparazione risposta html")
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -122,11 +167,11 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 		var numErr *strconv.NumError
 		if errors.As(err, &numErr) {
 			if errors.Is(numErr.Err, strconv.ErrSyntax) {
-				rt.baseLogger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
+				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
 			} else if errors.Is(numErr.Err, strconv.ErrRange) {
-				rt.baseLogger.WithError(numErr.Err).Error("the param chat_id range is out of range")
+				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
 			} else {
-				rt.baseLogger.WithError(err).Error("Error parsing param chat_id")
+				context.Logger.WithError(err).Error("Error parsing param chat_id")
 			}
 			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
 			return
@@ -135,7 +180,7 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 
 	//Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare i messaggi
 	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil {
-		rt.baseLogger.WithError(err).Error("Error checking if user is participant")
+		context.Logger.WithError(err).Error("Error checking if user is participant")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if !exist {
@@ -148,11 +193,11 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 	chatMessages, err := rt.db.GetChatMessages(chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithError(err).Warn("The chat have no messages, shouldn't be possible")
+			context.Logger.WithError(err).Warn("The chat have no messages, shouldn't be possible")
 			http.Error(writer, "The chat is empty", http.StatusNotFound)
 			return
 		}
-		rt.baseLogger.WithError(err).Error("Error getting chat messages")
+		context.Logger.WithError(err).Error("Error getting chat messages")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -160,14 +205,14 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 	//Se tutti i controlli vanno a buon fine procedo a preparare la risposta e inviarla
 	responseMessagesJSON, marshalErr := json.Marshal(map[string]interface{}{"messages": chatMessages})
 	if marshalErr != nil {
-		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}
 
 	//Scrivo la risposta
 	writer.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(writer).Encode(responseMessagesJSON); err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
+		context.Logger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
