@@ -31,7 +31,7 @@ func (rt *_router) Handler() http.Handler {
 	//Message operations
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))        //fatto
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.deleteMessage)))      //fatto
-	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.forwardMessage)))     //TODO
+	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.forwardMessage)))     //fatto
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getMessageComments))) //TODO
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.commentMessage)))     //TODO
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.uncommentMessage)))   //TODO

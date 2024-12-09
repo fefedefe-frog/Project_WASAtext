@@ -64,7 +64,6 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 
 	//Invio la risposta senza corpo
 	writer.WriteHeader(http.StatusNoContent)
-	return
 }
 
 func (rt *_router) deleteMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
@@ -117,10 +116,51 @@ func (rt *_router) deleteMessage(writer http.ResponseWriter, request *http.Reque
 	}
 
 	rt.baseLogger.WithField("msgId", msgId).Info("message removed successfully")
-	return
+	writer.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+	context.Logger.Info("POST request to endpoint /chats/{chat_id}/messages/{msg_id}")
+
+	chatId, err := strconv.Atoi(params.ByName("chat_id"))
+	if err != nil {
+		rt.baseLogger.WithError(err).Error("invalid chat id parameter")
+		http.Error(writer, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	var msgId int
+	msgId, err = strconv.Atoi(params.ByName("msg_id"))
+	if err != nil {
+		rt.baseLogger.WithError(err).Error("invalid message id parameter")
+		http.Error(writer, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	//Recupero l'id della chat a cui ba inoltrato il messaggio
+	requestJson := struct {
+		ChatToForward int `json:"chatToForward"`
+	}{}
+
+	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
+		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
+		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	if err := rt.db.ForwardMessage(token, msgId, requestJson.ChatToForward); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			rt.baseLogger.WithError(err).Warn("Message not found in the database")
+			http.Error(writer, "Not Found - Message not found", http.StatusNotFound)
+			return
+		}
+		rt.baseLogger.WithError(err).Error("Error while forwarding message to chat")
+		http.Error(writer, "Internal Server Error - Unable to forward message to chat", http.StatusInternalServerError)
+		return
+	}
+
+	rt.baseLogger.Debug("message forwarded successfully")
+	writer.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *_router) getMessageComments(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
