@@ -7,11 +7,60 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
+	var messages []Message
+
+	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
+	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, timestamp FROM chat_messages_table WHERE chatId = ?;`, chatId)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				logrus.WithError(closeErr).Errorf("rows.Close() error: %v", closeErr)
+			}
+		}
+	}()
+
+	//Itero su tutte le righe ottenute precedentemente
+	for rows.Next() {
+		var message Message
+
+		var contentRaw []byte
+		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.Timestamp)
+		if err != nil {
+			return nil, err
+		}
+
+		//controllo se il contenuto è una foto
+		switch message.ContentType {
+		case "photo":
+			message.Content = base64.StdEncoding.EncodeToString(contentRaw)
+		case "text":
+			message.Content = string(contentRaw)
+		default:
+			message.Content = string(contentRaw)
+		}
+
+		//Aggiungo l'utente all'array
+		messages = append(messages, message)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return messages, err
+}
+
 func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
 	//Conto quanti messaggi sono presenti nel db per poi sommare 1 al valore ottenuto e assegnarlo come msgId del nuovo messaggio
 	var messageCounts int
-	if err := db.c.QueryRow("SELECT COUNT(msgId) FROM chat_messages_table").Scan(&messageCounts); err != nil {
+	if err := db.c.QueryRow(`SELECT COUNT(msgId) FROM chat_messages_table;`).Scan(&messageCounts); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			messageCounts = 0
 		} else {
@@ -33,7 +82,6 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		}
 	}()
 
-	query := `INSERT INTO chat_messages_table (msgId, senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?, )`
 
 	//Controllo il tipo di contenuto che ha il messaggio
 	var messageContent interface{}
@@ -50,6 +98,8 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 	if message.IsForwarded {
 		isForwarded = 1
 	}
+
+	query := `INSERT INTO chat_messages_table (msgId, senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?, );`
 	if _, err := tx.Exec(query, message.MsgId, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded); err != nil {
 		return err
 	}
@@ -62,7 +112,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
 
-	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?`, msgId, chatId)
+	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?;`, msgId, chatId)
 	if err != nil {
 		return err
 	}
@@ -74,8 +124,7 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	//Recupero il messaggio da inoltrare
 	var message Message
 	var contentBytes []byte
-	query := `SELECT contentType, content FROM chat_messages_table WHERE msgId=?`
-	err := db.c.QueryRow(query, msgId).Scan(&message.ContentType, contentBytes)
+	err := db.c.QueryRow(`SELECT contentType, content FROM chat_messages_table WHERE msgId=?;`, msgId).Scan(&message.ContentType, contentBytes)
 	if err != nil {
 		return err
 	}
@@ -101,7 +150,7 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 	var message Message
 	var rawContent []byte
 	var isForwarded int
-	query := `SELECT senderId, contentType, content, deliveryStatus, timestamp, comments, isForwarded FROM chat_messages_table WHERE msgId= ?`
+	query := `SELECT senderId, contentType, content, deliveryStatus, timestamp, comments, isForwarded FROM chat_messages_table WHERE msgId= ?;`
 	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
 	if err != nil {
 		return message, err
@@ -126,7 +175,7 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 func (db *appdbimpl) GetSenderIdByMsgId(msgId int) (string, error) {
 
 	var senderId string
-	err := db.c.QueryRow(`SELECT senderId FROM chat_messages_table WHERE msgId= ?`, msgId).Scan(&senderId)
+	err := db.c.QueryRow(`SELECT senderId FROM chat_messages_table WHERE msgId= ?;`, msgId).Scan(&senderId)
 	if err != nil {
 		return "", err
 	}
@@ -134,8 +183,24 @@ func (db *appdbimpl) GetSenderIdByMsgId(msgId int) (string, error) {
 }
 
 func (db *appdbimpl) GetMessageComments(msgId int) ([]Comment, error) {
-	//TODO implement me
-	panic("implement me")
+
+	var comments []Comment
+	var rawCommentsString string
+
+	err := db.c.QueryRow(`SELECT comments FROM chat_messages_table WHERE msgId=?`, msgId).Scan(&rawCommentsString)
+	if err != nil {
+		return []Comment{}, err
+	}
+
+	/*
+	I commenti sono salvati sottoforma di stringa, la stringa in questione è formattata come segue
+	"<commenterId>:<commentContent>;<commenterId>:<commentContent>;..."
+	dove commenterId è l'id dell'utente che lascia il commento al messaggio,
+	mentre commentContent è il contenuto del commento
+	*/
+
+	// Controllo se la stringa dei commenti è vuota
+	return comments, nil
 }
 
 func (db *appdbimpl) CommentMessage(msgId int, comment Comment) error {
@@ -147,3 +212,4 @@ func (db *appdbimpl) UncommentMessage(msgId int, commenterId string) error {
 	//TODO implement me
 	panic("implement me")
 }
+

@@ -42,3 +42,5 @@ Content-Type: application/json-patch+json
 ### GET request for retriving user's chats
 GET localhost:3000/chats
 Authorization: Bearer {{client_token}}
+
+> {% console.log("chats: \n\t") %}

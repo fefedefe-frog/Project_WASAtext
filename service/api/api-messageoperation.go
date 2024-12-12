@@ -122,15 +122,7 @@ func (rt *_router) deleteMessage(writer http.ResponseWriter, request *http.Reque
 func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("POST request to endpoint /chats/{chat_id}/messages/{msg_id}")
 
-	chatId, err := strconv.Atoi(params.ByName("chat_id"))
-	if err != nil {
-		rt.baseLogger.WithError(err).Error("invalid chat id parameter")
-		http.Error(writer, "invalid parameter", http.StatusBadRequest)
-		return
-	}
-
-	var msgId int
-	msgId, err = strconv.Atoi(params.ByName("msg_id"))
+	msgId, err := strconv.Atoi(params.ByName("msg_id"))
 	if err != nil {
 		rt.baseLogger.WithError(err).Error("invalid message id parameter")
 		http.Error(writer, "invalid parameter", http.StatusBadRequest)

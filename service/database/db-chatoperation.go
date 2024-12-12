@@ -232,6 +232,8 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 		}
 	}()
 
+	/*	CON L'UTILIZZO DELLE FOREING KEY NEL DB QUANDO UNA CHAT VIENE ELIMINATA
+		OGNI ELEMENTO CHE USA UN chatId COLLEGATO A QUELLA CHAT VIENE RIMOSSO
 	//Rimuovo ogni associazione usrId <-> chatId da chat_participants_table
 	_, delPartErr := tx.Exec("DELETE FROM chat_participants_table WHERE chatId = ?", chatId)
 	if delPartErr != nil {
@@ -243,6 +245,7 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 	if err != nil {
 		return err
 	}
+	*/
 
 	//Rimuovo le info della chat da chats_table
 	if _, err := tx.Exec("DELETE FROM chats_table WHERE chatId = ?", chatId); err != nil {
@@ -275,55 +278,6 @@ func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 	return chat, err
 }
 
-func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
-	var messages []Message
-
-	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
-	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, timestamp FROM chat_messages_table WHERE chatId = ?`, chatId)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if closeErr := rows.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			} else {
-				logrus.WithError(closeErr).Errorf("rows.Close() error: %v", closeErr)
-			}
-		}
-	}()
-
-	//Itero su tutte le righe ottenute precedentemente
-	for rows.Next() {
-		var message Message
-
-		var contentRaw []byte
-		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.Timestamp)
-		if err != nil {
-			return nil, err
-		}
-
-		//controllo se il contenuto è una foto
-		switch message.ContentType {
-		case "photo":
-			message.Content = base64.StdEncoding.EncodeToString(contentRaw)
-		case "text":
-			message.Content = string(contentRaw)
-		default:
-			message.Content = string(contentRaw)
-		}
-
-		//Aggiungo l'utente all'array
-		messages = append(messages, message)
-	}
-
-	if rows.Err() != nil {
-		return nil, err
-	}
-
-	return messages, err
-}
-
 func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 
 	tx, err := db.c.Begin()
@@ -340,13 +294,13 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 	}()
 
 	//Elimino la relazione tra chatId <-> usrId
-	_, err = tx.Exec("DELETE FROM chat_participants_table WHERE chatId= ? AND usrId= ?", chatId, usrId)
+	_, err = tx.Exec(`DELETE FROM chat_participants_table WHERE chatId= ? AND usrId= ?;`, chatId, usrId)
 	if err != nil {
 		return err
 	}
 
 	//Rimuovo tutti i messaggi mandati dall'utente in quella chat
-	_, err = tx.Exec("DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ?", usrId, chatId)
+	_, err = tx.Exec(`DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ?;`, usrId, chatId)
 	if err != nil {
 		return err
 	}
@@ -360,7 +314,7 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 
 func (db *appdbimpl) InsertUserInChat(usrId string, chatId int) error {
 
-	_, err := db.c.Exec(`INSERT INTO chat_participants_table(chatId, usrId) VALUES (?, ?)`, chatId, usrId)
+	_, err := db.c.Exec(`INSERT INTO chat_participants_table(chatId, usrId) VALUES (?, ?);`, chatId, usrId)
 	if err != nil {
 		return err
 	}
@@ -370,7 +324,7 @@ func (db *appdbimpl) InsertUserInChat(usrId string, chatId int) error {
 func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 
 	//Recupero gli id delle chat dalla chat_participants_table
-	rows, err := db.c.Query(`SELECT usrId FROM chat_participants_table WHERE chatId = ?`, chatId)
+	rows, err := db.c.Query(`SELECT usrId FROM chat_participants_table WHERE chatId = ?;`, chatId)
 	if err != nil {
 		return nil, err
 	}

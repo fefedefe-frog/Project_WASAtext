@@ -102,8 +102,6 @@ type AppDatabase interface {
 	DeleteChat(chatId int) error
 	// GetChatInfo Chat, retrive all the info of a chat from the db
 	GetChatInfo(chatId int) (Chat, error)
-	// GetChatMessages Message, retrive all the messages of a chat by passing the chat id
-	GetChatMessages(chatId int) ([]Message, error)
 	// RemoveUserFromChat error, remove the associations betwheen a user and a chat
 	RemoveUserFromChat(usrId string, chatId int) error
 	// InsertUserInChat error, make the relation usrId <-> chatId
@@ -121,6 +119,8 @@ type AppDatabase interface {
 
 	//Message operations
 
+	// GetChatMessages Message, retrive all the messages of a chat by passing the chat id
+	GetChatMessages(chatId int) ([]Message, error)
 	// InsertMessage error, insert a message in the database
 	InsertMessage(message Message, chatId int) error
 	// RemoveMessage error, remove a message from the database
@@ -159,8 +159,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE users_table(
     			usrId TEXT PRIMARY KEY, 
-    			userName TEXT, 
-    			userPhoto BLOB
+    			userName TEXT NOT NULL, 
+    			userPhoto BLOB NOT NULL DEFAULT ''
         );`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -191,8 +191,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 		sqlStmt := `CREATE TABLE chat_participants_table(
     			chatId INTEGER, 
     			usrId TEXT, 
-    			FOREIGN KEY (chatId) REFERENCES chats_table(chatId), 
-    			FOREIGN KEY (usrId) REFERENCES users_table(usrId), 
+    			FOREIGN KEY (chatId) REFERENCES chats_table(chatId) ON DELETE CASCADE, 
+    			FOREIGN KEY (usrId) REFERENCES users_table(usrId) ON DELETE CASCADE, 
     			PRIMARY KEY (chatId, usrId)
         );`
 		_, err = db.Exec(sqlStmt)
@@ -215,8 +215,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 				comments TEXT DEFAULT '',
     			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     			isForwarded INTEGER NOT NULL CHECK (isForwarded IN (0, 1)),
-    			FOREIGN KEY (senderId) REFERENCES users_table(usrId), 
-    			FOREIGN KEY (chatId) REFERENCES chats_table(chatId)
+    			FOREIGN KEY (senderId) REFERENCES users_table(usrId) ON DELETE CASCADE, 
+    			FOREIGN KEY (chatId) REFERENCES chats_table(chatId) On DELETE CASCADE
         );`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
