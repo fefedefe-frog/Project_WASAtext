@@ -276,6 +276,14 @@ components:
       title: Comment
 
       properties:
+        commentId:
+          description: |
+            Id of the comment
+
+          type: integer
+          minimum: 0
+          maximum: 1000
+
         commenterId:
           description:  |
             Comment id of the user who commented the message
@@ -1358,7 +1366,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /chats/{chat_id}/messages/{msg_id}/comments/{commenter_id}:     #Endpoint di un commento di un messaggio
+  /chats/{chat_id}/messages/{msg_id}/comments/{comment_id}:     #Endpoint di un commento di un messaggio
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/msg_id"
@@ -1366,12 +1374,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          pattern: '^[^\s].*[^\s]$'
-          example: "ofnarc754"
-
-          minLength: 3
-          maxLength: 32
+          type: integer
           readOnly: true
         description:  |
           Id of the user that made the comment
