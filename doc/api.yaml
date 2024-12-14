@@ -376,8 +376,6 @@ components:
       scheme: bearer
       bearerFormat: plain
 
-
-
 paths:
   /session:                                                       #Endpoint per il login
     post:
@@ -555,14 +553,7 @@ paths:
               type: object
               properties:
                 newUserName:
-                  description:  |
-                    New user name
-
-                  type: string
-                  pattern: '^[^\s].*[^\s]$'
-
-                  minLength: 3
-                  maxLength: 16
+                  $ref: "#/components/schemas/User/properties/userName"
       
       responses:
         "202":
@@ -597,9 +588,6 @@ paths:
           $ref: "#/components/responses/InternalError"
   
   /profile/propic:                                         #Enpoint per la propic di un utente
-    parameters:
-      - $ref: "#/components/parameters/usr_id"
-    
     patch:
       description:  |
         Update only the photo leaving invariated the id and the name
@@ -623,15 +611,7 @@ paths:
               type: object
               properties:
                 newUserPhoto:
-                  description:  |
-                    New value of the key, the new photo in this case
-
-                  type: string
-                  format: binary
-                  example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  
-                  minLength: 0
-                  maxLength: 1398101
+                  $ref: "#/components/schemas/User/properties/userPhoto"
       
       responses:
         "202":
@@ -1370,7 +1350,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/chat_id"
       - $ref: "#/components/parameters/msg_id"
-      - name: commenter_id
+      - name: comment_id
         in: path
         required: true
         schema:
