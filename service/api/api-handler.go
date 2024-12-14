@@ -26,7 +26,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveGroup)))       // fatto
 	rt.router.PATCH("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.changeGroupName)))         // fatto
 	rt.router.PATCH("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.changeGroupPhoto))) // fatto
-	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.postAddUserToGroup))) // fatto
+	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addUserToGroup))) // fatto
 
 	// Message operations
 	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))        									// fatto
