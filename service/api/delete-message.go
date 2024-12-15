@@ -1,4 +1,4 @@
-package service
+package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
