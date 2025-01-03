@@ -11,7 +11,7 @@ import (
 )
 
 func (rt *_router) changeGroupPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("PATCH request to endpoint /chat/{chat_id}/propic")
+	context.Logger.Info("PUT request to endpoint /chat/{chat_id}/propic")
 
 	var requestJson = struct {
 		NewGroupPhoto string `json:"newGroupPhoto"`

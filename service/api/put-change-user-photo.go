@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-func (rt *_router) patchChangeUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("PATCH request to endpoint /profile/propic")
+func (rt *_router) putChangeUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+	context.Logger.Info("PUT request to endpoint /profile/propic")
 
 	var requestJson = struct {
 		NewUserPhoto string `json:"newUserPhoto"`

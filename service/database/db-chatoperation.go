@@ -232,21 +232,6 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 		}
 	}()
 
-	/*	CON L'UTILIZZO DELLE FOREING KEY NEL DB QUANDO UNA CHAT VIENE ELIMINATA
-			OGNI ELEMENTO CHE USA UN chatId COLLEGATO A QUELLA CHAT VIENE RIMOSSO
-		//Rimuovo ogni associazione usrId <-> chatId da chat_participants_table
-		_, delPartErr := tx.Exec("DELETE FROM chat_participants_table WHERE chatId = ?", chatId)
-		if delPartErr != nil {
-			return delPartErr
-		}
-
-		// Rimuovo tutti i messaggi mandati in quella chat
-		_, err = tx.Exec("DELETE FROM chat_messages_table WHERE chatId= ?", chatId)
-		if err != nil {
-			return err
-		}
-	*/
-
 	// Rimuovo le info della chat da chats_table
 	if _, err := tx.Exec("DELETE FROM chats_table WHERE chatId = ?;", chatId); err != nil {
 		return err
@@ -293,19 +278,19 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 		}
 	}()
 
-	//Elimino la relazione tra chatId <-> usrId
+	// Elimino la relazione tra chatId <-> usrId
 	_, err = tx.Exec(`DELETE FROM chat_participants_table WHERE chatId= ? AND usrId= ?;`, chatId, usrId)
 	if err != nil {
 		return err
 	}
 
-	//Rimuovo tutti i messaggi mandati dall'utente in quella chat
+	// Rimuovo tutti i messaggi mandati dall'utente in quella chat
 	_, err = tx.Exec(`DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ?;`, usrId, chatId)
 	if err != nil {
 		return err
 	}
 
-	//Applico le modifiche al db
+	// Applico le modifiche al db
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -428,7 +413,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 
 	_, err = stmt.Exec(data, chatId)
 	if err != nil {
-		return err //log.Fatal("errore nell'esecuzione della  query:", err)
+		return err
 	}
 	return err
 }
