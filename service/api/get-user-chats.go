@@ -26,16 +26,15 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 		return
 	}
 
-	// Preparo la risposta contentente tutte le info delle chats
-	responseChatsJSON, marshalErr := json.Marshal(map[string]interface{}{"chats": chats})
-	if marshalErr != nil {
-		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chats")
-		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+	rt.baseLogger.Debugf("user ha {%d} chats", len(chats))
+	for i, chat := range chats {
+		rt.baseLogger.Debugf("chat{%d}:\n\t chatId -> {%d}\n\t chatName -> {%s}\n\t chatPhoto -> {%s}\n\t participants -> {%d}\n", i, chat.ChatId, chat.ChatName, chat.ChatPhoto[:10], len(chat.Participants))
 	}
+
 
 	// Scrivo la risposta json
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(responseChatsJSON); err != nil {
+	if err := json.NewEncoder(writer).Encode(map[string]interface{}{"chats": chats}); err != nil {
 		context.Logger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
