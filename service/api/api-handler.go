@@ -11,10 +11,10 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/session", rt.wrap(rt.postSession)) // fatto
 
 	// User operations
-	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))                        // fatto
-	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))             // fatto
-	rt.router.PUT("/profile", rt.wrap(rt.BearerAuth(rt.putChangeUserName)))         // fatto
-	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.putChangeUserPhoto))) // fatto
+	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))						// fatto
+	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))            // fatto
+	rt.router.PUT("/profile", rt.wrap(rt.BearerAuth(rt.putChangeUserName)))         	// fatto
+	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.putChangeUserPhoto))) 	// fatto
 
 	// Chat operations
 	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                     // fatto
@@ -24,8 +24,8 @@ func (rt *_router) Handler() http.Handler {
 
 	// Group operations
 	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveGroup)))       // fatto
-	rt.router.PUT("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.changeGroupName)))         // fatto
-	rt.router.PUT("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.changeGroupPhoto))) // fatto
+	rt.router.PUT("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.changeGroupName)))         	// fatto
+	rt.router.PUT("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.changeGroupPhoto))) 	// fatto
 	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addUserToGroup)))     // fatto
 
 	// Message operations
