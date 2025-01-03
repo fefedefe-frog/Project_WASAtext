@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strings"
@@ -43,14 +44,28 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		return userChats, err
 	}
 
+	// Se l'utente non ha chat restituisco un errore personalizzato
 	if len(userChatsId) == 0 {
 		return userChats, ErrUserNoChat
 	}
 
-	// Recupero tutte le informazioni delle chat passando la lista di chatId ottenute in precedenza
-	query := "SELECT chatName, isGroup, chatPhoto FROM chats_table WHERE chatId IN (" + strings.Repeat("?", len(userChatsId)-1) + "?);"
+
+
+	// Costruisco la stringa di lunghezza variabile, contentente solo ?
+	placeholders := make([]string, len(userChatsId))
+	args := make([]interface{}, len(userChatsId))
+
+	for i, value := range userChatsId {
+		placeholders[i] = "?"
+		args[i] = value
+	}
+
+	queryPart := fmt.Sprintf("%s IN (%s)", "chatId", strings.Join(placeholders, ", "))
+
+	// Eseguo la query delle chat
+	query := fmt.Sprintf("SELECT chatId, chatName, isGroup, chatPhoto FROM chats_table WHERE %s", queryPart)
 	var chatRows *sql.Rows
-	chatRows, err = db.c.Query(query, toInterfaceSlice(userChatsId)...)
+	chatRows, err = db.c.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,17 +154,6 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 		return -1, errProp
 	}
 
-	// Conto quante chat sono presenti nel database per poi sommare 1 al valore ottenuto e assengnarlo come chatId della nuova chat
-	var chatsCount int
-	if err := db.c.QueryRow("SELECT COUNT(chatId) FROM chats_table;").Scan(&chatsCount); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			chatsCount = 0
-		} else {
-			return -1, err
-		}
-	}
-	newChatId := chatsCount + 1
-
 	tx, err := db.c.Begin()
 	if err != nil {
 		return -1, err
@@ -170,14 +174,21 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 	}
 
 	// Eseguo l'inserimento nel database
-	_, err = tx.Exec(`INSERT INTO chats_table (chatId, chatName, isGroup, chatPhoto) VALUES (?, ?, ?, ?);`, newChatId, chatName, isGroupVal, groupPhotoBytes)
+	var result sql.Result
+	result, err = tx.Exec(`INSERT INTO chats_table (chatName, isGroup, chatPhoto) VALUES (?, ?, ?);`, chatName, isGroupVal, groupPhotoBytes)
+	if err != nil {
+		return -1, err
+	}
+
+	var newChatId64 int64
+	newChatId64, err = result.LastInsertId()
 	if err != nil {
 		return -1, err
 	}
 
 	// Ora devo creare le associazioni usrId <-> chatId nella chat_participants_table
 	var stmt *sql.Stmt
-	stmt, err = tx.Prepare("INSERT INTO chat_participants_table (chatId, usrId) VALUES (?, ?);")
+	stmt, err = tx.Prepare("INSERT OR IGNORE INTO chat_participants_table (chatId, usrId) VALUES (?, ?);")
 	if err != nil {
 		return -1, err
 	}
@@ -194,7 +205,7 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 	for _, usrId := range participants {
 		exist, err := db.UsrIdExist(usrId)
 		if exist {
-			if _, err := stmt.Exec(newChatId, usrId); err != nil {
+			if _, err := stmt.Exec(int(newChatId64), usrId); err != nil {
 				return -1, err // Interrompe l'inserimento se c'è un errore
 			}
 		} else {
@@ -213,7 +224,7 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 	if err := tx.Commit(); err != nil {
 		return -1, err
 	}
-	return newChatId, nil
+	return int(newChatId64), nil
 }
 
 func (db *appdbimpl) DeleteChat(chatId int) error {
@@ -259,6 +270,13 @@ func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 	} else {
 		chat.ChatPhoto = "" // se non è presente assegno la stringa vuota
 	}
+
+	// Ottengo gli id dei partecipanti della chat
+	participants, participantsErr := db.GetChatPartecipants(chat.ChatId)
+	if participantsErr != nil {
+		return chat, participantsErr
+	}
+	chat.Participants = participants
 
 	return chat, err
 }
@@ -426,12 +444,4 @@ func (db *appdbimpl) IsAGroup(chatId int) (bool, error) {
 		return false, err
 	}
 	return isGroup == 1, nil
-}
-
-func toInterfaceSlice(ids []int) []interface{} {
-	out := make([]interface{}, len(ids))
-	for i, id := range ids {
-		out[i] = id
-	}
-	return out
 }
