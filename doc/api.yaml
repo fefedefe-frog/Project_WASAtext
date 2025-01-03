@@ -527,13 +527,9 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   /profile:
-    patch:
-      #uso patch perché voglio modificare SOLO il nome dell'utente,
-      #quindi un aggiornamento parziale di un elemento già esistente
+    put:
       description:  |
-        Update only the username leaving invariated the id and photo,
-        using patch method i form a request body that can contain only 
-        the "userName"
+        Update only the username leaving invariated the id and photo
       summary: Change the username
       
       tags: ["User operation"]
@@ -545,7 +541,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json-patch+json:
+          application/json:
             schema:
               description:  |
                 The request body expects to receive the userName field compatible
@@ -589,7 +585,7 @@ paths:
           $ref: "#/components/responses/InternalError"
   
   /profile/propic:                                         #Enpoint per la propic di un utente
-    patch:
+    put:
       description:  |
         Update only the photo leaving invariated the id and the name
       summary: Change the propic
@@ -603,7 +599,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json-patch+json:
+          application/json:
             schema:
               description:  |
                 The request body expects to receive the photo field compatible
@@ -768,7 +764,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
-    patch:
+    put:
       description:  |
         Change group name
       summary: Change Group name
@@ -782,7 +778,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json-patch+json:
+          application/json:
             schema:
               description:  |
                 The request body expects to receive the chatName field compatible
@@ -871,7 +867,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
-    patch:
+    put:
       description:  |
         Update only the group chat leaving invariated the other properties
       summary: Change the group chat photo
@@ -885,7 +881,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json-patch+json:
+          application/json:
             schema:
               description:  |
                 The request body expects to receive the chatPhoto field compatible
