@@ -28,7 +28,7 @@ func (rt *_router) getMessageComments(writer http.ResponseWriter, _ *http.Reques
 		if errors.Is(err, database.ErrMessageHaveNoComments) {
 			http.Error(writer, "Not Found - message doesn't have any comment yet", http.StatusNotFound)
 			return
-		}else if errors.Is(err, sql.ErrNoRows) {
+		} else if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Warn("Error while checking the message comments")
 			http.Error(writer, "Not Found - message don't exist", http.StatusNotFound)
 			return

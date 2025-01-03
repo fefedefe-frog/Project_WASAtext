@@ -29,7 +29,7 @@ func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request,
 
 	// Controllo che l'utente che vuole rimuovere il commento sia colui che l'ha commentato in precedenza
 	var isCommenter bool
-	isCommenter, err =rt.db.CheckCommentAuthor(chatId, token)
+	isCommenter, err = rt.db.CheckCommentAuthor(chatId, token)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error while checking the comment author")
 		http.Error(writer, "Internal Server Error - Unable to check the comment author", http.StatusInternalServerError)

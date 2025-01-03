@@ -14,7 +14,7 @@ import (
 func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("PATCH request to endpoint /chat/{chat_id}")
 
-	var requestJson= struct {
+	var requestJson = struct {
 		NewGroupName string `json:"newGroupName"`
 	}{}
 
@@ -24,13 +24,13 @@ func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Req
 		rt.baseLogger.WithError(err).Error("invalid chat id")
 		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant{
+	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
 
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("usrId", token).Warnf("tried to change group name of group <%d> which he isn't a member of", chatId)
 			http.Error(writer, "Forbidden - can't change the name of another group", http.StatusForbidden)
 			return
-		}else if err != nil {
+		} else if err != nil {
 			context.Logger.WithError(err).Errorf("Error while checking if the user <%s> is member of the group <%d>", token, chatId)
 			http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 			return
@@ -38,13 +38,13 @@ func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Req
 	}
 
 	// Controllo che la chat che si vuole modificare sia un gruppo
-	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup{
+	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup {
 
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Errorf("Chat <%d> not found", chatId)
 			http.Error(writer, "Not Found", http.StatusNotFound)
 			return
-		}else if err != nil{
+		} else if err != nil {
 			context.Logger.WithError(err).Errorf("Unable to check if the chat <%d> is a group", chatId)
 			http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 			return

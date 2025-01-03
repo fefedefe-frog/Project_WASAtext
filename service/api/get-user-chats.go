@@ -16,7 +16,7 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 	// Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetUserChats(token)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || errors.Is(err,database.ErrUserNoChat) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, database.ErrUserNoChat) {
 			context.Logger.Info("User doesn't have chat")
 			http.Error(writer, "The user doesn't have any chat", http.StatusNotFound)
 			return

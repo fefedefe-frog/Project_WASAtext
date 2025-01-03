@@ -71,7 +71,6 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		}
 	}()
 
-
 	// Controllo il tipo di contenuto che ha il messaggio
 	var messageContent interface{}
 	if message.ContentType == "photo" {
@@ -187,12 +186,10 @@ func (db *appdbimpl) GetMessageComments(msgId int) ([]Comment, error) {
 	for rows.Next() {
 		var comment Comment
 
-
 		err := rows.Scan(&comment.CommentId, &comment.CommenterId, &comment.Content)
 		if err != nil {
 			return nil, err
 		}
-
 
 		// Aggiungo l'utente all'array
 		comments = append(comments, comment)

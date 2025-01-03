@@ -18,8 +18,8 @@ func (rt *_router) leaveGroup(writer http.ResponseWriter, _ *http.Request, param
 		rt.baseLogger.WithError(err).Error("invalid chat id")
 		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant{
-		if errors.Is(err, sql.ErrNoRows){
+	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("usrId", token).Warnf("tried leave the group <%d> which isn't a member of", chatId)
 			http.Error(writer, "Forbidden - can't leave a group which are't member of", http.StatusForbidden)
 			return

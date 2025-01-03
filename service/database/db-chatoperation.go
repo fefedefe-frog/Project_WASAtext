@@ -50,7 +50,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	// Recupero tutte le informazioni delle chat passando la lista di chatId ottenute in precedenza
 	query := "SELECT chatName, isGroup, chatPhoto FROM chats_table WHERE chatId IN (" + strings.Repeat("?", len(userChatsId)-1) + "?);"
 	var chatRows *sql.Rows
-	chatRows, err= db.c.Query(query, toInterfaceSlice(userChatsId)...)
+	chatRows, err = db.c.Query(query, toInterfaceSlice(userChatsId)...)
 	if err != nil {
 		return nil, err
 	}
@@ -233,18 +233,18 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 	}()
 
 	/*	CON L'UTILIZZO DELLE FOREING KEY NEL DB QUANDO UNA CHAT VIENE ELIMINATA
-		OGNI ELEMENTO CHE USA UN chatId COLLEGATO A QUELLA CHAT VIENE RIMOSSO
-	//Rimuovo ogni associazione usrId <-> chatId da chat_participants_table
-	_, delPartErr := tx.Exec("DELETE FROM chat_participants_table WHERE chatId = ?", chatId)
-	if delPartErr != nil {
-		return delPartErr
-	}
+			OGNI ELEMENTO CHE USA UN chatId COLLEGATO A QUELLA CHAT VIENE RIMOSSO
+		//Rimuovo ogni associazione usrId <-> chatId da chat_participants_table
+		_, delPartErr := tx.Exec("DELETE FROM chat_participants_table WHERE chatId = ?", chatId)
+		if delPartErr != nil {
+			return delPartErr
+		}
 
-	// Rimuovo tutti i messaggi mandati in quella chat
-	_, err = tx.Exec("DELETE FROM chat_messages_table WHERE chatId= ?", chatId)
-	if err != nil {
-		return err
-	}
+		// Rimuovo tutti i messaggi mandati in quella chat
+		_, err = tx.Exec("DELETE FROM chat_messages_table WHERE chatId= ?", chatId)
+		if err != nil {
+			return err
+		}
 	*/
 
 	// Rimuovo le info della chat da chats_table

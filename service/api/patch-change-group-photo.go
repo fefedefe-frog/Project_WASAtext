@@ -23,8 +23,8 @@ func (rt *_router) changeGroupPhoto(writer http.ResponseWriter, request *http.Re
 		rt.baseLogger.WithError(err).Error("invalid chat id")
 		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant{
-		if errors.Is(err, sql.ErrNoRows){
+	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("usrId", token).Warnf("tried to change group photo of group <%d> which he isn't a member of", chatId)
 			http.Error(writer, "Forbidden - can't change the photo of another group", http.StatusForbidden)
 			return
@@ -35,13 +35,13 @@ func (rt *_router) changeGroupPhoto(writer http.ResponseWriter, request *http.Re
 	}
 
 	// Controllo che la chat che si vuole modificare sia un gruppo
-	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup{
+	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup {
 
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Errorf("Chat <%d> not found", chatId)
 			http.Error(writer, "Not Found", http.StatusNotFound)
 			return
-		}else if err != nil{
+		} else if err != nil {
 			context.Logger.WithError(err).Errorf("Unable to check if the chat <%d> is a group", chatId)
 			http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 			return

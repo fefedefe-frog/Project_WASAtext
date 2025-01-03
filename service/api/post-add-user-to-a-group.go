@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string){
+func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 	context.Logger.Info("POST request to endpoint /chat/{chat_id}/users")
 
 	var requestJson = struct {
@@ -23,8 +23,8 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 		rt.baseLogger.WithError(err).Error("invalid chat id")
 		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant{
-		if errors.Is(err, sql.ErrNoRows){
+	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("usrId", token).Warnf("tried to change group photo of group <%d> which he isn't a member of", chatId)
 			http.Error(writer, "Forbidden - can't change the photo of another group", http.StatusForbidden)
 			return
@@ -41,10 +41,9 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-
 	context.Logger.Infof("user <%s> request to add user <%s> to the group", token, requestJson.UsrIdToAdd)
 	// Aggiungo l'utente alla chat
-	err= rt.db.InsertUserInChat(requestJson.UsrIdToAdd, chatId)
+	err = rt.db.InsertUserInChat(requestJson.UsrIdToAdd, chatId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error adding user to group")
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
@@ -56,7 +55,7 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 	var chatParticipants []string
 	chatParticipants, err = rt.db.GetChatPartecipants(chatId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("chatId", chatId).Error("chat not found in the chat_participants_table")
 			http.Error(writer, "Chat not found", http.StatusNotFound)
 			return
@@ -67,7 +66,7 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 	}
 
 	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"users": chatParticipants})
-	if marshalErr != nil{
+	if marshalErr != nil {
 		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 	}

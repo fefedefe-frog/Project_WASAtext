@@ -26,18 +26,15 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveGroup)))       // fatto
 	rt.router.PATCH("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.changeGroupName)))         // fatto
 	rt.router.PATCH("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.changeGroupPhoto))) // fatto
-	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addUserToGroup))) // fatto
+	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addUserToGroup)))     // fatto
 
 	// Message operations
-	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))        									// fatto
-	rt.router.DELETE("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.deleteMessage)))      								// fatto
-	rt.router.POST("/chats/:chat_id/messages/:msg_id", rt.wrap(rt.BearerAuth(rt.forwardMessage)))     							// fatto
-	rt.router.GET("/chats/:chat_id/messages/:msg_id/comments", rt.wrap(rt.BearerAuth(rt.getMessageComments))) 					// fatto
-	rt.router.POST("/chats/:chat_id/messages/:msg_id/comments", rt.wrap(rt.BearerAuth(rt.commentMessage)))     				// fatto
-	rt.router.DELETE("/chats/:chat_id/messages/:msg_id/comments/:commenter_id", rt.wrap(rt.BearerAuth(rt.uncommentMessage)))   // fatto
-
-	// Special routes
-	// rt.router.GET("/liveness", rt.liveness)
+	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))                                       // fatto
+	rt.router.DELETE("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.deleteMessage)))                                   // fatto
+	rt.router.POST("/chats/:chat_id/messages/:msg_id", rt.wrap(rt.BearerAuth(rt.forwardMessage)))                            // fatto
+	rt.router.GET("/chats/:chat_id/messages/:msg_id/comments", rt.wrap(rt.BearerAuth(rt.getMessageComments)))                // fatto
+	rt.router.POST("/chats/:chat_id/messages/:msg_id/comments", rt.wrap(rt.BearerAuth(rt.commentMessage)))                   // fatto
+	rt.router.DELETE("/chats/:chat_id/messages/:msg_id/comments/:commenter_id", rt.wrap(rt.BearerAuth(rt.uncommentMessage))) // fatto
 
 	return rt.router
 }

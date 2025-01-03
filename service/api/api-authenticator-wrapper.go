@@ -18,17 +18,17 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 
 	return func(writer http.ResponseWriter, request *http.Request, parameters httprouter.Params, context reqcontext.RequestContext) {
 
-		//Estraggo l'header "Authentication" dalla richiesta
+		// Estraggo l'header "Authentication" dalla richiesta
 		authHeader := request.Header.Get("Authorization")
 
-		//Controllo che l'header sia presente e che sia del tipo Bearer
+		// Controllo che l'header sia presente e che sia del tipo Bearer
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			context.Logger.WithField("authentication_header:", authHeader).Warn("Missing or invalid bearer Authentication header")
 			http.Error(writer, "Unauthorized - missing token", http.StatusUnauthorized)
 			return
 		}
 
-		//Estraggo il toked dall header(rimuovo "Bearer " dall'header)
+		// Estraggo il toked dall header(rimuovo "Bearer " dall'header)
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		if err := utilitytool.UsrIdIsValid(token); err != nil {
 			context.Logger.WithError(err).Warnf("Invalid token: <%s>", token)
@@ -36,7 +36,7 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 			return
 		}
 
-		//Verifico se il token corrisponde ad un usrId di un utente già registrato
+		// Verifico se il token corrisponde ad un usrId di un utente già registrato
 		exist, err := rt.db.UsrIdExist(token)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -50,13 +50,13 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 		}
 
 		if !exist {
-			//Se l'usrId non esiste e quindi l'utente non esiste e il token presente nel header non è valido restituisco una richiesta Unauthorized
+			// Se l'usrId non esiste e quindi l'utente non esiste e il token presente nel header non è valido restituisco una richiesta Unauthorized
 			context.Logger.WithField("token", token).Warn("User id token not present in the db")
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		//If the token is valid call the next handler in chain (usually, the handler function for the path)
+		// If the token is valid call the next handler in chain (usually, the handler function for the path)
 		fn(writer, request, parameters, context, token)
 	}
 }

@@ -97,7 +97,7 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error {
 	var stmt *sql.Stmt
 	stmt, err = db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?;`)
 	if err != nil {
-		return err //log.Fatal("errore nella preparazione della query:", err)	//usare logger giusto, ritorno errore che viene gestito quando la funzione è chiamata
+		return err
 	}
 	defer func() {
 		if closeErr := stmt.Close(); closeErr != nil {
@@ -111,7 +111,7 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error {
 
 	_, err = stmt.Exec(data, usrId)
 	if err != nil {
-		return err //log.Fatal("errore nell'esecuzione della  query:", err)
+		return err
 	}
 	return err
 }
@@ -163,7 +163,7 @@ func (db *appdbimpl) GetUsers() ([]User, error) {
 		}
 		user.UserPhoto = base64.StdEncoding.EncodeToString(propicBytes)
 
-		//Aggiungo l'utente all'array
+		// Aggiungo l'utente all'array
 		users = append(users, user)
 	}
 
