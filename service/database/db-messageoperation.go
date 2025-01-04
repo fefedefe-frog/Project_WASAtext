@@ -11,7 +11,7 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 	var messages []Message
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
-	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, timestamp FROM chat_messages_table WHERE chatId = ?;`, chatId)
+	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ?;`, chatId)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 		var message Message
 
 		var contentRaw []byte
-		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.Timestamp)
+		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
 		if err != nil {
 			return nil, err
 		}
