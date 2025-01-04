@@ -61,13 +61,13 @@ Authorization: Bearer ramta986
 Content-Type: application/json
 
 {
-  "chatName": "Gruppo franchi",
+  "chatName": "",
   "chatPhoto": "",
-  "isGroup": true,
-  "participants": ["orcfna720", "rrodogi596"]
+  "isGroup": false,
+  "participants": ["rrodogi596"]
 }
 
-> {% client.global.set("marta_groupChat_id", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ response.body["chatPhoto"].substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
+> {% client.global.set("marta_groupChat_id", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ (response.body["chatPhoto"]).substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
 
 
 ### POST request for sending a message
@@ -89,5 +89,7 @@ Authorization: Bearer orcfna720
 
 
 ### GET request for retriving messages from a chat
-GET localhost:3000/chats/4/messages
-Authorization: Bearer orcfna720
+GET localhost:3000/chats/{{marta_groupChat_id}}/messages
+Authorization: Bearer rrodogi596
+
+> {% response.body["messages"].forEach(message => {console.log("send by : "+ message.senderId +"\n\t"+ message.content +"\n\t\t\t"+ message.timestamp)}) %}
