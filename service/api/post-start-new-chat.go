@@ -55,9 +55,9 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(responseJSON); err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
-		http.Error(writer, "Internal server error - failed to send the response", http.StatusInternalServerError)
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 }

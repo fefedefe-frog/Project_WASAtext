@@ -18,7 +18,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		UserName string `json:"userName"`
 	}{}
 
-	//Decodifica il corpo della richiesta JSON
+	// Decodifica il corpo della richiesta JSON
 	err := json.NewDecoder(request.Body).Decode(&requestJson)
 
 	if err != nil {
@@ -28,7 +28,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 	}
 
 	context.Logger.Infof("Tentativo di login da user: %s", requestJson.UserName)
-	//Controllo che rispetti i regex richiesti e la lunghezza minima e massima
+	// Controllo che rispetti i regex richiesti e la lunghezza minima e massima
 	if err := utilitytool.NameIsValid(requestJson.UserName); err != nil {
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
@@ -48,8 +48,8 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	usrId, err := rt.db.GetUsrIdByName(requestJson.UserName)
 
-	//Controllo se l'utente esiste ed è presente nel database se non è presente lo creo e provo ad inserirlo nel database
-	//in caso di riuscita preparo la rosposta http e la invio
+	// Controllo se l'utente esiste ed è presente nel database se non è presente lo creo e provo ad inserirlo nel database
+	// in caso di riuscita preparo la rosposta http e la invio
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rt.baseLogger.WithField("db error", err).Debug("utente non presente nel database")
@@ -74,20 +74,19 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	context.Logger.WithField("usrId", usrId).Info("login effettuato")
 	rt.sendJsonResponse(writer, usrId)
-	return
 }
 
 func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 
-	//Creo la risposta http contentente il token di autorizzazione e l'usrId (in questo caso entrambi sono la stessa cosa
+	// Creo la risposta http contentente il token di autorizzazione e l'usrId (in questo caso entrambi sono la stessa cosa
 	response := map[string]string{
 		"usrId": usrId,
 	}
 
-	//Scrivo nell'header della risposta il token bearer che in questo caso corrisponde all'usrId
+	// Scrivo nell'header della risposta il token bearer che in questo caso corrisponde all'usrId
 	writer.Header().Set("Authorization", "Bearer "+usrId)
 
-	//Scrivo nella risposta l'usrId
+	// Scrivo nella risposta l'usrId
 	writer.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(writer).Encode(response)
 	if err != nil {
@@ -95,5 +94,4 @@ func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	return
 }

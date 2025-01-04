@@ -81,7 +81,7 @@ func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	//A ggiorno l'username nel database
+	// Aggiorno l'username nel database
 	if err := rt.db.SetGroupName(chatId, requestJson.NewGroupName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rt.baseLogger.WithError(err).Errorf("Group chat: <%s> not found in database", token)
@@ -94,14 +94,17 @@ func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Req
 	}
 
 	// Preparo la risposta
-	response := map[string]string{
-		"chatName": requestJson.NewGroupName,
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatName": requestJson.NewGroupName})
+	if marshalErr != nil {
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new group chat name")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
-		http.Error(writer, "Internal Server Error - ", http.StatusInternalServerError)
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 }

@@ -58,15 +58,17 @@ func (rt *_router) putChangeUserName(writer http.ResponseWriter, request *http.R
 	}
 
 	// Preparo la risposta
-	response := map[string]string{
-		"userName": requestJson.NewUserName,
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatName": requestJson.NewUserName})
+	if marshalErr != nil {
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new username")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	return
 }

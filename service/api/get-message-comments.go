@@ -38,15 +38,15 @@ func (rt *_router) getMessageComments(writer http.ResponseWriter, _ *http.Reques
 	// Preparo la risposta contenente i commenti del messaggio
 	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"comments": messageComments})
 	if marshalErr != nil {
-		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the message comments")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 		return
 	}
 
 	// Scrivo la risposta
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(responseJSON); err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}

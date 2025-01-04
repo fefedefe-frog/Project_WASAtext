@@ -31,11 +31,17 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 		rt.baseLogger.Debugf("chat{%d}:\n\t chatId -> {%d}\n\t chatName -> {%s}\n\t chatPhoto -> {%s}\n\t participants -> {%d}\n", i, chat.ChatId, chat.ChatName, chat.ChatPhoto[:10], len(chat.Participants))
 	}
 
+	// Preparo la risposta json
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chats": chats})
+	if marshalErr != nil {
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chat info")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
+	}
 
 	// Scrivo la risposta json
-	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(map[string]interface{}{"chats": chats}); err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}

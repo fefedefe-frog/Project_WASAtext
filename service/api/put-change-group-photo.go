@@ -73,13 +73,16 @@ func (rt *_router) changeGroupPhoto(writer http.ResponseWriter, request *http.Re
 	}
 
 	// Preparo la risposta
-	response := map[string]string{
-		"chatPhoto": requestJson.NewGroupPhoto,
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatPhoto": requestJson.NewGroupPhoto})
+	if marshalErr != nil {
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new group chat photo")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}

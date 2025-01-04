@@ -2,6 +2,7 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
+	"Project_WASAtext/service/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -42,7 +43,8 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 	}
 
 	// Recupero i messaggi della chat dal database
-	chatMessages, err := rt.db.GetChatMessages(chatId)
+	var chatMessages []database.Message
+	chatMessages, err = rt.db.GetChatMessages(chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Warn("The chat have no messages, shouldn't be possible")
@@ -64,8 +66,8 @@ func (rt *_router) getChatMessages(writer http.ResponseWriter, _ *http.Request, 
 
 	// Scrivo la risposta
 	writer.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(writer).Encode(responseMessagesJSON); err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseMessagesJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
