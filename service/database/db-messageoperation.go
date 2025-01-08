@@ -53,6 +53,12 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 		return nil, err
 	}
 
+	// Procedo ad aggiornare lo stato dei messaggi
+	_, err = db.c.Exec(`UPDATE chat_messages_table SET deliveryStatus= ? WHERE chatId= ?`, "received")
+	if err != nil {
+		return messages, ErrUpdateMessageStatus
+	}
+
 	return messages, err
 }
 
@@ -87,6 +93,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		isForwarded = 1
 	}
 
+	message.DeliveryStatus= "sent"
 	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?);`
 	if _, err := tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded); err != nil {
 		return err
