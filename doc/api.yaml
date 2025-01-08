@@ -1033,9 +1033,10 @@ paths:
     parameters:
       - $ref: "#/components/parameters/chat_id"
     
-    get:
+    put:
       description:  |
-        Retrieve most of the messages of the chat ordered from the newest to the oldest
+        Retrieve most of the messages of the chat ordered from the newest to the oldest,
+        and update it's status to received
       summary: Get chat messages
 
       tags: ["Chat operation"]
