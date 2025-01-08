@@ -11,18 +11,18 @@ import (
 )
 
 func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("Richiesta all'endpoint /chat/{chat_id}")
 
 	// Recupero il valore di chat_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
 		var numErr *strconv.NumError
 		if errors.As(err, &numErr) {
-			if errors.Is(numErr.Err, strconv.ErrSyntax) {
+			switch {
+			case errors.Is(numErr.Err, strconv.ErrSyntax):
 				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
-			} else if errors.Is(numErr.Err, strconv.ErrRange) {
+			case errors.Is(numErr.Err, strconv.ErrRange):
 				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
-			} else {
+			default:
 				context.Logger.WithError(err).Error("Error parsing param chat_id")
 			}
 			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
