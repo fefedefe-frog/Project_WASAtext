@@ -9,7 +9,6 @@ import (
 )
 
 func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("POST request to endpoint /chats")
 
 	requestJson := struct {
 		ChatName     string   `json:"chatName"`

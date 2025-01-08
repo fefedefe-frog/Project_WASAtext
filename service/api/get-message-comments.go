@@ -12,7 +12,6 @@ import (
 )
 
 func (rt *_router) getMessageComments(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, _ string) {
-	context.Logger.Info("GET request to endpoint /chats/{chat_id}/messages/{msg_id}/comments")
 
 	// Recupero l'id del messaggio dai paramentri dell'endpoint
 	msgId, err := strconv.Atoi(params.ByName("msg_id"))

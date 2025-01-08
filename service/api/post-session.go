@@ -12,7 +12,7 @@ import (
 )
 
 func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
-	context.Logger.Info("Richiesta dall'endpoint /session")
+	rt.baseLogger.Debugf("Received request: %s %s\n", request.Method, request.URL.Path)
 
 	var requestJson = struct {
 		UserName string `json:"userName"`

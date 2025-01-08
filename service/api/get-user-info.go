@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, _ string) {
-	context.Logger.Info("richiesta all'endpoint /users")
 
 	// Recupero l'user id dell'user interessato
 	usrId := params.ByName("usr_id")

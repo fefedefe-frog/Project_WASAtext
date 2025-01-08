@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("GET request to endpoint /chats")
 
 	// Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetUserChats(token)
@@ -26,11 +25,6 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 		return
 	}
 
-	rt.baseLogger.Debugf("user ha {%d} chats", len(chats))
-	for i, chat := range chats {
-		rt.baseLogger.Debugf("chat{%d}:\n\t chatId -> {%d}\n\t chatName -> {%s}\n\t chatPhoto -> {%s}\n\t participants -> {%d}\n", i, chat.ChatId, chat.ChatName, chat.ChatPhoto[:10], len(chat.Participants))
-	}
-
 	// Preparo la risposta json
 	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chats": chats})
 	if marshalErr != nil {
@@ -40,6 +34,7 @@ func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ h
 	}
 
 	// Scrivo la risposta json
+	writer.Header().Set("Content-Type", "application/json")
 	if _, err := writer.Write(responseJSON); err != nil {
 		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)

@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("POST request to endpoint /chats/{chat_id}/messages/{msg_id}")
 
 	msgId, err := strconv.Atoi(params.ByName("msg_id"))
 	if err != nil {

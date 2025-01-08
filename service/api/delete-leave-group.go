@@ -10,7 +10,6 @@ import (
 )
 
 func (rt *_router) leaveGroup(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Infof("DELETE request to endpoint /chat/{chat_id}/users")
 
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))

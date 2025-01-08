@@ -10,7 +10,6 @@ import (
 
 // TODO controllo del contenuto che si vuole inserire come commento, sono accettate solo emoji
 func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("POST request to endpoint /chats/{chat_id}/messages/{msg_id}/comments")
 
 	// Recupero l'id della chat del messaggio dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))

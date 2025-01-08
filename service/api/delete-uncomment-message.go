@@ -10,7 +10,6 @@ import (
 )
 
 func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("DELETE request to endpoint /chats/{chat_id}/messages/{msg_id}/comments/{comment_id}")
 
 	// Recupero l'id della chat e del commento dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))

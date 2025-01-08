@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("DELETE request to endpoint /chats/{chat_id}/messages/{msg_id}")
 
 	// Recupero l'id della chat e del messaggio dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))

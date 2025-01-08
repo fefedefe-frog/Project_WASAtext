@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) getUsers(w http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, _ string) {
-	context.Logger.Info("Richiesta all'endpoint /users")
 
 	users, err := rt.db.GetUsers()
 	if err != nil {

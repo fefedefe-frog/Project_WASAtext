@@ -11,7 +11,6 @@ import (
 )
 
 func (rt *_router) putChangeUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("PUT request to endpoint /users/{usr_id}")
 
 	var requestJson = struct {
 		NewUserName string `json:"newUserName"`
