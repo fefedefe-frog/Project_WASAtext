@@ -17,10 +17,10 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.putChangeUserPhoto))) 	// fatto
 
 	// Chat operations
-	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                     // fatto
-	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getUserChats)))                      // fatto
-	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))              // fatto
-	rt.router.GET("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getChatMessages))) // fatto
+	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                            // fatto
+	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getUserChats)))                             // fatto
+	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))                     // fatto
+	rt.router.PUT("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.putRetriveChatMessages))) // fatto
 
 	// Group operations
 	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveGroup)))       // fatto
