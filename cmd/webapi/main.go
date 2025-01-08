@@ -150,6 +150,8 @@ func run() error {
 			err = apiserver.Close()
 		}
 
+		// TODO copia del db da /tmp in demo, sottoforma di .bak
+		
 		// Log the status of this shutdown.
 		switch {
 		case sig == syscall.SIGSTOP:
