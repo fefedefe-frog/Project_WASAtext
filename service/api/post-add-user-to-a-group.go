@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )
 
 func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-	context.Logger.Info("POST request to endpoint /chat/{chat_id}/users")
 
 	var requestJson = struct {
 		UsrIdToAdd string `json:"usrIdToAdd"`
@@ -25,11 +25,11 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 	}
 	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("usrId", token).Warnf("tried to change group photo of group <%d> which he isn't a member of", chatId)
-			http.Error(writer, "Forbidden - can't change the photo of another group", http.StatusForbidden)
+			context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to modify group members of group which he isn't a member of")
+			http.Error(writer, "Forbidden - can't add users to a group where you aren't part off", http.StatusForbidden)
 			return
 		}
-		context.Logger.WithError(err).Errorf("Error while checking if the user <%s> is member of the group <%d>", token, chatId)
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
@@ -42,6 +42,19 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 	}
 
 	context.Logger.Infof("user <%s> request to add user <%s> to the group", token, requestJson.UsrIdToAdd)
+
+	// Controllo che l'utente da aggiungere non faccia già parte del gruppo
+	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, requestJson.UsrIdToAdd); !isParticipant {
+		if errors.Is(err, sql.ErrNoRows) {
+			context.Logger.WithFields(logrus.Fields{"usrId": requestJson.UsrIdToAdd, "groupId": chatId}).Warn("The user you are trying to add is already part of the group")
+			http.Error(writer, "Forbidden - can't add users to a group that he is already a member of", http.StatusForbidden)
+			return
+		}
+		context.Logger.WithFields(logrus.Fields{"usrId": requestJson.UsrIdToAdd, "groupId": chatId}).Error("Error while checking if the user is a member of the group")
+		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+
 	// Aggiungo l'utente alla chat
 	err = rt.db.InsertUserInChat(requestJson.UsrIdToAdd, chatId)
 	if err != nil {
