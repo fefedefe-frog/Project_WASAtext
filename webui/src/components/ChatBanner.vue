@@ -16,7 +16,7 @@ export default {
   <div class="chat-banner" @onclick="loadChat">
     <!-- Foto Profilo a destra -->
     <div class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+chatPhoto" alt="User Profile" />
+      <img :src="'data:image/png;base64,'+chatPhoto" alt="Chat Image" />
     </div>
 
     <!-- Contenuto del banner -->
@@ -34,13 +34,16 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 5px;
-  background-color: #f5f5f5;
+  margin: 5px;
+  background-color: lightgray;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  height: 70px;
+  width: 200px;
 }
 
 .chat-banner:hover {
-  background-color: #e5e5e5;
+  background-color: darkgray;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
@@ -49,13 +52,13 @@ export default {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  user-select: none;
 }
 
 .chat-immage-container {
   max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
   max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
   object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
-  border: 5px solid #ffcd39;
 }
 
 .text-container {
@@ -65,7 +68,7 @@ export default {
   flex-direction: column;
   justify-content: center;
   margin-left: 10px;
-  border: #0a53be 1px solid;
+  user-select: none;
 }
 
 .chat-name {
