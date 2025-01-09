@@ -10,7 +10,7 @@ export default {
     };
   },
   methods: {
-    async login() {
+    async doLogin() {
       // Imposta lo stato di caricamento
       this.loading = true;
       this.error = null;
@@ -24,6 +24,7 @@ export default {
         // Estraggo il token dall'header
         const token = response.headers["authorization"];
         const usrId = response.data.usrId;
+        this.usrId = usrId;
 
         if (token && usrId) {
 
@@ -31,8 +32,6 @@ export default {
           localStorage.setItem('authToken', token);
           localStorage.setItem('usrId', usrId);
 
-          this.usrId = usrId;
-          this.welcomeMsg = true;
 
           // Ritarda la redirezione per consentire il caricamento
           setTimeout(() => {
@@ -43,11 +42,17 @@ export default {
         }
       } catch (error) {
         // Gestisci errori di rete o di altro tipo
-        this.errormsg = error.response ? error.response.data.message : 'Errore durante la richiesta';
-      } finally {
-        this.loading = false; // Imposta lo stato di caricamento a false
+        this.errormsg = error.toString();
       }
     },
+  },
+  created(){
+    localStorage.setItem('authToken', "");
+    localStorage.setItem('usrId', "");
+  },
+  mounted() {
+    localStorage.setItem('authToken', "");
+    localStorage.setItem('usrId', "");
   }
 };
 </script>
@@ -58,7 +63,7 @@ export default {
   </div>
   <div class="login-container">
     <!-- Form di login -->
-    <form @submit.prevent="login" class="login-form">
+    <form @submit.prevent="doLogin" class="login-form">
       <label for="username">Nome utente:</label>
       <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
       <button type="submit" :disabled="!username || loading" :class="{ disabled: !username || loading }">Login</button>
@@ -68,13 +73,7 @@ export default {
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
 
     <!-- Spinner di caricamento -->
-    <LoadingSpinner v-if="loading" />
-
-    <!-- Messaggio di benvenuto -->
-    <div v-if="welcomeMsg" class="welcome-message">
-      <p>Benvenuto {{ usrId }}! Caricamento chat in corso...</p>
-      <LoadingSpinner /> <!-- Spinner durante il caricamento -->
-    </div>
+    <LoadingSpinner v-if="loading" loading="{{ loading }}" :loadingText="'Benvenuto/a '+ username +'! Caricamento chat in corso'"/><LoadingSpinner />
   </div>
 </template>
 
