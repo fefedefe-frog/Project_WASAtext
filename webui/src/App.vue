@@ -8,7 +8,7 @@ export default {
       isAuthenticated: false, //Stato che verifica se l'utente è autenticato
       }
   },
-  created(){
+  mounted(){
     const token = localStorage.getItem('authToken');
     if (token){
       this.isAuthenticated = true;
@@ -33,28 +33,34 @@ export default {
 					<ul class="nav flex-column">
 						<li class="nav-item">
 							<RouterLink to="/chats" class="nav-link">
-								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#layout"/></svg>
+								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#message-square"/></svg>
                 Chats
 							</RouterLink>
 						</li>
 						<li class="nav-item">
 							<RouterLink to="/users" class="nav-link">
-								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#key"/></svg>
+								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#users"/></svg>
 								Users
 							</RouterLink>
 						</li>
 					</ul>
 
 					<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
-						<span>Settings</span>
+						<span>Preferences</span>
 					</h6>
 					<ul class="nav flex-column">
 						<li class="nav-item">
 							<RouterLink to="/profile" class="nav-link">
-								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#file-text"/></svg>
+								<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user"/></svg>
 								Your Profile
 							</RouterLink>
 						</li>
+            <li class="nav-item">
+              <RouterLink to="/session" class="nav-link">
+                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out"/></svg>
+                Logout
+              </RouterLink>
+            </li>
 					</ul>
 				</div>
 			</nav>
