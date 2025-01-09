@@ -18,7 +18,7 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 
 	return func(writer http.ResponseWriter, request *http.Request, parameters httprouter.Params, context reqcontext.RequestContext) {
 
-		rt.baseLogger.Debugf("Received request: %s %s\n", request.Method, request.URL.Path)
+		context.Logger.Debugf("Received request: %s %s\n", request.Method, request.URL.Path)
 		// Estraggo l'header "Authentication" dalla richiesta
 		authHeader := request.Header.Get("Authorization")
 
