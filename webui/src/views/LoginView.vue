@@ -58,22 +58,24 @@ export default {
 </script>
 
 <template>
-  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Login</h1>
-  </div>
-  <div class="login-container">
-    <!-- Form di login -->
-    <form @submit.prevent="doLogin" class="login-form">
-      <label for="username">Nome utente:</label>
-      <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
-      <button type="submit" :disabled="!username || loading" :class="{ disabled: !username || loading }">Login</button>
-    </form>
+  <div>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <h1 class="h2">Login</h1>
+    </div>
+    <div class="login-container">
+      <!-- Form di login -->
+      <form @submit.prevent="doLogin" class="login-form">
+        <label for="username">Nome utente:</label>
+        <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
+        <button type="submit" :disabled="!username || loading" :class="{ disabled: !username || loading }">Login</button>
+      </form>
 
-    <!-- Mostra messaggi di errore -->
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+      <!-- Mostra messaggi di errore -->
+      <ErrorMsg v-if="errormsg" :msg="errormsg" />
 
-    <!-- Spinner di caricamento -->
-    <LoadingSpinner v-if="loading" loading="{{ loading }}" :loadingText="'Benvenuto/a '+ username +'! Caricamento chat in corso'"/><LoadingSpinner />
+      <!-- Spinner di caricamento -->
+      <LoadingSpinner v-if="loading" loading="{{ loading }}" :loadingText="'Benvenuto/a '+ username +'! Caricamento chat in corso'"/><LoadingSpinner />
+    </div>
   </div>
 </template>
 

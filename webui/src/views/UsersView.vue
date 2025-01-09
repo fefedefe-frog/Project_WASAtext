@@ -70,7 +70,7 @@ export default {
 
 </template>
 
-<style>
+<style scoped>
 #users_list_container{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
