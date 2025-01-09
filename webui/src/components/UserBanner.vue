@@ -18,7 +18,7 @@ export default {
   </div>
 </template>
 
-<style>
+<style scoped>
 
 .user-banner {
   display: flex;

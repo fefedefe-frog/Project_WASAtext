@@ -4,7 +4,7 @@ export default {
   methods: {
     loadChat(){
       console.log("loading chat"+ this.chatId)
-      this.$router.push('/chats/' + this.chatId);
+      this.$router.push('/chats/'+ this.chatId);
       let div = document.getElementById("chat-banner");
       div.style.backgroundColor= d5d5d5;
     }
@@ -13,7 +13,7 @@ export default {
 </script>
 
 <template>
-  <div class="chat-banner" @onclick="loadChat">
+  <div class="chat-banner" @click="loadChat">
     <!-- Foto Profilo a destra -->
     <div class="chat-immage-container">
       <img :src="'data:image/png;base64,'+chatPhoto" alt="Chat Image" />

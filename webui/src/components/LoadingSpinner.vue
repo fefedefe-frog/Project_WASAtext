@@ -16,7 +16,7 @@ export default {
 	<div v-if="!loading"><slot /></div>
 </template>
 
-<style>
+<style scoped>
 .centered {
   text-align: center; /* Centra il testo */
 }
