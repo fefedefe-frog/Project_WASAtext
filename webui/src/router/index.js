@@ -19,7 +19,7 @@ const router = createRouter({
 		// schermata di una chat, contentente anche i messagi
 		{path: '/chats/:chat_id', component: ChatView, meta: {requiresAuth: true}},
 		// route per catturare tutti gli url non validi, riporterà alla schermata di login
-		{ path: '/:pathMatch(.*)*', redirect: '/session' }
+		{path: '/:pathMatch(.*)*', redirect: '/session' }
 	]
 })
 
