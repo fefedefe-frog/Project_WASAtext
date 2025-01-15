@@ -1,6 +1,6 @@
 <script>
-
 export default {
+  components: {UserBanner},
   data: function () {
     return {
       token: localStorage.getItem('authToken'),
@@ -16,7 +16,6 @@ export default {
 
       try {
         let response = await this.$axios.get("/users", {headers: {Authorization: `${this.token}`}});
-        console.log(response.data);
         this.users = []
         if (response.data){
           response.data["users"].forEach(user => {
@@ -31,11 +30,9 @@ export default {
     },
     showOverlay() {
       this.isOverlayVisible = true;
-      console.log('Overlay mostrato:', this.isOverlayVisible);
     },
     hideOverlay() {
       this.isOverlayVisible = false;
-      console.log('Overlay nascosto:', this.isOverlayVisible);
     },
 
   },
@@ -46,27 +43,31 @@ export default {
 </script>
 
 <template>
-  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Users</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-      <div class="btn-group me-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
-          Refresh
-        </button>
+  <div>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <h1 class="h2">Users</h1>
+      <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-          <button type="button" class="btn btn-sm btn-outline-primary" @click="showOverlay">
-            New
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
+            Refresh
           </button>
+          <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" @click="showOverlay">
+              New Chat
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="container">
-    <div id="users_list_container">
-      <LoadingSpinner v-if="loading" loading="{{ loading }}" loadingText="Caricamento chat"/><LoadingSpinner/>
+    <div class="container">
+      <div id="users_list_container">
+        <UserBanner v-for="user in users" :user="user"></UserBanner>
+
+        <LoadingSpinner v-if="loading" loading="{{ loading }}" loadingText="Caricamento users"/><LoadingSpinner/>
+      </div>
     </div>
+    <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
   </div>
-  <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
 
 </template>
 
