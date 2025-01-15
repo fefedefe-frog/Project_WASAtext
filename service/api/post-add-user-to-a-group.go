@@ -2,6 +2,7 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
+	"Project_WASAtext/service/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -64,9 +65,9 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 	}
 	rt.baseLogger.Debug("Successfully added user to group")
 
-	// Preparo la risposta contentente la lista aggiornata di user id
-	var chatParticipants []string
-	chatParticipants, err = rt.db.GetChatPartecipants(chatId)
+	// Tento di recuperare le info degli utenti
+	var participants []database.User
+	participants, err= rt.db.GetChatParticipantsInfo(chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("chatId", chatId).Error("chat not found in the chat_participants_table")
@@ -78,10 +79,12 @@ func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"users": chatParticipants})
+	// Preparo la risposta
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"participants": participants})
 	if marshalErr != nil {
-		rt.baseLogger.WithError(marshalErr).Errorf("Failed to marshal the chat messages")
+		context.Logger.WithError(err).Errorf("Failed to marshal the user")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
