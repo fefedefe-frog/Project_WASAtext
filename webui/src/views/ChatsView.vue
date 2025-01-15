@@ -50,7 +50,7 @@ export default {
 
     <!-- Div che contiene la lista di chat -->
     <div id="chat_list_container">
-      <chatBanner v-for="chat in chats" :chatId="chat['chatId']" :chatName="chat['chatName']" :chatPhoto="chat['chatPhoto']" lastMessage="franco"></chatBanner>
+      <chatBanner v-for="chat in chats" :chat="chat" lastMessage="franco"></chatBanner>
     </div>
 
 
