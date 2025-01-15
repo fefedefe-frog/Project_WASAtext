@@ -44,7 +44,7 @@ func (rt *_router) putRetriveChatMessages(writer http.ResponseWriter, _ *http.Re
 
 	// Recupero i messaggi della chat dal database
 	var chatMessages []database.Message
-	chatMessages, err = rt.db.GetChatMessages(chatId)
+	chatMessages, err = rt.db.GetChatMessages(chatId, token)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
