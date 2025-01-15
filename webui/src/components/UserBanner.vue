@@ -1,19 +1,36 @@
 <script>
 export default {
-  props: ["userName", "userPhoto", "usrId"],
+  props: {
+    user: {
+      type: Object,
+      required: true,
+    }
+  },
+  data: function() {
+    return {
+      usrId: '',
+      userName: '',
+      userPhoto: '',
+    }
+  },
+  mounted() {
+    this.usrId= this.user['usrId'];
+    this.userName= this.user['userName'];
+    this.userPhoto= this.user['userPhoto'];
+  }
 };
 </script>
 
 <template>
   <div class="user-banner">
     <!-- Foto Profilo a destra -->
-    <div v-if="userPhoto" class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+userPhoto" alt="Profile Image" />
+    <div v-if="this.userPhoto" class="chat-immage-container">
+      <img :src="'data:image/png;base64,'+this.userPhoto" alt="Profile Image" />
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <p>{{ userName }}</p>
+      <p>{{ this.userName }}</p>
     </div>
   </div>
 </template>
