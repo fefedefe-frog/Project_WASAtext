@@ -1,12 +1,18 @@
 <script>
 export default {
-  props: ["chatName", "chatPhoto", "lastMessage", "chatId"],
+  props: {
+    chat: {
+      type: Object,
+      required: true
+    },
+    lastMessage: {
+      type: String,
+      required: true
+    }
+  },
   methods: {
     loadChat(){
-      console.log("loading chat"+ this.chatId)
-      this.$router.push('/chats/'+ this.chatId);
-      let div = document.getElementById("chat-banner");
-      div.style.backgroundColor= d5d5d5;
+      this.$router.push('/chats/'+ this.chat['chatId']);
     }
   },
 };
@@ -16,12 +22,12 @@ export default {
   <div class="chat-banner" @click="loadChat">
     <!-- Foto Profilo a destra -->
     <div class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+chatPhoto" alt="Chat Image" />
+      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image" />
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <div class="chat-name">{{ chatName }}</div>
+      <div class="chat-name">{{ chat['chatName'] }}</div>
       <div class="last-message">{{ lastMessage }}</div>
     </div>
   </div>
