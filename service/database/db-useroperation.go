@@ -136,6 +136,17 @@ func (db *appdbimpl) GetUserInfo(usrId string) (User, error) {
 	return user, err
 }
 
+func (db *appdbimpl) GetUserNameById(usrId string) (string, error) {
+	var username string
+
+	err := db.c.QueryRow(`SELECT userName FROM users_table WHERE usrId=?;`, usrId).Scan(&username)
+	if err != nil {
+		return "", err
+	}
+
+	return username, err
+}
+
 func (db *appdbimpl) GetUsers() ([]User, error) {
 	var users []User
 
