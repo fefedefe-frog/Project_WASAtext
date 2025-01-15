@@ -11,6 +11,8 @@ export default {
       deliveryStatus: 'minus',
       date: '',
       messageContentType: '',
+      token: '',
+      username: '',
     }
   },
   methods: {
@@ -41,39 +43,57 @@ export default {
       this.date= formattedDate +" "+ formattedTime;
 
       this.messageContentType = this.message['contentType'];
-      console.log(this.messageContentType);
+    }
+  },
+  computed: {
+    dynamicMarginSide(){
+      return{
+        'margin-left': this.token === this.message.senderId ? 'auto' : '0',
+      }
     }
   },
   created () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
     this.prepMessage()
   },
   mounted () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
     this.prepMessage()
   }
 };
 </script>
 
 <template>
-  <div class="message-container">
-    <div class="message-info">
-      <div class="sender-id">{{ message['senderId'] }}</div>
-      <div class="message-status">
-        <span class="timestamp">{{ this.date }}</span>
-        <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus"/></svg>
+  <div class="message-div">
+    <div class="message-container" :style="dynamicMarginSide">
+      <div class="message-info">
+        <div class="sender-id">{{ message['senderId'] }}</div>
+        <div class="message-status">
+          <span class="timestamp">{{ this.date }}</span>
+          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus"/></svg>
+        </div>
       </div>
-    </div>
-    <div class="message-content">
-      <div v-if="messageContentType === 'text' " class="message-content-text-container">
-        <p>{{ message["content"] }}</p>
-      </div>
-      <div class="message-content-image-container" v-if="messageContentType === 'photo'">
-        <img :src="'data:image/png;base64,'+message['content']" alt="Immage" />
+      <div class="message-content">
+        <div v-if="messageContentType === 'text' " class="message-content-text-container">
+          <p>{{ message["content"] }}</p>
+        </div>
+        <div class="message-content-image-container" v-if="messageContentType === 'photo'">
+          <img :src="'data:image/png;base64,'+message['content']" alt="Immage" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.message-div {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .message-container {
   display: flex;
   flex-direction: column;
@@ -144,6 +164,7 @@ export default {
   display: block;
   align-items: center;
   width: 100%;
+  margin: 2px;
 }
 
 /* Stile in caso di testo */
@@ -153,7 +174,6 @@ export default {
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
   padding: 2px;
-  margin: 1px;
 }
 
 .message-content-text-container p {
