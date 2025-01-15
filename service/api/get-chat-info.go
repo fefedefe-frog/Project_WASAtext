@@ -53,6 +53,31 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 		return
 	}
 
+	// Controllo se la chat è un gruppo o meno, se non è un gruppo procedo
+	// a recuperare le informazioni dell'altro utente partecipante alla chat
+	if !chat.IsGroup{
+
+		otherUsrId := chat.Participants[0]
+		if otherUsrId == token {
+			otherUsrId= chat.Participants[1]
+		}
+
+		user, err := rt.db.GetUserInfo(otherUsrId)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				context.Logger.WithError(err).Warn("The other participant of the chat doesn't exist, in the db")
+				http.Error(writer, "Not found - other participant not exist", http.StatusNotFound)
+				return
+			}
+			context.Logger.WithError(err).Warn("Error getting other participant info")
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		chat.ChatName= user.UserName
+		chat.ChatPhoto= user.UserPhoto
+	}
+
 	// Preparo la risposta
 	responseChatJSON, marshalErr := json.Marshal(chat)
 	if marshalErr != nil {
