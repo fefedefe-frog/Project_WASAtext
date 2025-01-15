@@ -91,6 +91,8 @@ type AppDatabase interface {
 	SetUserPhoto(usrId string, newPhoto string) error
 	// GetUserInfo User, search in the database a user with the usrId passed in the fuction, and retrive it info
 	GetUserInfo(usrId string) (User, error)
+	// GetUserNameById string, retrive the name of an user by its id
+	GetUserNameById(usrId string) (string, error)
 	// GetUsers User, get an array of all the users present in the db
 	GetUsers() ([]User, error)
 	// UsrIdExist bool, check if a user in present in the db by its user id
@@ -112,6 +114,8 @@ type AppDatabase interface {
 	InsertUserInChat(usrId string, chatId int) error
 	// GetChatPartecipants string, retrive all the user id of all the users in a chat
 	GetChatPartecipants(chatId int) ([]string, error)
+	// GetChatParticipantsInfo []User, retrive all info of the participants of a chat
+	GetChatParticipantsInfo(chatId int) ([]User, error)
 	// CheckIfUserIsParticipant bool, check if exist the relation between the chatId and usrId given in input
 	CheckIfUserIsParticipant(chatId int, userId string) (bool, error)
 	// SetGroupName error, update the name of a group chat
@@ -124,13 +128,15 @@ type AppDatabase interface {
 	// Message operations
 
 	// GetChatMessages Message, retrive all the messages of a chat by passing the chat id
-	GetChatMessages(chatId int) ([]Message, error)
+	GetChatMessages(chatId int, usrId string) ([]Message, error)
 	// InsertMessage error, insert a message in the database
 	InsertMessage(message Message, chatId int) error
 	// RemoveMessage error, remove a message from the database
 	RemoveMessage(msgId int, chatId int) error
 	// ForwardMessage error, forward an existing message with the msgId gived in input to another chat
 	ForwardMessage(forwarderId string, msgId int, chatIdToForwatd int) error
+	// UpdateMessageDeliveryStatusToRead error, update the delivery status of a message (And all its previus) to read, for the specified user
+	UpdateMessageDeliveryStatusToRead(msgId int, chatId int, usrId string) error
 	// GetMessageComments []Comment, get all the comment of a message by its msgId
 	GetMessageComments(msgId int) ([]Comment, error)
 	// CommentMessage error, comment a message
@@ -164,7 +170,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='users_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE users_table(
-    			usrId TEXT PRIMARY KEY, 
+    			usrId TEXT PRIMARY KEY NOT NULL, 
     			userName TEXT NOT NULL, 
     			userPhoto BLOB NOT NULL DEFAULT ''
         );`
@@ -179,7 +185,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='chats_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE chats_table(
-    			chatId INTEGER PRIMARY KEY AUTOINCREMENT,
+    			chatId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     			isGroup INTEGER NOT NULL CHECK (isGroup IN (0, 1)), 
     			chatName TEXT, 
     			chatPhoto BLOB
@@ -212,7 +218,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='chat_messages_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE chat_messages_table(
-    			msgId INTEGER PRIMARY KEY AUTOINCREMENT, 
+    			msgId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
     			senderId TEXT, 
     			chatId INTEGER, 
     			contentType TEXT NOT NULL CHECK (contentType IN ('text', 'photo')), 
@@ -234,7 +240,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='message_comments_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE message_comments_table(
-    			commentId INTEGER PRIMARY KEY AUTOINCREMENT,
+    			commentId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     			msgId INTEGER, 
     			commenterId TEXT, 
     			content TEXT NOT NULL,
@@ -248,9 +254,28 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
+	// Check for message_status_table
+	tableName = ""
+	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='message_status_table';`).Scan(&tableName)
+	if errors.Is(err, sql.ErrNoRows) {
+		sqlStmt := `CREATE TABLE message_status_table(
+    			msgId INTEGER,
+    			receiverId TEXT,
+    			status TEXT NOT NULL CHECK (status IN ('not_received', 'received', 'read')),
+    			PRIMARY KEY (msgId, receiverId),
+    			FOREIGN KEY (msgId) REFERENCES chat_messages_table(msgId) ON DELETE CASCADE,
+    			FOREIGN KEY (receiverId) REFERENCES users_table(usrId) ON DELETE CASCADE,
+    			CONSTRAINT unique_status UNIQUE (msgId, receiverId)
+        );`
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			return nil, fmt.Errorf("error creating database structure: %w", err)
+		}
+	}
+
 	// Trigger for auto deleting a chat with no messages
 	_, err= db.Exec(`CREATE TRIGGER IF NOT EXISTS delete_empty_chats
-						AFTER DELETE ON chat_messages_table
+						AFTER UPDATE ON chat_messages_table
 						BEGIN
 							DELETE FROM chats_table
 							WHERE chatId = OLD.chatId
@@ -259,6 +284,44 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing db trigger: %w", err)
 	}
+
+	// Trigger for auto updating a message delivery status
+	_, err= db.Exec(`CREATE TRIGGER IF NOT EXISTS update_message_status
+						AFTER UPDATE ON message_status_table
+						BEGIN
+							UPDATE chat_messages_table
+						    SET deliveryStatus = 'read'
+						    WHERE msgId = NEW.msgId
+						    AND (
+						        SELECT COUNT(*)
+						        FROM message_status_table
+						        WHERE msgId = NEW.msgId AND status != 'read'
+						    ) = 0;
+							
+							UPDATE chat_messages_table
+						    SET deliveryStatus = 'received'
+						    WHERE msgId = NEW.msgId
+						    AND (
+						        SELECT COUNT(*)
+						        FROM message_status_table
+						        WHERE msgId = NEW.msgId AND status != 'received'
+						    ) = 0;
+						END;`)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing db trigger: %w", err)
+	}
+
+	// Index initialization for faster db interaction used in some function
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_chat_messages_chatId_timestamp ON chat_messages_table(chatId, timestamp);
+							CREATE INDEX IF NOT EXISTS idx_chat_messages_msgId ON chat_messages_table(msgId);
+							CREATE INDEX IF NOT EXISTS dx_message_status_receiverId ON message_status_table(receiverId);
+							CREATE INDEX IF NOT EXISTS idx_message_status_msgId ON message_status_table(msgId);
+							CREATE INDEX IF NOT EXISTS idx_message_status_status_receiverId_chatId ON message_status_table(status, receiverId, msgId);`)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing db index: %w", err)
+	}
+
+
 
 	return &appdbimpl{
 		c: db,
