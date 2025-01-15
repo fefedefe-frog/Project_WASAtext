@@ -23,7 +23,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("rows.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("rows.Close()")
 			}
 		}
 	}()
@@ -74,7 +74,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("chatRows.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("chatRows.Close()")
 			}
 		}
 	}()
@@ -197,7 +197,7 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("stmt.Close()")
 			}
 		}
 	}()
@@ -326,7 +326,7 @@ func (db *appdbimpl) InsertUserInChat(usrId string, chatId int) error {
 
 func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 
-	// Recupero gli id delle chat dalla chat_participants_table
+	// Recupero gli id degli user dalla chat_participants_table
 	rows, err := db.c.Query(`SELECT usrId FROM chat_participants_table WHERE chatId = ?;`, chatId)
 	if err != nil {
 		return nil, err
@@ -336,7 +336,7 @@ func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("rows.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("rows.Close()")
 			}
 		}
 	}()
@@ -357,6 +357,48 @@ func (db *appdbimpl) GetChatPartecipants(chatId int) ([]string, error) {
 	}
 
 	return partecipants, nil
+}
+
+func (db *appdbimpl) GetChatParticipantsInfo(chatId int) ([]User, error) {
+
+	// Uso di un join su una sotto tabella di chat_participants_table per ottenere tutti i dati sui partecipanti
+	query := `SELECT users.*
+	FROM  users_table AS users
+	JOIN (
+		SELECT usrId
+		FROM chat_participants_table
+		WHERE chatId = ?
+	) AS participants
+	ON users.usrId = participants.usrId;`
+
+	rows, err := db.c.Query(query, chatId)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				logrus.WithError(closeErr).Error("rows.Close()")
+			}
+		}
+	}()
+
+	var participants []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.UsrId, &user.UserName, &user.UserPhoto)
+		if err != nil {
+			return nil, err
+		}
+		participants = append(participants, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return participants, nil
 }
 
 func (db *appdbimpl) CheckIfUserIsParticipant(chatId int, usrId string) (bool, error) {
@@ -382,7 +424,7 @@ func (db *appdbimpl) SetGroupName(chatId int, newName string) error {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("stmt.Close()")
 			}
 		}
 	}()
@@ -424,7 +466,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("stmt.Close()")
 			}
 		}
 	}()
