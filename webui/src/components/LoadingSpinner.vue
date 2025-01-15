@@ -22,16 +22,16 @@ export default {
 }
 
 .loading-spinner {
-  position: fixed; /* Rimane centrato anche durante lo scroll */
-  top: 50%; /* Posiziona al centro verticalmente */
-  left: 50%; /* Posiziona al centro orizzontalmente */
-  transform: translate(-50%, -50%); /* Compensa il 50% della larghezza e altezza per centrare perfettamente */
-  background-color: #f0f0f0; /* Colore di sfondo (opzionale) */
-  padding: 20px; /* Spazio interno */
-  border-radius: 10px; /* Arrotonda i bordi */
-  text-align: center; /* Centra il testo */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombra per stile */
-  font-size: 18px; /* Dimensione del testo */
-  color: #333; /* Colore del testo */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #f0f0f0;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  font-size: 18px;
+  color: #333;
 }
 </style>
