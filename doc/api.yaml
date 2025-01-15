@@ -926,7 +926,68 @@ paths:
   /chats/{chat_id}/users:                                         #Endpoint degli utenti di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
-    
+
+    get:
+      description:  |
+        Retrive the participants of a chat
+      summary: Get participants list
+
+      tags: ["Chat operation"]
+      operationId: getChatParticipants
+
+      security:
+        - BearerAuth: []
+
+      responses:
+        "201":
+          description: |
+            The response have the list of participants of the chat
+
+          content:
+            application/json:
+              schema:
+                description: |
+                  List with the participants of the chat
+
+                type: object
+                properties:
+                  users:
+                    description: Users of the chat
+
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+
+                    minItems: 1
+                    maxItems: 32
+
+              example:
+                users:
+                  - usrId: "ofnarc754"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usrId: "artmat34"
+                    userName: "marta"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+
+        "204":
+          description: No content, user is already in the chat
+
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+        "500":
+          $ref: "#/components/responses/InternalError"
+
     post:
       description:  |
         Add an user to the chat, by inserting the usr_id
@@ -949,12 +1010,28 @@ paths:
 
               type: object
               properties:
-                usrIdToAdd:
-                  $ref: "#/components/schemas/User/properties/usrId"
+                users:
+                  description: Users of the chat
+
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/User"
+
+                  minItems: 1
+                  maxItems: 32
+
+              example:
+                users:
+                  - usrId: "ofnarc754"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usrId: "artmat34"
+                    userName: "marta"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
       
       responses:
         "201":
-          description: User added successfully, return the list of partecipant refreshed
+          description: User added successfully, return the list of participant refreshed
           content:
             application/json:
               schema:
@@ -1191,7 +1268,37 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalError"
-    
+
+    put:
+      description:  |
+        Update the delivery status of a message for the user that is reading the message
+      summary: Update message status
+
+      tags: ["Message operation"]
+      operationId: setMessageReadStatus
+
+      security:
+        - BearerAuth: []
+
+      responses:
+        "204":
+          description: Message status updated to read correctly
+
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "403":
+          $ref: "#/components/responses/OperationNotAllowed"
+
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+        "500":
+          $ref: "#/components/responses/InternalError"
+
     post:
       description:  |
         Forward a message to the chat that its id is passed in the query in the value "forward_to_chat"
@@ -1204,6 +1311,7 @@ paths:
         - BearerAuth: []
 
       requestBody:
+        required: true
         content:
           application/json:
             schema:
