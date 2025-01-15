@@ -1,8 +1,9 @@
 <script>
 import ChatMessage from "../components/ChatMessage.vue";
+import ChatInfo from "../components/ChatInfo.vue";
 
 export default {
-  components: {ChatMessage},
+  components: {ChatInfo, ChatMessage},
   data: function () {
     return {
       token: '',
@@ -10,23 +11,27 @@ export default {
       loading: false,
       loadingMessages: false,
       isChatInfoVisible: false,
-      chatId: -1,
       chatInfo: {
+        chatId: -1,
         chatName: '',
         chatPhoto: '',
         isGroup: false,
-        participants: [],
+        participants: [], // can be a list of username, or usrId if the request for their name doesn't go as expected
       },
+      participantsInfo: [],
+      participantsName: [],
       messages: [],
+      textContent: '',
     }
   },
   methods: {
-    async refreshChatInfo() {
+    async getChatInfo() {
       this.loading= true
       this.errormsg= null
+      this.messages=[]
 
       try {
-        let response = await this.$axios.get('/chats/'+ this.chatId, {headers: {Authorization: `${this.token}`}});
+        let response = await this.$axios.get(`/chats/${this.chatInfo['chatId']}`, {headers: {Authorization: `${this.token}`}});
         if (response.data) {
           this.chatInfo['chatName']= response.data.chatName
           this.chatInfo['chatPhoto']= response.data.chatPhoto
@@ -44,10 +49,10 @@ export default {
       this.errormsg = null
 
       try {
-        let response= await this.$axios.put('/chats/'+ this.chatId+ '/messages', {}, {headers: {Authorization: this.token}});
+        let response= await this.$axios.put(`/chats/${this.chatInfo['chatId']}/messages`, {}, {headers: {Authorization: this.token}});
         if (response.data) {
           this.messages= []
-          response.data['messages'].forEach((message) => {
+          response.data['messages'].reverse().forEach(message => {
             this.messages.push(message)
           })
         }
@@ -57,49 +62,66 @@ export default {
         this.loadingMessages = false
       }
     },
+    async getParticipantsInfo() {
+      this.participantsInfo = []
+      this.errormsg = null
+
+      try{
+        let response= await this.$axios.get(`/chats/${this.chatInfo['chatId']}/users`, {headers: {Authorization: `${this.token}`}});
+        if (response.data) {
+          response.data['participants'].forEach(participant => {
+            this.participantsInfo.push(participant)
+            this.participantsName.push(participant['userName'])
+          })
+        }
+      }catch(e) {
+        this.errormsg = e.toString();
+      }
+    },
     async leaveChat() {
       console.log('leave chat')
     },
-    showChatInfo() {
-      console.log('showChatInfo')
-      this.isChatInfoVisible = true
+    toggleChatInfo() {
+      this.isChatInfoVisible = !this.isChatInfoVisible
     },
-    hideChatInfo() {
-      console.log('hideChatInfo')
-      this.isChatInfoVisible = false
-    }
+    errorHandler(e){
+      this.errormsg = e.toString();
+    },
   },
   mounted() {
-    this.chatId= this.$route.params.chat_id;
+    this.chatInfo['chatId']= this.$route.params.chat_id;
     this.token= localStorage.getItem('authToken');
-    this.refreshChatInfo().then(
+    this.getChatInfo().then(
       this.getMessages()
     )
+    this.getParticipantsInfo()
   },
   created() {
-    this.chatId= this.$route.params.chat_id;
+    this.chatInfo['chatId']= this.$route.params.chat_id;
     this.token= localStorage.getItem('authToken');
   }
 }
 </script>
 
 <template>
-  <div class="main-container">
+  <div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
       <div class="chat-image-container">
         <img :src="'data:image/png;base64,'+ chatInfo['chatPhoto']" alt="Chat Image" />
       </div>
       <div class="text-container">
-        <div class="chat-name">{{ chatInfo['chatName'] }}</div>
-        <div v-if="chatInfo['isGroup']" class="participants">{{ chatInfo['participants'].join(", ") }}</div>
+        <div class="chat-name">
+          <h3>{{ chatInfo['chatName'] }}</h3>
+        </div>
+        <div v-if="chatInfo['isGroup']" class="participants">{{ participantsName.length>0 ? participantsName.join(", ") : chatInfo['participants'].join(", ") }}</div>
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="getMessages()">
             Refresh messages
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" @click="showChatInfo">
-            Chat Info
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="toggleChatInfo">
+            {{ this.isChatInfoVisible ? "Close info" : "Chat Info" }}
           </button>
           <button type="button" class="btn btn-sm btn-outline-primary" @click="leaveChat">
             Leave chat
@@ -107,36 +129,34 @@ export default {
         </div>
       </div>
     </div>
-    <div class="messages-container">
-      <div v-for="message in messages" class="message-div">
-        <ChatMessage :message="message"></ChatMessage>
-      </div>
 
-
-      <LoadingSpinner v-if="loadingMessages" :loading="loadingMessages" loadingText="Caricamento Messaggi"/><LoadingSpinner/>
-
-      <div v-if="isChatInfoVisible" class="chat-info-sidebar">
-        <div class="chat-info-sidebar-header">
-          <h3>Chat Info</h3>
-          <button @click="hideChatInfo" class="close-chat-info-sidebar-btn">Chiudi</button>
-        </div>
-        <div class="chat-info-sidebar-content">
-          <p>Contenuto del componente.</p>
-          <p>Aggiungi tutto quello che vuoi qui.</p>
-        </div>
-      </div>
-
-      <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+    <div class="message-sender">
+      <form @submit.prevent="sendMessage" class="sendMessage-form">
+        <label for="text">
+          <input id="textContent" v-model="textContent" type="text" placeholder="Scrivi un messaggio" required/>
+        </label>
+        <button type="submit" :disabled="!textContent || loading" :class="{ disabled: !textContent}">
+          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator"/></svg>
+        </button>
+      </form>
+      <ChatInfo :isVisible="this.isChatInfoVisible" :chatId="this.chatInfo['chatId']" :participantsInfo="this.participantsInfo" @error="errorHandler" @visibility="toggleChatInfo"></ChatInfo>
     </div>
+
+    <div class="messages-main">
+      <div class="messages-container">
+        <ChatMessage v-for="message in messages" :message="message"></ChatMessage>
+
+
+        <LoadingSpinner v-if="loadingMessages" :loading="loadingMessages" loadingText="Caricamento Messaggi"/><LoadingSpinner/>
+      </div>
+    </div>
+
+
+    <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
   </div>
 </template>
 
 <style scoped>
-.main-container {
-  border: blue 2px solid;
-  height: 100%;
-}
-
 /* Barra superiore */
 .chat-image-container img {
   width: 40px;
@@ -174,72 +194,40 @@ export default {
 }
 /* fine barra superiore */
 
+.messages-main {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
 
 /* gestione dei messaggi */
 .messages-container {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: auto;
   min-height: 100%;
-  border-bottom: saddlebrown 1px solid;
+  margin-left: 2px;
+  margin-right: 2px;
 }
 
-.message-div {
-  display: flex;
-  flex-direction: row;
+/* invio messaggio */
+.message-sender{
+  position: sticky;
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.5);
+  height: 50px;
   width: 100%;
-  border: black 1px solid;
 }
 
-.message-div ChatMessage {
-  margin-left: auto;
-  border: black 1px solid;
-}
+.message-sender svg{
+  background-color: white;
+  border: 1px black solid;
+  border-radius: 50%;
+  fill: currentColor;
 
-/* sidebar chat info*/
-.chat-info-sidebar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 300px;
-  height: 400px;
-  background-color: #f8f9fa;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
+  user-select: none;
 }
-
-.chat-info-sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-}
-
-.close-chat-info-sidebar-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.close-chat-info-sidebar-btn:hover {
-  background-color: #c82333;
-}
-
-.chat-info-sidebar-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  color: #333;
-  font-size: 14px;
-}
-/* fine sidebare chat info */
-
 </style>
