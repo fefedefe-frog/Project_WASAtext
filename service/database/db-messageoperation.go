@@ -7,11 +7,31 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
+func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error) {
 	var messages []Message
 
+	tx, err := db.c.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				// Se il rollback fallisce, logghiamo l'errore di rollback
+				logrus.WithError(rbErr).Error("Errore durante il rollback")
+			}
+		}
+	}()
+
+	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId=?) AND receiverId=?`, chatId, usrId)
+	if err != nil {
+		return messages, ErrUpdateMessageStatus
+	}
+
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
-	rows, err := db.c.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ?;`, chatId)
+	var rows *sql.Rows
+	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? ORDER BY timestamp DESC, msgId;`, chatId)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +40,7 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 			if err == nil {
 				err = closeErr
 			} else {
-				logrus.WithError(closeErr).Errorf("rows.Close() error: %v", closeErr)
+				logrus.WithError(closeErr).Error("rows.Close()")
 			}
 		}
 	}()
@@ -36,27 +56,21 @@ func (db *appdbimpl) GetChatMessages(chatId int) ([]Message, error) {
 		}
 
 		// controllo se il contenuto è una foto
-		switch message.ContentType {
-		case "photo":
+		if message.ContentType == "photo" {
 			message.Content = base64.StdEncoding.EncodeToString(contentRaw)
-		case "text":
-			message.Content = string(contentRaw)
-		default:
+		}else {
 			message.Content = string(contentRaw)
 		}
 
 		// Aggiungo l'utente all'array
 		messages = append(messages, message)
 	}
-
-	if rows.Err() != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	// Procedo ad aggiornare lo stato dei messaggi
-	_, err = db.c.Exec(`UPDATE chat_messages_table SET deliveryStatus= ? WHERE chatId= ?`, "received")
-	if err != nil {
-		return messages, ErrUpdateMessageStatus
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	return messages, err
@@ -93,9 +107,26 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 		isForwarded = 1
 	}
 
+	// Inserisco il messaggio nella tabella dei messaggi
 	message.DeliveryStatus= "sent"
-	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?);`
-	if _, err := tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded); err != nil {
+	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+	var result sql.Result
+	result, err = tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded);
+	if err != nil {
+		return err
+	}
+
+	// Recuper l'id del messaggio appena inserito
+	var msgId int64
+	msgId, err = result.LastInsertId()
+
+	// Inserisco l'associazione tra messaggio e partecipante della chat dandogli il valoredi "not_received" e "read" per l'utente che ha inviato il messaggio
+	query= `INSERT INTO message_status_table (msgId, receiverId, status)
+			SELECT ?, usrId, 'not_received'
+			FROM chat_participants_table
+			WHERE chatId=? AND usrId != ?;`
+	_, err = tx.Exec(query, msgId, chatId, message.SenderId)
+	if err != nil {
 		return err
 	}
 
@@ -136,6 +167,58 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	message.IsForwarded = true
 
 	if err := db.InsertMessage(message, chatIdToForwatd); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, usrId string) error {
+
+	tx, err := db.c.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				// Se il rollback fallisce, logghiamo l'errore di rollback
+				logrus.WithError(rbErr).Error("Errore durante il rollback")
+			}
+		}
+	}()
+
+	// Aggiorno il messaggio che interessa
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'read' WHERE msgId=? AND receiverId=?;`, msgId, usrId)
+	if err != nil {
+		return err
+	}
+
+	// Aggiorno tutti i messaggi precedenti legati alla chat di quel messaggio
+	// in una subquery recupero tutti i msgId legati alla chat passata come chatId,
+	_, err = tx.Exec(`UPDATE message_status_table
+							SET status = 'read'
+							WHERE msgId IN (
+								SELECT ms.msgId
+								FROM message_status_table ms
+									JOIN chat_messages_table cm ON ms.msgId = cm.msgId
+								WHERE ms.receiverId = ?
+								  AND cm.chatId = ?
+								  AND cm.timestamp < (
+									SELECT MIN(cm2.timestamp)
+									FROM message_status_table ms2
+											 JOIN chat_messages_table cm2 ON ms2.msgId = cm2.msgId
+									WHERE ms2.receiverId = ?
+									  AND cm2.chatId = ?
+									  AND ms2.status = 'read'
+								)
+								  AND ms.status != 'read'
+							)
+							  AND receiverId = ?;`, usrId, chatId, usrId, chatId)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 	return nil
