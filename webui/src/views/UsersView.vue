@@ -1,6 +1,5 @@
 <script>
 export default {
-  components: {UserBanner},
   data: function () {
     return {
       token: localStorage.getItem('authToken'),

@@ -1,9 +1,5 @@
 <script>
-import ChatMessage from "../components/ChatMessage.vue";
-import ChatInfo from "../components/ChatInfo.vue";
-
 export default {
-  components: {ChatInfo, ChatMessage},
   data: function () {
     return {
       token: '',
@@ -52,7 +48,7 @@ export default {
         let response= await this.$axios.put(`/chats/${this.chatInfo['chatId']}/messages`, {}, {headers: {Authorization: this.token}});
         if (response.data) {
           this.messages= []
-          response.data['messages'].reverse().forEach(message => {
+          response.data['messages'].forEach(message => {
             this.messages.push(message)
           })
         }

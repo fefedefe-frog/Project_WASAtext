@@ -15,10 +15,15 @@ export default {
       this.loading = true;
       this.error = null;
 
+      // Controllo se il nome inserito rispetta le regex prestabilite
+      const regex= /^\S.*\S$/;
+      if (!regex.test(this.username)) {
+      }else
+
       try {
         // Esegui la richiesta POST e aspetta la risposta con `await`
         const response = await this.$axios.post('http://localhost:3000/session', {
-          userName: this.username
+          userName: (this.username).toLowerCase(),
         });
 
         // Estraggo il token dall'header
@@ -37,14 +42,23 @@ export default {
           setTimeout(() => {
             this.$router.push('/chats'); // Redirigi alla schermata principale delle chat
           }, 2000); // Attendi 2 secondi
-        } else {
-          throw new Error('Token o usrId non ricevuti dal server.');
         }
       } catch (error) {
         // Gestisci errori di rete o di altro tipo
         this.errormsg = error.toString();
+      } finally {
+        this.loading = false;
       }
     },
+  },
+  computed: {
+    isUsernameValid() {
+      const username = this.username;
+      return (username.length>=3 && username.length<=16 && ((/^\S.*\S$/).test(username)));
+    },
+    notValidInfo() {
+
+    }
   },
   created(){
     localStorage.setItem('authToken', "");
@@ -67,7 +81,7 @@ export default {
       <form @submit.prevent="doLogin" class="login-form">
         <label for="username">Nome utente:</label>
         <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
-        <button type="submit" :disabled="!username || loading" :class="{ disabled: !username || loading }">Login</button>
+        <button type="submit" :disabled="!isUsernameValid || loading" :class="{ disabled: !isUsernameValid || loading }">Login</button>
       </form>
 
       <!-- Mostra messaggi di errore -->
