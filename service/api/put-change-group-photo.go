@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) changeGroupPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewGroupPhoto string `json:"newGroupPhoto"`

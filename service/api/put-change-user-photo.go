@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) putChangeUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewUserPhoto string `json:"newUserPhoto"`

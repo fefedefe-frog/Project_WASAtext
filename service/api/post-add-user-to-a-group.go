@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) addUserToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		UsrIdToAdd string `json:"usrIdToAdd"`

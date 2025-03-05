@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) changeGroupName(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setGroupName(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewGroupName string `json:"newGroupName"`

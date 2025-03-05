@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) putChangeUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewUserName string `json:"newUserName"`

@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) getUserChats(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetUserChats(token)
