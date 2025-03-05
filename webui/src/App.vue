@@ -8,7 +8,7 @@ export default {
       isAuthenticated: false, //Stato che verifica se l'utente è autenticato
       }
   },
-  mounted(){
+  created(){
     const token = localStorage.getItem('authToken');
     if (token){
       this.isAuthenticated = true;
