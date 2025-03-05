@@ -17,7 +17,7 @@ func (db *appdbimpl) InsertNewUser(userName string) (User, error) {
 	user.UserName = userName
 
 	// Creo l'id dell'utente, rimescolando i caratteri del suo nome e aggiungendo delle cifre
-	runes := []rune(userName) // converto la stringa in array di caratteri
+	runes := []rune(strings.ToLower(userName)) // converto la stringa in array di caratteri
 
 	// Mescola l'array di rune usando lo shuffle Fisher-Yates
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
