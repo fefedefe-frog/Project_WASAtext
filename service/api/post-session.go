@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"strings"
 )
 
 func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
@@ -20,16 +21,18 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 
 	// Decodifica il corpo della richiesta JSON
 	err := json.NewDecoder(request.Body).Decode(&requestJson)
-
 	if err != nil {
 		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
 		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
-	context.Logger.Infof("Tentativo di login da user: %s", requestJson.UserName)
+	// Converto il contenuto in lower case
+	usernameLower := strings.ToLower(requestJson.UserName)
+
+	context.Logger.Infof("Tentativo di login da user: '%s'", usernameLower)
 	// Controllo che rispetti i regex richiesti e la lunghezza minima e massima
-	if err := utilitytool.NameIsValid(requestJson.UserName); err != nil {
+	if err := utilitytool.NameIsValid(usernameLower); err != nil {
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
 			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
@@ -46,7 +49,8 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	usrId, err := rt.db.GetUsrIdByName(requestJson.UserName)
+	var usrId string
+	usrId, err = rt.db.GetUsrIdByName(usernameLower)
 
 	// Controllo se l'utente esiste ed è presente nel database se non è presente lo creo e provo ad inserirlo nel database
 	// in caso di riuscita preparo la rosposta http e la invio
@@ -54,7 +58,7 @@ func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request
 		if errors.Is(err, sql.ErrNoRows) {
 			rt.baseLogger.WithField("db error", err).Debug("utente non presente nel database")
 
-			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", requestJson.UserName))
+			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", usernameLower))
 			user, err := rt.db.InsertNewUser(requestJson.UserName)
 
 			if err != nil {
