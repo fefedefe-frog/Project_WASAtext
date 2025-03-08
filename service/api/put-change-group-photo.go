@@ -3,10 +3,12 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"regexp"
 	"strconv"
 )
 
@@ -58,9 +60,27 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
+	// Semplice controllo della stringa base64 per assicurarsi
+	// che la stringa contenga solo caratteri usati dalla codifica base64
+	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
+	if !re.MatchString(requestJson.NewGroupPhoto) {
+		http.Error(writer, "Bad request - The photo isn't codified correctly, or is not a photo", http.StatusBadRequest)
+		context.Logger.Debug("The photo received in input is not in the base64 format")
+		return
+	}
+
+	// Verifica che la stringa sia in formato base64 valido
+	var photoData []byte
+	photoData, err = base64.StdEncoding.DecodeString(requestJson.NewGroupPhoto)
+	if err != nil {
+		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
+		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		return
+	}
+
 	context.Logger.Infof("user <%s> request to change group photo of group <%d>", token, chatId)
 	// Aggiorno la propic del gruppo nel database
-	if err := rt.db.SetGroupPhoto(chatId, requestJson.NewGroupPhoto); err != nil {
+	if err := rt.db.SetGroupPhoto(chatId, photoData); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rt.baseLogger.WithError(err).Errorf("Group chat <%d> not found in database", chatId)
 			http.Error(writer, "Group chat not found", http.StatusNotFound)
