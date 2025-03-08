@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"regexp"
 	"strings"
 )
 
@@ -48,8 +47,6 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	if len(userChatsId) == 0 {
 		return userChats, ErrUserNoChat
 	}
-
-
 
 	// Costruisco la stringa di lunghezza variabile, contentente solo ?
 	placeholders := make([]string, len(userChatsId))
@@ -131,7 +128,7 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 	return userChats, nil
 }
 
-func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatPhoto string, isGroup bool) (int, error) {
+func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatPhotoData []byte, isGroup bool) (int, error) {
 	var groupPhotoBytes []byte
 
 	// Se la chat è un gruppo controllo se sono stati dati il nome e la propic
@@ -139,19 +136,9 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 		if chatName == "" { // Assegno un nome di default
 			chatName = "Gruppo"
 		}
-		if chatPhoto == "" { // Assegno una propic di default
-			chatPhoto = defaultGroupPhotoBase64
-		}
 	} else {
 		chatName = ""
-		chatPhoto = ""
-	}
-
-	var errProp error
-	// Decodifica la stringa Base64 in byte
-	groupPhotoBytes, errProp = base64.StdEncoding.DecodeString(chatPhoto)
-	if errProp != nil {
-		return -1, errProp
+		chatPhotoData = []byte{}
 	}
 
 	tx, err := db.c.Begin()
@@ -436,28 +423,9 @@ func (db *appdbimpl) SetGroupName(chatId int, newName string) error {
 	return err
 }
 
-func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
-	// Verifica che la stringa sia in formato base64 valido
-	_, err := base64.StdEncoding.DecodeString(newPhoto)
-	if err != nil {
-		return err
-	}
+func (db *appdbimpl) SetGroupPhoto(chatId int, newPhotoData []byte) error {
 
-	// Semplice controllo della stringa base64 per assicurarsi
-	// che la stringa contenga solo caratteri usati dalla codifica base64
-	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(newPhoto) {
-		return errors.New("la stringa base64 non rappresenta un'immagine valida")
-	}
-
-	// Decodifica la stringa base64
-	data, errPropic := base64.StdEncoding.DecodeString(newPhoto)
-	if errPropic != nil {
-		return errPropic
-	}
-
-	var stmt *sql.Stmt
-	stmt, err = db.c.Prepare(`UPDATE chats_table SET chatPhoto = ? WHERE chatId=?;`)
+	stmt, err := db.c.Prepare(`UPDATE chats_table SET chatPhoto = ? WHERE chatId=?;`)
 	if err != nil {
 		return err
 	}
@@ -471,7 +439,7 @@ func (db *appdbimpl) SetGroupPhoto(chatId int, newPhoto string) error {
 		}
 	}()
 
-	_, err = stmt.Exec(data, chatId)
+	_, err = stmt.Exec(newPhotoData, chatId)
 	if err != nil {
 		return err
 	}

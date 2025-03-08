@@ -1,13 +1,10 @@
 package database
 
 import (
-	"database/sql"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"math/rand"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -73,29 +70,9 @@ func (db *appdbimpl) SetUserName(usrId string, newName string) error {
 	return err
 }
 
-func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error {
+func (db *appdbimpl) SetUserPhoto(usrId string, newPhotoData []byte) error {
 
-	// Verifica che la stringa sia in formato base64 valido
-	_, err := base64.StdEncoding.DecodeString(newPhoto)
-	if err != nil {
-		return err
-	}
-
-	// Semplice controllo della stringa base64 per assicurarsi
-	// che la stringa contenga solo caratteri usati dalla codifica base64
-	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(newPhoto) {
-		return errors.New("la stringa base64 non rappresenta un'immagine valida")
-	}
-
-	// Decodifica la stringa base64
-	data, errPropic := base64.StdEncoding.DecodeString(newPhoto)
-	if errPropic != nil {
-		return errPropic
-	}
-
-	var stmt *sql.Stmt
-	stmt, err = db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?;`)
+	stmt, err := db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?;`)
 	if err != nil {
 		return err
 	}
@@ -109,7 +86,7 @@ func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto string) error {
 		}
 	}()
 
-	_, err = stmt.Exec(data, usrId)
+	_, err = stmt.Exec(newPhotoData, usrId)
 	if err != nil {
 		return err
 	}
