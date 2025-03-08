@@ -3,10 +3,12 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"regexp"
 )
 
 func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
@@ -23,9 +25,27 @@ func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request,
 		return
 	}
 
+	// Semplice controllo della stringa base64 per assicurarsi
+	// che la stringa contenga solo caratteri usati dalla codifica base64
+	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
+	if !re.MatchString(requestJson.NewUserPhoto) {
+		http.Error(writer, "Bad request - The photo isn't codified correctly, or is not a photo", http.StatusBadRequest)
+		context.Logger.Debug("The photo received in input is not in the base64 format")
+		return
+	}
+
+	// Verifica che la stringa sia in formato base64 valido
+	var photoData []byte
+	photoData, err = base64.StdEncoding.DecodeString(requestJson.NewUserPhoto)
+	if err != nil {
+		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
+		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		return
+	}
+
 	// Aggiorno la propic nel database
 	context.Logger.Infof("Richiesta di cambio propic da parte dell'user: %s || nuova propic: %s...", token, requestJson.NewUserPhoto[:10])
-	if err := rt.db.SetUserPhoto(token, requestJson.NewUserPhoto); err != nil {
+	if err := rt.db.SetUserPhoto(token, photoData); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Errorf("User: %s not found in database", token)
 			http.Error(writer, "User not found", http.StatusNotFound)
