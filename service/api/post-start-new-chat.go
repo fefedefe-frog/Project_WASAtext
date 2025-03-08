@@ -24,6 +24,18 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
+	if requestJson.IsGroup && requestJson.ChatPhoto == "" {
+		requestJson.ChatPhoto = database.DefaultGroupPhotoBase64
+	}
+	// Decodifica la stringa Base64 in byte
+	var groupPhotoData []byte
+	groupPhotoData, err = base64.StdEncoding.DecodeString(requestJson.ChatPhoto)
+	if err != nil {
+		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
+		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		return
+	}
+
 	// aggiungo l'utente che effettua la richiesta alla lista dei partecipanti
 	requestJson.Participants = append(requestJson.Participants, token)
 	var newChatId int
