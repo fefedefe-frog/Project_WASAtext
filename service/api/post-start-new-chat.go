@@ -39,7 +39,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	// aggiungo l'utente che effettua la richiesta alla lista dei partecipanti
 	requestJson.Participants = append(requestJson.Participants, token)
 	var newChatId int
-	newChatId, err = rt.db.InsertNewChat(requestJson.Participants, requestJson.ChatName, requestJson.ChatPhoto, requestJson.IsGroup)
+	newChatId, err = rt.db.InsertNewChat(requestJson.Participants, requestJson.ChatName, groupPhotoData, requestJson.IsGroup)
 	if err != nil {
 		context.Logger.WithError(err).Error("unable to insert a new chat in the db")
 		http.Error(writer, "Internal server error - unable to create the chat", http.StatusInternalServerError)
