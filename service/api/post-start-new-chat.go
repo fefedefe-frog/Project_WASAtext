@@ -3,6 +3,7 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"Project_WASAtext/service/database"
+	"encoding/base64"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
