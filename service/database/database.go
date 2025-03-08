@@ -88,7 +88,7 @@ type AppDatabase interface {
 	// SetUserName error, update the name of a user, by passing its usrId and its newName
 	SetUserName(usrId string, newName string) error
 	// SetUserPhoto update the user propic, the function receive the user id and the new propic as a string in base64 format
-	SetUserPhoto(usrId string, newPhoto string) error
+	SetUserPhoto(usrId string, newPhotoData []byte) error
 	// GetUserInfo User, search in the database a user with the usrId passed in the fuction, and retrive it info
 	GetUserInfo(usrId string) (User, error)
 	// GetUserNameById string, retrive the name of an user by its id
@@ -103,7 +103,7 @@ type AppDatabase interface {
 	// GetUserChats Chat, retrive the chats of a user by passing its usrId
 	GetUserChats(usrId string) ([]Chat, error)
 	// InsertNewChat int, add a new chat in the db, the function receive an array of users that are in the chat
-	InsertNewChat(participants []string, chatName string, chatPhoto string, isGroup bool) (int, error)
+	InsertNewChat(participants []string, chatName string, chatPhotoData []byte, isGroup bool) (int, error)
 	// DeleteChat error, remove a chat from the db, also remove all the message of that chat from the db
 	DeleteChat(chatId int) error
 	// GetChatInfo Chat, retrive all the info of a chat from the db
@@ -121,7 +121,7 @@ type AppDatabase interface {
 	// SetGroupName error, update the name of a group chat
 	SetGroupName(chatId int, newName string) error
 	// SetGroupPhoto error, update the group photo
-	SetGroupPhoto(chatId int, newPhoto string) error
+	SetGroupPhoto(chatId int, newPhotoData []byte) error
 	// IsAGroup bool, check if the chat is a group chat or not
 	IsAGroup(chatId int) (bool, error)
 
