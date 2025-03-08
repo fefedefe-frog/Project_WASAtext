@@ -274,7 +274,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// Trigger for auto deleting a chat with no messages
-	_, err= db.Exec(`CREATE TRIGGER IF NOT EXISTS delete_empty_chats
+	_, err = db.Exec(`CREATE TRIGGER IF NOT EXISTS delete_empty_chats
 						AFTER UPDATE ON chat_messages_table
 						BEGIN
 							DELETE FROM chats_table
@@ -286,7 +286,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// Trigger for auto updating a message delivery status
-	_, err= db.Exec(`CREATE TRIGGER IF NOT EXISTS update_message_status
+	_, err = db.Exec(`CREATE TRIGGER IF NOT EXISTS update_message_status
 						AFTER UPDATE ON message_status_table
 						BEGIN
 							UPDATE chat_messages_table
@@ -320,8 +320,6 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing db index: %w", err)
 	}
-
-
 
 	return &appdbimpl{
 		c: db,
