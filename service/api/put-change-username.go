@@ -44,6 +44,22 @@ func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
+	// Controllo se l'username scelto non sia già in uso
+	if idFinded, err := rt.db.GetUsrIdByName(requestJson.NewUserName); err != nil {
+		// Banalmente controllo se, data la chiamata alla funzione precedente, se l'username non è presente nel db
+		// allora dovrei ricevere l'errore ErrNoRows, ovvero non è stato trovato nessun utente con quel nome
+		if !errors.Is(err, sql.ErrNoRows) {
+			// Se ho un errore, e non è l' errore no rows, c'è stato un problema
+			http.Error(writer, "Internal Server Error - Unable to check if the username is available", http.StatusInternalServerError)
+			context.Logger.WithError(err).Error("unable to check if the username selected is available")
+			return
+		}
+	} else if idFinded != "" { // La ricerca tramite usename ha dato risultato quindi l'username è già usato da altri
+		http.Error(writer, "Username already exists", http.StatusBadRequest)
+		context.Logger.Debug("username selected is not available")
+		return
+	}
+
 	// Aggiorno l'username nel database
 	if err := rt.db.SetUserName(token, requestJson.NewUserName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
