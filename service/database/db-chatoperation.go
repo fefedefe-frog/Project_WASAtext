@@ -10,87 +10,54 @@ import (
 )
 
 func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
-	var userChats []Chat
 
-	// Recupero gli id delle chat associate all'usrId dalla chat_participants_table
-	rows, err := db.c.Query(`SELECT chatId FROM chat_participants_table WHERE usrId = ?;`, usrId)
+	/*
+		In questa query eseguo il primo join per ottenere tutte le info delle chat di cui fa parte l'utente
+		tramite il join nella tabella chats_table e quella dei partecipanti, associando il chatId
+		successivamente faccio un join della tabella dei partecipanti su se stessa per trovare gli id dei
+		partecipanti di una chat, che poi aggiungerò all'output finale tramite la funzione GROUP_CONCAT
+		che restituisce una colonna di id concatenate dal carattere speciale ␟ (in questo caso)
+	*/
+	query := `
+			SELECT C.chatId, C.chatName, C.chatPhoto, C.isGroup, GROUP_CONCAT(P2.usrId, '␟') AS participantsString
+			FROM chat_participants_table AS P
+			JOIN chats_table C ON P.chatId = C.chatId
+			JOIN chat_participants_table P2 ON C.chatId = P2.chatId
+			WHERE P.usrId = ?
+			GROUP BY C.chatId, C.chatName, C.chatPhoto;`
+
+	// Eseguo la query descritta primia
+	rows, err := db.c.Query(query, usrId)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("rows.Close()")
 			if err == nil {
 				err = closeErr
-			} else {
-				logrus.WithError(closeErr).Error("rows.Close()")
 			}
 		}
 	}()
 
-	// Inserisco i vari id trovati in un array
-	var userChatsId []int
+	// Controllo se la query ha restituito righe, se no, l'utente non fa parte di alcuna chat
+	if !rows.Next() {
+		return nil, ErrUserNoChat
+	}
+
+	// Inserisco i vari id trovati nell'array di output
+	var userChats []Chat
 	for rows.Next() {
-		var chatId int
-
-		if err := rows.Scan(&chatId); err != nil {
-			return nil, err
-		}
-		userChatsId = append(userChatsId, chatId)
-	}
-
-	// Controllo se ci sono stati errori sulle righe
-	if err := rows.Err(); err != nil {
-		return userChats, err
-	}
-
-	// Se l'utente non ha chat restituisco un errore personalizzato
-	if len(userChatsId) == 0 {
-		return userChats, ErrUserNoChat
-	}
-
-	// Costruisco la stringa di lunghezza variabile, contentente solo ?
-	placeholders := make([]string, len(userChatsId))
-	args := make([]interface{}, len(userChatsId))
-
-	for i, value := range userChatsId {
-		placeholders[i] = "?"
-		args[i] = value
-	}
-
-	queryPart := fmt.Sprintf("%s IN (%s)", "chatId", strings.Join(placeholders, ", "))
-
-	// Eseguo la query delle chat
-	query := fmt.Sprintf("SELECT chatId, chatName, isGroup, chatPhoto FROM chats_table WHERE %s", queryPart)
-	var chatRows *sql.Rows
-	chatRows, err = db.c.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if closeErr := chatRows.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			} else {
-				logrus.WithError(closeErr).Error("chatRows.Close()")
-			}
-		}
-	}()
-
-	// Aggiungo le chat dell'utente allo slice userChats
-	for chatRows.Next() {
 		var chat Chat
 		var chatPropicBytes []byte
+		var participantsString string
 
-		if err := chatRows.Scan(&chat.ChatId, &chat.ChatName, &chat.IsGroup, &chatPropicBytes); err != nil {
+		if err := rows.Scan(&chat.ChatId, &chat.ChatName, &chatPropicBytes, &chat.IsGroup, &participantsString); err != nil {
 			return nil, err
 		}
 
-		// Ottengo gli id dei partecipanti della chat
-		participants, participantsErr := db.GetChatPartecipants(chat.ChatId)
-		if participantsErr != nil {
-			return nil, participantsErr
-		}
-		chat.Participants = participants
+		// Splitto la stringa contenente i partecipanti
+		chat.Participants = strings.Split(participantsString, "␟")
 
 		/*
 			Controllo se la chat è un gruppo o meno, se la chat è un gruppo
@@ -100,46 +67,38 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		if chat.IsGroup {
 			chat.ChatPhoto = base64.StdEncoding.EncodeToString(chatPropicBytes)
 		} else {
-			var secondParticipantId string
-			if len(participants) == 2 {
-				for _, participant := range participants {
+			if len(chat.Participants) == 2 { // Ho una chat diretta tra due persone
+				var otherParticipantId string
+				for _, participant := range chat.Participants {
 					if participant != usrId {
-						secondParticipantId = participant
+						otherParticipantId = participant
 					}
 				}
-			} else {
-				return nil, ErrChatParticipantNumber
+
+				user, err := db.GetUserInfo(otherParticipantId)
+				if err != nil {
+					return nil, err
+				}
+				chat.ChatName = user.UserName
+				chat.ChatPhoto = user.UserPhoto
+			} else { // C'è stato qualche problema, non possono esistere chat, che non sono gruppi con meno di 2 utenti
+				return nil, fmt.Errorf("invalid participant number")
 			}
-			user, err := db.GetUserInfo(secondParticipantId)
-			if err != nil {
-				return nil, err
-			}
-			chat.ChatName = user.UserName
-			chat.ChatPhoto = user.UserPhoto
 		}
 
 		// Aggiungo la chat allo slice di chats
 		userChats = append(userChats, chat)
 	}
 
-	if err := chatRows.Err(); err != nil {
+	// Controllo se ci sono stati errori sulle righe
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
 	return userChats, nil
 }
 
-func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatPhotoData []byte, isGroup bool) (int, error) {
-	var groupPhotoBytes []byte
-
-	// Se la chat è un gruppo controllo se sono stati dati il nome e la propic
-	if isGroup {
-		if chatName == "" { // Assegno un nome di default
-			chatName = "Gruppo"
-		}
-	} else {
-		chatName = ""
-		chatPhotoData = []byte{}
-	}
+func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPhotoData []byte, participants []string, isGroup bool, messageContent interface{}) (int, error) {
 
 	tx, err := db.c.Begin()
 	if err != nil {
@@ -162,7 +121,7 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 
 	// Eseguo l'inserimento nel database
 	var result sql.Result
-	result, err = tx.Exec(`INSERT INTO chats_table (chatName, isGroup, chatPhoto) VALUES (?, ?, ?);`, chatName, isGroupVal, groupPhotoBytes)
+	result, err = tx.Exec(`INSERT INTO chats_table (chatName, isGroup, chatPhoto) VALUES (?, ?, ?);`, chatName, isGroupVal, chatPhotoData)
 	if err != nil {
 		return -1, err
 	}
@@ -173,39 +132,48 @@ func (db *appdbimpl) InsertNewChat(participants []string, chatName string, chatP
 		return -1, err
 	}
 
+	// Inserisco gli usrId nella lista da passare alla funzione Exec
+	usrIds := make([]interface{}, len(participants)+1)
+	usrIds[0] = creatorUsrId
+	for i, participant := range participants {
+		usrIds[i] = participant
+	}
+
 	// Ora devo creare le associazioni usrId <-> chatId nella chat_participants_table
-	var stmt *sql.Stmt
-	stmt, err = tx.Prepare("INSERT OR IGNORE INTO chat_participants_table (chatId, usrId) VALUES (?, ?);")
+	query := `INSERT OR IGNORE INTO chat_participants_table (chatId, usrId) SELECT ?, usrId FROM users_table WHERE usrId IN (` + strings.Repeat("?,", len(usrIds)-1) + `?);`
+	if _, err := tx.Exec(query, append([]interface{}{int(newChatId64)}, usrIds...)...); err != nil {
+		return -1, err
+	}
+
+	// Inserisco il messaggio iniziale nella tabella dei messaggi
+	var contentType string
+	switch value := messageContent.(type) {
+	case []byte:
+		contentType = "photo"
+	case string:
+		contentType = "text"
+	default:
+		return -1, fmt.Errorf("unsupported message content type: %T", value)
+	}
+
+	queryMessage := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+	result, err = tx.Exec(queryMessage, creatorUsrId, int(newChatId64), contentType, messageContent, "sent", 0)
 	if err != nil {
 		return -1, err
 	}
-	defer func() {
-		if closeErr := stmt.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			} else {
-				logrus.WithError(closeErr).Error("stmt.Close()")
-			}
-		}
-	}()
 
-	for _, usrId := range participants {
-		exist, err := db.UsrIdExist(usrId)
-		if exist {
-			if _, err := stmt.Exec(int(newChatId64), usrId); err != nil {
-				return -1, err // Interrompe l'inserimento se c'è un errore
-			}
-		} else {
-			if err != nil {
-				// se non riesco a controllare se l'utente esiste lo segnaolo, se la chat era tra due persone annullo la sua creazione
-				logrus.WithError(err).WithField("usrId", usrId).Error("unable to add user to the group")
-				if !isGroup {
-					return -1, err
-				}
-			}
-			// se non esiste nessun utente nel db, lo segnalo semplicemente
-			logrus.WithField("usrId", usrId).Info("user does not exist")
-		}
+	// Recuper l'id del messaggio appena inserito
+	var msgId int64
+	msgId, err = result.LastInsertId()
+
+	// Inserisco l'associazione tra messaggio e partecipante della chat dandogli il valoredi "not_received" e "read" per l'utente che ha inviato il messaggio
+	query = `INSERT INTO message_status_table (msgId, receiverId, status)
+			SELECT ?, usrId, 'not_received'
+			FROM chat_participants_table
+			WHERE chatId=? AND usrId != ?;`
+	_, err = tx.Exec(query, msgId, int(newChatId64), creatorUsrId)
+	if err != nil {
+		return -1, err
 	}
 
 	if err := tx.Commit(); err != nil {
