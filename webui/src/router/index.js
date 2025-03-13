@@ -9,7 +9,7 @@ const router = createRouter({
 	history: createWebHashHistory(import.meta.env.BASE_URL),
 	routes: [
 		// schermata di login
-		{path: '/session', component: LoginView},
+		{path: '/session', component: LoginView, meta: {requiresAuth: false}},
 		// schermata contentente il profilo di un utente
 		{path: '/profile', component: ProfileView, meta: {requiresAuth: true}},
 		// schermata "principale" dell'utente, mostra le chat di cui fa parte
@@ -25,13 +25,19 @@ const router = createRouter({
 
 // Guard che si occupa di controllare se l'utente è autenticato
 router.beforeEach((to, from, next) => {
-	const isAuthenticated = localStorage.getItem("authToken");
+	// La doppia ! in js indica che la variabile viene forzata ad uno stato booleano,
+	// quindi se ha contenuto -> true, se non ha conteunto("") o è nulla -> false
+	const isAuthenticated = !!localStorage.getItem("authToken");
 
+	// Controllo che reindirizza tutti gli utenti non autenticati alla pagina di login
 	if (to.meta.requiresAuth && !isAuthenticated) {
-		// Se la rotta richiede autenticazione ma l'utente non è autenticato
-		next("/session"); // Reindirizza alla pagina di login
+		next("/session");
+	} else if (to.path === "/session" && isAuthenticated) {
+		// Se l'utente invece è già autenticato e vuole accedere alla pagina per il login,
+		// verrà reindirizzato direttamente alla pagina principale, ovvero in questo caso, la lista di chat
+		next("/chats");
 	} else {
-		next(); // Procedi normalmente
+		next(); // Altrimenti, continua normalmente verso la pagina selezionata
 	}
 });
 
