@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) putUpdateMessageStatus(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setMessageStatusToRead(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Recupero il valore di chat_id e msg_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
