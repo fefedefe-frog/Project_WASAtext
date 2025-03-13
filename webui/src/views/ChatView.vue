@@ -141,9 +141,6 @@ export default {
     <div class="messages-main">
       <div class="messages-container">
         <ChatMessage v-for="message in messages" :message="message"></ChatMessage>
-
-
-        <LoadingSpinner v-if="loadingMessages" :loading="loadingMessages" loadingText="Caricamento Messaggi"/><LoadingSpinner/>
       </div>
     </div>
 
