@@ -16,3 +16,5 @@ docker-compose.log
 !.vscode/extensions.json
 
 .lint_config
+
+cmd/webapi/register-web-ui.go
