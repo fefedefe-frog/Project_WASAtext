@@ -3,20 +3,33 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 <script>
 export default {
-  data (){
+  data() {
     return {
-      isAuthenticated: false, //Stato che verifica se l'utente è autenticato
-      }
+      isAuthenticated: false
+    };
   },
-  created(){
-    const token = localStorage.getItem('authToken');
-    if (token){
-      this.isAuthenticated = true;
+  methods: {
+    checkAuth() {
+      const token = localStorage.getItem('authToken');
+      if (token && token !== "") {
+        this.isAuthenticated = true;
+      }
+    },
+    logout() {
+      localStorage.removeItem("authToken");
+      this.checkAuth();
     }
+  },
+  created() {
+    this.checkAuth();
+    // Ascolto i cambiamenti nel localStorage (da altre schede)
+    window.addEventListener("storage", this.checkAuth);
+  },
+  beforeUnmount() {
+    window.removeEventListener("storage", this.checkAuth);
   }
-}
+};
 </script>
-
 <template>
 
 	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
@@ -56,7 +69,7 @@ export default {
 							</RouterLink>
 						</li>
             <li class="nav-item">
-              <RouterLink to="/session" class="nav-link">
+              <RouterLink to="/session" class="nav-link" @click.native="logout">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out"/></svg>
                 Logout
               </RouterLink>
