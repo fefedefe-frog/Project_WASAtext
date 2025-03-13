@@ -1249,7 +1249,7 @@ paths:
 
       security:
         - BearerAuth: []
-      
+
       responses:
         "204":
           description: Message deleted successfully
@@ -1275,7 +1275,7 @@ paths:
       summary: Update message status
 
       tags: ["Message operation"]
-      operationId: setMessageReadStatus
+      operationId: setMessageStatusToRead
 
       security:
         - BearerAuth: []
