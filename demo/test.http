@@ -6,6 +6,29 @@ Content-Type: application/json
 
 > {% client.global.set("client_token", response.headers.valueOf("Authorization").split(' ')[1]); client.global.set("usrId", response.body.valueOf()["usrId"]); console.log(client.global.get("usrId")) %}
 
+### POST request for login
+POST http://localhost:3000/session
+Content-Type: application/json
+
+{"userName": "franco"}
+
+### POST request for login
+POST http://localhost:3000/session
+Content-Type: application/json
+
+{"userName": "mara"}
+
+### POST request for login
+POST http://localhost:3000/session
+Content-Type: application/json
+
+{"userName": "ambra"}
+
+### POST request for login
+POST http://localhost:3000/session
+Content-Type: application/json
+
+{"userName": "rosa"}
 
 ### GET request for listing all the users
 GET http://localhost:3000/users
@@ -57,14 +80,14 @@ Authorization: Bearer ramta986
 
 ### POST request for starting a new chat
 POST localhost:3000/chats
-Authorization: Bearer ramta986
+Authorization: Bearer efed904
 Content-Type: application/json
 
 {
   "chatName": "",
   "chatPhoto": "",
   "isGroup": false,
-  "participants": ["rrodogi596"]
+  "participants": ["{{id_amico}}"]
 }
 
 > {% client.global.set("marta_groupChat_id", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ (response.body["chatPhoto"]).substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
