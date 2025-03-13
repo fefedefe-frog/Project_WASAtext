@@ -41,32 +41,19 @@ export default {
           // Ritarda la redirezione per consentire il caricamento
           setTimeout(() => {
             this.$router.push('/chats'); // Redirigi alla schermata principale delle chat
-          }, 2000); // Attendi 2 secondi
+          }, 1000); // Attendi 2 secondi
         }
       } catch (error) {
         // Gestisci errori di rete o di altro tipo
         this.errormsg = error.toString();
-      } finally {
-        this.loading = false;
       }
     },
   },
   computed: {
     isUsernameValid() {
       const username = this.username;
-      return (username.length>=3 && username.length<=16 && ((/^\S.*\S$/).test(username)));
+      return (username.length >= 3 && username.length <= 16 && ((/^\S.*\S$/).test(username)));
     },
-    notValidInfo() {
-
-    }
-  },
-  created(){
-    localStorage.setItem('authToken', "");
-    localStorage.setItem('usrId', "");
-  },
-  mounted() {
-    localStorage.setItem('authToken', "");
-    localStorage.setItem('usrId', "");
   }
 };
 </script>
@@ -79,7 +66,7 @@ export default {
     <div class="login-container">
       <!-- Form di login -->
       <form @submit.prevent="doLogin" class="login-form">
-        <label for="username">Nome utente:</label>
+        <label for="username">Nome utente:  <span v-if="!isUsernameValid" class="error">Nome non valido</span></label>
         <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
         <button type="submit" :disabled="!isUsernameValid || loading" :class="{ disabled: !isUsernameValid || loading }">Login</button>
       </form>
@@ -96,18 +83,14 @@ export default {
 
 
 <style scoped>
-/* Stili per il form di login */
-.login {
+form {
+  display: flex;
+  flex-direction: column;
   width: 300px;
   margin: 0 auto;
   padding: 20px;
   border: 1px solid #ccc;
   border-radius: 8px;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
 }
 
 input {
@@ -140,14 +123,5 @@ button.disabled {
 .error {
   color: red;
   margin-top: 10px;
-}
-
-.alert {
-  display: block !important;
-}
-
-.welcome-message {
-  text-align: center;
-  margin-top: 20px;
 }
 </style>
