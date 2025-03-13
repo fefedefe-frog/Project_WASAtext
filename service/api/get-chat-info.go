@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) getConversation(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Recupero il valore di chat_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -55,11 +55,11 @@ func (rt *_router) getConversation(writer http.ResponseWriter, _ *http.Request, 
 
 	// Controllo se la chat è un gruppo o meno, se non è un gruppo procedo
 	// a recuperare le informazioni dell'altro utente partecipante alla chat
-	if !chat.IsGroup{
+	if !chat.IsGroup {
 
 		otherUsrId := chat.Participants[0]
 		if otherUsrId == token {
-			otherUsrId= chat.Participants[1]
+			otherUsrId = chat.Participants[1]
 		}
 
 		user, err := rt.db.GetUserInfo(otherUsrId)
@@ -74,8 +74,8 @@ func (rt *_router) getConversation(writer http.ResponseWriter, _ *http.Request, 
 			return
 		}
 
-		chat.ChatName= user.UserName
-		chat.ChatPhoto= user.UserPhoto
+		chat.ChatName = user.UserName
+		chat.ChatPhoto = user.UserPhoto
 	}
 
 	// Preparo la risposta

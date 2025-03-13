@@ -67,7 +67,7 @@ func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request,
 
 	// Tento di recuperare le info degli utenti
 	var participants []database.User
-	participants, err= rt.db.GetChatParticipantsInfo(chatId)
+	participants, err = rt.db.GetChatParticipantsInfo(chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithField("chatId", chatId).Error("chat not found in the chat_participants_table")

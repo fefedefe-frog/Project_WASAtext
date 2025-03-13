@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) getChatParticipants(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getChatParticipants(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -32,7 +32,7 @@ func (rt *_router) getChatParticipants(writer http.ResponseWriter, request *http
 
 	// Tento di recuperare le info degli utenti
 	var participants []database.User
-	participants, err= rt.db.GetChatParticipantsInfo(chatId)
+	participants, err = rt.db.GetChatParticipantsInfo(chatId)
 	if err != nil {
 		context.Logger.WithError(err).WithField("chatId", chatId).Errorf("Error getting chat participants")
 		http.Error(writer, "Unable to retrive participants of the chat", http.StatusInternalServerError)

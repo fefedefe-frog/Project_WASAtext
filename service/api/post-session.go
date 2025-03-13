@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func (rt *_router) postSession(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
+func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
 	rt.baseLogger.Debugf("Received request: %s %s\n", request.Method, request.URL.Path)
 
 	var requestJson = struct {
