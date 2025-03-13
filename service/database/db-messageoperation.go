@@ -58,7 +58,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error
 		// controllo se il contenuto è una foto
 		if message.ContentType == "photo" {
 			message.Content = base64.StdEncoding.EncodeToString(contentRaw)
-		}else {
+		} else {
 			message.Content = string(contentRaw)
 		}
 
@@ -75,6 +75,8 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error
 
 	return messages, err
 }
+
+// TODO modificare gestione stringa qui
 
 func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
@@ -108,10 +110,10 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 	}
 
 	// Inserisco il messaggio nella tabella dei messaggi
-	message.DeliveryStatus= "sent"
+	message.DeliveryStatus = "sent"
 	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	var result sql.Result
-	result, err = tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded);
+	result, err = tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded)
 	if err != nil {
 		return err
 	}
@@ -121,7 +123,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 	msgId, err = result.LastInsertId()
 
 	// Inserisco l'associazione tra messaggio e partecipante della chat dandogli il valoredi "not_received" e "read" per l'utente che ha inviato il messaggio
-	query= `INSERT INTO message_status_table (msgId, receiverId, status)
+	query = `INSERT INTO message_status_table (msgId, receiverId, status)
 			SELECT ?, usrId, 'not_received'
 			FROM chat_participants_table
 			WHERE chatId=? AND usrId != ?;`
