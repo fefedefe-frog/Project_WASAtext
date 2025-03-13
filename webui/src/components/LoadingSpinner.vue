@@ -13,7 +13,6 @@ export default {
     <p class="visually-visible centered">{{ loadingText }}...</p>
 		</div>
 	</div>
-	<div v-if="!loading"><slot /></div>
 </template>
 
 <style scoped>
@@ -22,10 +21,9 @@ export default {
 }
 
 .loading-spinner {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  width: fit-content;
+  height: fit-content;
   background-color: #f0f0f0;
   padding: 20px;
   border-radius: 10px;
