@@ -1,18 +1,27 @@
 <script>
 export default {
-	props: ["loading", "loadingText"]
+	props: {
+    loading:{
+      type: Boolean,
+      required: true
+    },
+    loadingText:{
+      type: String,
+      required: false
+    }
+  },
 }
 </script>
 
 <template>
-	<div v-if="loading">
-		<div class="loading-spinner">
-			<div class="spinner-border" role="status">
-				<span class="visually-hidden"></span>
-			</div>
-    <p class="visually-visible centered">{{ loadingText }}...</p>
-		</div>
-	</div>
+  <div v-if="loading">
+    <div class="loading-spinner">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden" />
+      </div>
+      <p class="visually-visible centered">{{ loadingText }}...</p>
+    </div>
+  </div>
 </template>
 
 <style scoped>

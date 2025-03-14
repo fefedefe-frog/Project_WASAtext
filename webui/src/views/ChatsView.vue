@@ -11,6 +11,9 @@ export default {
       noChats: false,
     }
   },
+  mounted() {
+    this.refresh()
+  },
   methods: {
     async refresh() {
       this.loading= true;
@@ -49,9 +52,6 @@ export default {
         this.loading= false
       }
     }
-  },
-  mounted() {
-    this.refresh()
   }
 }
 </script>
@@ -75,11 +75,11 @@ export default {
         <p class="visually-visible centered">Non hai nessuna chat :(</p>
       </div>
 
-      <LoadingSpinner v-if="loading" :loading="loading" loadingText="Caricamento chats"/><LoadingSpinner/>
-      <chatBanner v-for="chat in chats" :chat="chat" lastMessage="franco"></chatBanner>
+      <LoadingSpinner v-if="loading" :loading="loading" loading-text="Caricamento chats" /><LoadingSpinner />
+      <chatBanner v-for="chat in chats" :key="chat.chatId" :chat="chat" last-message="franco" />
     </div>
 
-    <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>
 

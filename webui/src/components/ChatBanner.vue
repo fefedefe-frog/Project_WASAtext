@@ -22,7 +22,7 @@ export default {
   <div class="chat-banner" @click="loadChat">
     <!-- Foto Profilo a destra -->
     <div class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image" />
+      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image">
     </div>
 
     <!-- Contenuto del banner -->

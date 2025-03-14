@@ -24,13 +24,13 @@ export default {
 <template>
   <div class="user-banner">
     <!-- Foto Profilo a destra -->
-    <div v-if="this.userPhoto" class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+this.userPhoto" alt="Profile Image" />
+    <div v-if="userPhoto" class="chat-immage-container">
+      <img :src="'data:image/png;base64,'+userPhoto" alt="Profile Image">
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <p>{{ this.userName }}</p>
+      <p>{{ userName }}</p>
     </div>
   </div>
 </template>

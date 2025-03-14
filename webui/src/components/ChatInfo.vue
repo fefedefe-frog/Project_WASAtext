@@ -1,6 +1,7 @@
 <script>
 export default {
-  props: ["chatId", "isVisible"],
+  props: {chatId: String, isVisible: Boolean},
+  emits: ["error"],
   data: function () {
     return{
       chatName: '',
@@ -8,6 +9,12 @@ export default {
       participants: [],
       token: '',
     }
+  },
+  created () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
+  },
+  mounted () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
   },
   methods: {
     async refreshChatInfo() {
@@ -23,17 +30,11 @@ export default {
           this.participants= response.data.participants
         }
       } catch (e) {
-        this.$emit('error', e)
+          this.$emit('error', e)
       }finally {
         this.loading = false;
       }
     }
-  },
-  created () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
-  },
-  mounted () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
   }
 };
 </script>

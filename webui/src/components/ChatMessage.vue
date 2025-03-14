@@ -15,6 +15,21 @@ export default {
       username: '',
     }
   },
+  computed: {
+    dynamicMarginSide(){
+      return{
+        'margin-left': this.token === this.message.senderId ? 'auto' : '0',
+      }
+    }
+  },
+  created () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
+    this.prepMessage()
+  },
+  mounted () {
+    this.token= localStorage.getItem('authToken').split(' ')[1];
+    this.prepMessage()
+  },
   methods: {
     prepMessage() {
       switch (this.message['deliveryStatus']) {
@@ -44,21 +59,6 @@ export default {
 
       this.messageContentType = this.message['contentType'];
     }
-  },
-  computed: {
-    dynamicMarginSide(){
-      return{
-        'margin-left': this.token === this.message.senderId ? 'auto' : '0',
-      }
-    }
-  },
-  created () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
-    this.prepMessage()
-  },
-  mounted () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
-    this.prepMessage()
   }
 };
 </script>
@@ -69,16 +69,16 @@ export default {
       <div class="message-info">
         <div class="sender-id">{{ message['senderId'] }}</div>
         <div class="message-status">
-          <span class="timestamp">{{ this.date }}</span>
-          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus"/></svg>
+          <span class="timestamp">{{ date }}</span>
+          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus" /></svg>
         </div>
       </div>
       <div class="message-content">
         <div v-if="messageContentType === 'text' " class="message-content-text-container">
           <p>{{ message["content"] }}</p>
         </div>
-        <div class="message-content-image-container" v-if="messageContentType === 'photo'">
-          <img :src="'data:image/png;base64,'+message['content']" alt="Immage" />
+        <div v-if="messageContentType === 'photo'" class="message-content-image-container">
+          <img :src="'data:image/png;base64,'+message['content']" alt="Immage">
         </div>
       </div>
     </div>

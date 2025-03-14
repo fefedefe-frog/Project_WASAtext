@@ -9,6 +9,12 @@ export default {
       welcomeMsg: false,
     };
   },
+  computed: {
+    isUsernameValid() {
+      const username = this.username;
+      return (username.length >= 3 && username.length <= 16 && ((/^\S.*\S$/).test(username)));
+    },
+  },
   methods: {
     async doLogin() {
       // Imposta lo stato di caricamento
@@ -48,12 +54,6 @@ export default {
         this.errormsg = error.toString();
       }
     },
-  },
-  computed: {
-    isUsernameValid() {
-      const username = this.username;
-      return (username.length >= 3 && username.length <= 16 && ((/^\S.*\S$/).test(username)));
-    },
   }
 };
 </script>
@@ -65,9 +65,9 @@ export default {
     </div>
     <div class="login-container">
       <!-- Form di login -->
-      <form @submit.prevent="doLogin" class="login-form">
+      <form class="login-form" @submit.prevent="doLogin">
         <label for="username">Nome utente:  <span v-if="!isUsernameValid" class="error">Nome non valido</span></label>
-        <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required/>
+        <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required>
         <button type="submit" :disabled="!isUsernameValid || loading" :class="{ disabled: !isUsernameValid || loading }">Login</button>
       </form>
 
@@ -75,7 +75,7 @@ export default {
       <ErrorMsg v-if="errormsg" :msg="errormsg" />
 
       <!-- Spinner di caricamento -->
-      <LoadingSpinner v-if="loading" loading="{{ loading }}" :loadingText="'Benvenuto/a '+ username +'! Caricamento chat in corso'"/><LoadingSpinner />
+      <LoadingSpinner v-if="loading" loading="{{ loading }}" :loading-text="'Benvenuto/a '+ username +'! Caricamento chat in corso'" /><LoadingSpinner />
     </div>
   </div>
 </template>

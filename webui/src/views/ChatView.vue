@@ -20,6 +20,18 @@ export default {
       textContent: '',
     }
   },
+  mounted() {
+    this.chatInfo['chatId']= this.$route.params.chat_id;
+    this.token= localStorage.getItem('authToken');
+    this.getChatInfo().then(
+      this.getMessages()
+    )
+    this.getParticipantsInfo()
+  },
+  created() {
+    this.chatInfo['chatId']= this.$route.params.chat_id;
+    this.token= localStorage.getItem('authToken');
+  },
   methods: {
     async getChatInfo() {
       this.loading= true
@@ -83,18 +95,6 @@ export default {
     errorHandler(e){
       this.errormsg = e.toString();
     },
-  },
-  mounted() {
-    this.chatInfo['chatId']= this.$route.params.chat_id;
-    this.token= localStorage.getItem('authToken');
-    this.getChatInfo().then(
-      this.getMessages()
-    )
-    this.getParticipantsInfo()
-  },
-  created() {
-    this.chatInfo['chatId']= this.$route.params.chat_id;
-    this.token= localStorage.getItem('authToken');
   }
 }
 </script>
@@ -103,7 +103,7 @@ export default {
   <div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
       <div class="chat-image-container">
-        <img :src="'data:image/png;base64,'+ chatInfo['chatPhoto']" alt="Chat Image" />
+        <img :src="'data:image/png;base64,'+ chatInfo['chatPhoto']" alt="Chat Image">
       </div>
       <div class="text-container">
         <div class="chat-name">
@@ -117,7 +117,7 @@ export default {
             Refresh messages
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="toggleChatInfo">
-            {{ this.isChatInfoVisible ? "Close info" : "Chat Info" }}
+            {{ isChatInfoVisible ? "Close info" : "Chat Info" }}
           </button>
           <button type="button" class="btn btn-sm btn-outline-primary" @click="leaveChat">
             Leave chat
@@ -127,25 +127,25 @@ export default {
     </div>
 
     <div class="message-sender">
-      <form @submit.prevent="sendMessage" class="sendMessage-form">
+      <form class="sendMessage-form" @submit.prevent="sendMessage">
         <label for="text">
-          <input id="textContent" v-model="textContent" type="text" placeholder="Scrivi un messaggio" required/>
+          <input id="textContent" v-model="textContent" type="text" placeholder="Scrivi un messaggio" required>
         </label>
         <button type="submit" :disabled="!textContent || loading" :class="{ disabled: !textContent}">
-          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator"/></svg>
+          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator" /></svg>
         </button>
       </form>
-      <ChatInfo :isVisible="this.isChatInfoVisible" :chatId="this.chatInfo['chatId']" :participantsInfo="this.participantsInfo" @error="errorHandler" @visibility="toggleChatInfo"></ChatInfo>
+      <ChatInfo :is-visible="isChatInfoVisible" :chat-id="chatInfo['chatId']" :participants-info="participantsInfo" @error="errorHandler" @visibility="toggleChatInfo" />
     </div>
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :message="message"></ChatMessage>
+        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" />
       </div>
     </div>
 
 
-    <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>
 

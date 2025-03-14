@@ -12,6 +12,9 @@ export default {
       noUsers: false,
     }
   },
+  mounted() {
+    this.refresh();
+  },
   methods: {
     async refresh() {
       this.loading= true;
@@ -60,9 +63,6 @@ export default {
     toggleOverlay() {
       this.isOverlayVisible = !this.isOverlayVisible;
     }
-  },
-  mounted() {
-    this.refresh();
   }
 }
 </script>
@@ -87,7 +87,7 @@ export default {
 
     <div class="container">
       <div :class="showMessage ? 'user-list-show-message' : 'users-list-container'">
-        <div class="overlay" v-if="isOverlayVisible">
+        <div v-if="isOverlayVisible" class="overlay">
           <!-- overlay per startare una nuova chat o vedere le info di un utente -->
         </div>
 
@@ -95,14 +95,13 @@ export default {
           <p class="visually-visible centered">Non ci sono utenti nel sistema :(</p>
         </div>
 
-        <LoadingSpinner v-if="loading" :loading="loading" loadingText="Caricamento users"/><LoadingSpinner/>
-        <UserBanner v-for="user in users" :user="user"></UserBanner>
+        <LoadingSpinner v-if="loading" :loading="loading" loading-text="Caricamento users" /><LoadingSpinner />
+        <UserBanner v-for="user in users" :key="user.usrId" :user="user" />
       </div>
 
-      <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+      <ErrorMsg v-if="errormsg" :msg="errormsg" />
     </div>
   </div>
-
 </template>
 
 <style scoped>
