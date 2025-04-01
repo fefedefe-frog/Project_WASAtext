@@ -3,10 +3,13 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"Project_WASAtext/service/database"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/julienschmidt/httprouter"
+	"errors"
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
@@ -77,14 +80,49 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 
 	context.Logger.WithField("chatId", newChatId).Info("chat created successfully")
 
-	// preparo la risposta, contenente solo l'id della chat
-	responseJSON, marshalErr := json.Marshal(struct {
-		ChatId int `json:"chatId"`
-	}{ChatId: newChatId})
+	var chat database.Chat
+	chat, err = rt.db.GetChatInfo(newChatId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			context.Logger.WithError(err).Warn("The chat doesn't exist, in the db")
+			http.Error(writer, "Not found - chat not exist", http.StatusNotFound)
+			return
+		}
+		context.Logger.WithError(err).Error("Error getting chat info")
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
+	// Controllo se la chat è un gruppo o meno, se non è un gruppo procedo
+	// a recuperare le informazioni dell'altro utente partecipante alla chat
+	if !chat.IsGroup {
+
+		otherUsrId := chat.Participants[0]
+		if otherUsrId == token {
+			otherUsrId = chat.Participants[1]
+		}
+
+		user, err := rt.db.GetUserInfo(otherUsrId)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				context.Logger.WithError(err).Warn("The other participant of the chat doesn't exist, in the db")
+				http.Error(writer, "Not found - other participant not exist", http.StatusNotFound)
+				return
+			}
+			context.Logger.WithError(err).Warn("Error getting other participant info")
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		chat.ChatName = user.UserName
+		chat.ChatPhoto = user.UserPhoto
+	}
+
+	// preparo la risposta, contenente le info della chat
+	responseJSON, marshalErr := json.Marshal(chat)
 	if marshalErr != nil {
-		context.Logger.WithError(marshalErr).Error("unable to marshal the chat info")
-		http.Error(writer, "Internal server error - failed json conversion while preparing the response", http.StatusInternalServerError)
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the chat")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
 		return
 	}
 

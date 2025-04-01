@@ -6,9 +6,9 @@
  * @author ENDERZOMBI102 <enderzombi102.end@gmail.com> 2024
  * @description Quick and dirty `lint-openapi` config to better conform to the Prof's requests and style.
  */
-const ibmCloudValidationRules = require( '@ibm-cloud/openapi-ruleset' );
-const { allowedKeywords, propertyCasingConvention, operationIdCasingConvention } = require( '@ibm-cloud/openapi-ruleset/src/functions' );
-const { operations, schemas, parameters } = require( '@ibm-cloud/openapi-ruleset-utilities/src/collections' );
+const ibmCloudValidationRules = require( '/usr/local/lib/node_modules/@ibm-cloud/openapi-ruleset' );
+const { allowedKeywords, propertyCasingConvention, operationIdCasingConvention } = require( '/usr/local/lib/node_modules/@ibm-cloud/openapi-ruleset/src/functions' );
+const { operations, schemas, parameters } = require( '/usr/local/lib/node_modules/@ibm-cloud/openapi-ruleset-utilities/src/collections' );
 
 console.log( 'Loaded config from `.spectral.js`' );
 

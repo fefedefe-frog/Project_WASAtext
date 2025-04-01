@@ -123,6 +123,7 @@ components:
           type: integer
           
           minimum: 0
+          maximum: 999
           readOnly: true
 
         chatName:
@@ -183,6 +184,7 @@ components:
           
           type: integer
           minimum: 0
+          maximum: 999
           readOnly: true
         
         senderId:
@@ -725,6 +727,9 @@ paths:
               type: object
               properties:
                 chatInfo:
+                  description: |
+                    Info of the chat
+                  
                   type: object
                   properties:
                     chatName:
@@ -740,6 +745,9 @@ paths:
                       $ref: "#/components/schemas/Chat/properties/participants"
                 
                 firstMessage:
+                  description: |
+                    First message required for creating the chat
+
                   type: object
                   
                   properties:
@@ -754,10 +762,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Chat/properties/chatId"
+                $ref: "#/components/schemas/Chat"
 
               example:
-                chatId: 123
+                chat_id: 344
+                chatName: "Franco"
+                chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                isGroup: false
+                participants: ["ofnarc754", "arima53"]
         
         "400":
           $ref: "#/components/responses/BadRequestError"

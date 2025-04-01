@@ -2,12 +2,14 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
+	"Project_WASAtext/service/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
@@ -41,14 +43,15 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 		return
 	}
 
-	chat, dbErr := rt.db.GetChatInfo(chatId)
-	if dbErr != nil {
-		if errors.Is(dbErr, sql.ErrNoRows) {
-			context.Logger.WithError(dbErr).Warn("The chat doesn't exist, in the db")
+	var chat database.Chat
+	chat, err = rt.db.GetChatInfo(chatId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			context.Logger.WithError(err).Warn("The chat doesn't exist, in the db")
 			http.Error(writer, "Not found - chat not exist", http.StatusNotFound)
 			return
 		}
-		context.Logger.WithError(dbErr).Error("Error getting chat info")
+		context.Logger.WithError(err).Error("Error getting chat info")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}

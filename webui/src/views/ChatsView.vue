@@ -63,7 +63,7 @@ export default {
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
-            Refresh
+           Refresh
           </button>
         </div>
       </div>
@@ -75,7 +75,7 @@ export default {
         <p class="visually-visible centered">Non hai nessuna chat :(</p>
       </div>
 
-      <LoadingSpinner v-if="loading" :loading="loading" loading-text="Caricamento chats" /><LoadingSpinner />
+      <LoadingSpinner v-if="loading" :loading="loading" loading-text="Caricamento chats" />
       <chatBanner v-for="chat in chats" :key="chat.chatId" :chat="chat" last-message="franco" />
     </div>
 
