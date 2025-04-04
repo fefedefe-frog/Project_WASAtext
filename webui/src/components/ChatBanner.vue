@@ -19,7 +19,7 @@ export default {
   methods: {
     // TODO
     loadChat(){
-      this.$router.push('/chats/'+ this.chatId);
+      console.log("caricamento chat: "+ this.chatId)
     }
   },
 };
@@ -28,14 +28,14 @@ export default {
 <template>
   <div class="chat-banner" @click="loadChat">
     <!-- Foto Profilo a destra -->
-    <div class="chat-immage-container">
+    <div class="chat-image-container">
       <img :src="'data:image/png;base64,'+this.chatData['chatPhoto']" alt="Chat Image">
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
       <div class="chat-name">{{ chatData['chatName'] }}</div>
-      <div class="last-message"> messaggo tem...</div>
+      <div class="last-message"> messaggio tem...</div>
     </div>
   </div>
 </template>
@@ -60,7 +60,7 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
-.chat-immage-container img {
+.chat-image-container img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -68,7 +68,7 @@ export default {
   user-select: none;
 }
 
-.chat-immage-container {
+.chat-image-container {
   max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
   max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
   object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
