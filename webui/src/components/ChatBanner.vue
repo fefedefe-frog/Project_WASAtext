@@ -1,7 +1,7 @@
 <script>
 export default {
   props: {
-    chat: {
+    chatData: {
       type: Object,
       required: true
     },
@@ -13,9 +13,11 @@ export default {
     }
   },
   mounted() {
-    this.chatId= this.chat['chatId'];
+    this.chatId= this.chatData['chatId'];
+    console.log(this.chatData)
   },
   methods: {
+    // TODO
     loadChat(){
       this.$router.push('/chats/'+ this.chatId);
     }
@@ -27,13 +29,13 @@ export default {
   <div class="chat-banner" @click="loadChat">
     <!-- Foto Profilo a destra -->
     <div class="chat-immage-container">
-      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image">
+      <img :src="'data:image/png;base64,'+this.chatData['chatPhoto']" alt="Chat Image">
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <div class="chat-name">{{ chat['chatName'] }}</div>
-      <div class="last-message">{{ lastMessage }}</div>
+      <div class="chat-name">{{ chatData['chatName'] }}</div>
+      <div class="last-message"> messaggo tem...</div>
     </div>
   </div>
 </template>

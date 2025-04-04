@@ -87,6 +87,7 @@ export default {
 .chat-list-container{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+
 }
 
 /* usato per quando devo mostare un messaggio centrato nel div della lista */

@@ -24,8 +24,6 @@ import {RouterView} from 'vue-router'
 .app-main {
   width: 100%;
   height: 100%;
-  margin: auto;
-  padding: 20px;
 
   display: flex;
   justify-content: center;

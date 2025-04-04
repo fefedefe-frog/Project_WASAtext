@@ -46,7 +46,7 @@ export default {
 
           // Ritarda la redirezione per consentire il caricamento
           setTimeout(() => {
-            this.$router.push('/chats'); // Redirigi alla schermata principale delle chat
+            this.$router.push('/home'); // Redirigi alla schermata principale delle chat
           }, 1000); // Attendi 2 secondi
         }
       } catch (error) {
@@ -80,9 +80,6 @@ export default {
 
 
 <style scoped>
-* {
-  border: #0dcaf0 1px solid;
-}
 .container {
   display: flex;
   align-items: center;

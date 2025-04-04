@@ -78,7 +78,7 @@ export default {
           <p>{{ message["content"] }}</p>
         </div>
         <div v-if="messageContentType === 'photo'" class="message-content-image-container">
-          <img :src="'data:image/png;base64,'+message['content']" alt="Immage">
+          <img :src="'data:image/png;base64,'+message['content']" alt="Image">
         </div>
       </div>
     </div>
