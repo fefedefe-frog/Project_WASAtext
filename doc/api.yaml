@@ -1158,16 +1158,28 @@ paths:
     
     put:
       description:  |
-        Retrieve most of the messages of the chat ordered from the newest to the oldest,
-        and update it's status to received
+        Retrive messages of the chat ordered from the newest to the oldest,
+        and update it's status to received, starting from a specify msgId
       summary: Get chat messages
 
-      tags: ["Chat operation"]
+      tags: ["Message operation"]
       operationId: getConversation
 
       security:
         - BearerAuth: []
-      
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description:  |
+                msgId from where starting to receiving new messages
+
+              type: object
+              properties:
+                msgId:
+                  $ref: "#/components/schemas/Message/properties/msgId"
+
       responses:
         "200":
           description:  |
@@ -1317,7 +1329,7 @@ paths:
 
     put:
       description:  |
-        Update the delivery status of a message for the user that is reading the message
+        Update the delivery status of a message for an user to read
       summary: Update message status
 
       tags: ["Message operation"]
