@@ -41,6 +41,8 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	if chatInfo.IsGroup {
 		if chatInfo.ChatPhoto == "" {
 			chatInfo.ChatPhoto = database.DefaultGroupPhotoBase64
+		} else {
+
 		}
 		if chatInfo.ChatName == "" {
 			chatInfo.ChatName = "Gruppo"
@@ -71,6 +73,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	}
 
 	var newChatId int
+	chatInfo.Participants = append(chatInfo.Participants, token)
 	newChatId, err = rt.db.InsertNewChat(token, chatInfo.ChatName, groupPhotoData, chatInfo.Participants, chatInfo.IsGroup, messageContent)
 	if err != nil {
 		context.Logger.WithError(err).Error("unable to insert a new chat in the db")
