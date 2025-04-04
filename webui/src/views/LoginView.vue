@@ -28,7 +28,7 @@ export default {
 
       try {
         // Esegui la richiesta POST e aspetta la risposta con `await`
-        const response = await this.$axios.post('http://localhost:3000/session', {
+        const response = await this.$axios.post('/session', {
           userName: (this.username).toLowerCase(),
         });
 
@@ -40,8 +40,8 @@ export default {
         if (token && usrId) {
 
           // Salvo il token e usrId
-          localStorage.setItem('authToken', token);
-          localStorage.setItem('usrId', usrId);
+          sessionStorage.setItem('authToken', token);
+          sessionStorage.setItem('usrId', usrId);
 
 
           // Ritarda la redirezione per consentire il caricamento
@@ -59,38 +59,46 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-      <h1 class="h2">Login</h1>
-    </div>
-    <div class="login-container">
+  <div class="container">
+    <div class="login-container" v-if="!loading">
       <!-- Form di login -->
       <form class="login-form" @submit.prevent="doLogin">
-        <label for="username">Nome utente:  <span v-if="!isUsernameValid" class="error">Nome non valido</span></label>
+        <h3 class="h3">Login</h3>
+        <label for="username">Nome utente:  <span v-if="!isUsernameValid && username" class="error">Nome non valido</span></label>
         <input id="username" v-model="username" type="text" placeholder="Inserisci il nome utente" required>
         <button type="submit" :disabled="!isUsernameValid || loading" :class="{ disabled: !isUsernameValid || loading }">Login</button>
       </form>
-
-      <!-- Mostra messaggi di errore -->
-      <ErrorMsg v-if="errormsg" :msg="errormsg" />
-
-      <!-- Spinner di caricamento -->
-      <LoadingSpinner v-if="loading" loading="{{ loading }}" :loading-text="'Benvenuto/a '+ username +'! Caricamento chat in corso'" /><LoadingSpinner />
     </div>
+    <!-- Mostra messaggi di errore -->
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+
+    <!-- Spinner di caricamento -->
+    <LoadingSpinner :loading="loading" :loading-text="'Benvenuto/a '+ username +'! Caricamento in corso'" />
   </div>
 </template>
 
 
 
 <style scoped>
+* {
+  border: #0dcaf0 1px solid;
+}
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 form {
   display: flex;
   flex-direction: column;
+
   width: 300px;
   margin: 0 auto;
   padding: 20px;
-  border: 1px solid #ccc;
+
   border-radius: 8px;
+  background: #ccc;
 }
 
 input {

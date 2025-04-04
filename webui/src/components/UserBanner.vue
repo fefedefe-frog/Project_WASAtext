@@ -1,12 +1,12 @@
 <script>
 export default {
   props: {
-    user: {
+    userData: {
       type: Object,
       required: true,
     }
   },
-  data: function() {
+  data() {
     return {
       usrId: '',
       userName: '',
@@ -14,9 +14,9 @@ export default {
     }
   },
   mounted() {
-    this.usrId= this.user['usrId'];
-    this.userName= this.user['userName'];
-    this.userPhoto= this.user['userPhoto'];
+    this.usrId= this.userData['usrId'];
+    this.userName= this.userData['userName'];
+    this.userPhoto= this.userData['userPhoto'];
   }
 };
 </script>

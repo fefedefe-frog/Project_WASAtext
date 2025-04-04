@@ -651,8 +651,8 @@ paths:
   /chats:                                                         #Endpoint delle chat
     get:
       description:  |
-        Return an array that contain all the chats of a single user
-      summary: List the chat of the user
+        Return an array that contain all the chats, with the last message for the chats
+      summary: List the chats of the user
       
       tags: ["Chat operation"]
       operationId: getMyConversations
@@ -667,32 +667,57 @@ paths:
           content:
             application/json:
               schema:
-                description: List with all user chat
+                description: List with all the chats of the user with the last message for that chat.
+
                 type: object
                 properties:
                   chats:
-                    description: user chats
+                    description: array of chat info and one message
 
                     type: array
                     items:
-                      $ref: "#/components/schemas/Chat"
-                    
+                      type: object
+                      properties:
+                        chatInfo:
+                          $ref: "#/components/schemas/Chat"
+                        lastMessage:
+                          $ref: "#/components/schemas/Message"
+
+
                     minItems: 0
                     maxItems: 32
               
               example:
                 chats:
-                  - chat_id: 234
-                    chatName: "Chat Uni"
-                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                    isGroup: true
-                    participants: ["ofnarc754", "arima53", "odfn34"]
+                  - chatInfo:
+                      chat_id: 234
+                      chatName: "Chat Uni"
+                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                      isGroup: true
+                      participants: ["ofnarc754", "arima53", "odfn34"]
+                    lastMessage:
+                      msgId: 3
+                      senderId: "ofnarc754"
+                      contentType: "photo"
+                      content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                      deliveryStatus: "sent"
+                      timestamp: "2021-06-01T14:10:27Z"
+                      comments: [ "😒" ]
 
-                  - chat_id: 254
-                    chatName: "Roberto"
-                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                    isGroup: false
-                    participants: ["ofnarc754", "ordigro293"]
+                  - chatInfo:
+                      chat_id: 254
+                      chatName: "Roberto"
+                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                      isGroup: false
+                      participants: ["ofnarc754", "ordigro293"]
+                    lastMessage:
+                      msgId: 5
+                      senderId: "ordigro293"
+                      contentType: "text"
+                      content: "ciao"
+                      deliveryStatus: "sent"
+                      timestamp: "2021-06-01T14:10:27Z"
+                      comments: []
 
         "401":
           $ref: "#/components/responses/UnauthorizedError"

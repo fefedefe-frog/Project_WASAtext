@@ -7,6 +7,11 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({command, mode, ssrBuild}) => {
 	const ret = {
 		plugins: [vue()],
+		server: {
+			watch: {
+				usePolling: true
+			}
+		},
 		resolve: {
 			alias: {
 				'@': fileURLToPath(new URL('./src', import.meta.url))

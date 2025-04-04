@@ -19,21 +19,17 @@ export default {
       <div class="spinner-border" role="status">
         <span class="visually-hidden" />
       </div>
-      <p class="visually-visible centered">{{ loadingText }}...</p>
+      <p class="visually-visible text-center">{{ loadingText }}...</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.centered {
-  text-align: center; /* Centra il testo */
-}
-
 .loading-spinner {
   position: relative;
   width: fit-content;
   height: fit-content;
-  background-color: #f0f0f0;
+  background-color: #a0a0a0;
   padding: 20px;
   border-radius: 10px;
   text-align: center;

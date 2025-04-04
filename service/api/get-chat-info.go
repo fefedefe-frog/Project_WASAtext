@@ -19,14 +19,16 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	if err != nil {
 		var numErr *strconv.NumError
 		if errors.As(err, &numErr) {
+			var errVal string
 			switch {
 			case errors.Is(numErr.Err, strconv.ErrSyntax):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
+				errVal = "the param chat_id is not a valid number"
 			case errors.Is(numErr.Err, strconv.ErrRange):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
+				errVal = "the param chat_id range is out of range"
 			default:
-				context.Logger.WithError(err).Error("Error parsing param chat_id")
+				errVal = "Error parsing param chat_id"
 			}
+			context.Logger.WithError(err).Error(errVal)
 			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
 			return
 		}

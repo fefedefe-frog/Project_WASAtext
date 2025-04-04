@@ -5,14 +5,19 @@ export default {
       type: Object,
       required: true
     },
-    lastMessage: {
-      type: String,
-      required: true
+  },
+  data() {
+    return {
+      chatId: -1,
+      message: {}
     }
+  },
+  mounted() {
+    this.chatId= this.chat['chatId'];
   },
   methods: {
     loadChat(){
-      this.$router.push('/chats/'+ this.chat['chatId']);
+      this.$router.push('/chats/'+ this.chatId);
     }
   },
 };

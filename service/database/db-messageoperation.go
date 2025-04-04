@@ -76,8 +76,6 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error
 	return messages, err
 }
 
-// TODO modificare gestione stringa qui
-
 func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
 	tx, err := db.c.Begin()
@@ -248,7 +246,6 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 
 	// Converto il valore di isForwarded
 	message.IsForwarded = isForwarded != 0
-
 	return message, nil
 }
 

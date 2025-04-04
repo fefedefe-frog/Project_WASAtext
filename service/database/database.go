@@ -99,8 +99,8 @@ type AppDatabase interface {
 
 	// Chat operations
 
-	// GetUserChats Chat, retrive the chats of a user by passing its usrId
-	GetUserChats(usrId string) ([]Chat, error)
+	// GetChatsOfUser Chat, retrive the chats of a user by passing its usrId
+	GetChatsOfUser(usrId string) ([]Chat, error)
 	// InsertNewChat int, add a new chat in the db, the function receive an array of users that are in the chat
 	InsertNewChat(creatorUsrId string, chatName string, chatPhotoData []byte, participants []string, isGroup bool, messageContent interface{}) (int, error)
 	// DeleteChat error, remove a chat from the db, also remove all the message of that chat from the db

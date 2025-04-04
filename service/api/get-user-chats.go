@@ -13,7 +13,7 @@ import (
 func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Tento di recuperare le chat di quell'user
-	chats, err := rt.db.GetUserChats(token)
+	chats, err := rt.db.GetChatsOfUser(token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, database.ErrUserNoChat) {
 			context.Logger.Info("User doesn't have chat")

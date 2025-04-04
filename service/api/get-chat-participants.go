@@ -18,6 +18,7 @@ func (rt *_router) getChatParticipants(writer http.ResponseWriter, _ *http.Reque
 	if err != nil {
 		rt.baseLogger.WithError(err).Error("invalid chat id")
 		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
 	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
 		if errors.Is(err, sql.ErrNoRows) {

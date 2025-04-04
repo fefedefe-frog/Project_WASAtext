@@ -9,14 +9,16 @@ import (
 	"strings"
 )
 
-func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
+func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 
 	/*
 		In questa query eseguo il primo join per ottenere tutte le info delle chat di cui fa parte l'utente
 		tramite il join nella tabella chats_table e quella dei partecipanti, associando il chatId
 		successivamente faccio un join della tabella dei partecipanti su se stessa per trovare gli id dei
 		partecipanti di una chat, che poi aggiungerò all'output finale tramite la funzione GROUP_CONCAT
-		che restituisce una colonna di id concatenate dal carattere speciale ␟ (in questo caso)
+		che restituisce una colonna di id concatenate dal carattere speciale ␟ (in questo caso).
+
+		Infine recupero anche il message id del messaggio più recente della chat tramite il left join
 	*/
 	query := `
 			SELECT C.chatId, C.chatName, C.chatPhoto, C.isGroup, GROUP_CONCAT(P2.usrId, '␟') AS participantsString
@@ -52,7 +54,8 @@ func (db *appdbimpl) GetUserChats(usrId string) ([]Chat, error) {
 		var chatPropicBytes []byte
 		var participantsString string
 
-		if err := rows.Scan(&chat.ChatId, &chat.ChatName, &chatPropicBytes, &chat.IsGroup, &participantsString); err != nil {
+		err = rows.Scan(&chat.ChatId, &chat.ChatName, &chatPropicBytes, &chat.IsGroup, &participantsString)
+		if err != nil {
 			return nil, err
 		}
 
