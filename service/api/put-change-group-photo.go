@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -18,20 +19,24 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 		NewGroupPhoto string `json:"newGroupPhoto"`
 	}{}
 
-	// Controllo che l'utente faccia effettivamente parte del gruppo
+	// Recupero il chatId dai paramentri del'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		rt.baseLogger.WithError(err).Error("invalid chat id")
-		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("usrId", token).Warnf("tried to change group photo of group <%d> which he isn't a member of", chatId)
-			http.Error(writer, "Forbidden - can't change the photo of another group", http.StatusForbidden)
-			return
-		}
-		context.Logger.WithError(err).Errorf("Error while checking if the user <%s> is member of the group <%d>", token, chatId)
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
+
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+	if !isParticipant {
+		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to change a photo of group which he isn't a member of")
+		http.Error(writer, "Forbidden - can't change the photo of a group where you aren't part off", http.StatusForbidden)
 		return
 	}
 
@@ -39,7 +44,7 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup {
 
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).Errorf("Chat <%d> not found", chatId)
+			context.Logger.WithError(err).WithField("groupChatId", chatId).Error("Chat not found")
 			http.Error(writer, "Not Found", http.StatusNotFound)
 			return
 		} else if err != nil {
@@ -56,7 +61,7 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 	// Decodifico la richiesta
 	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
 		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
+		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
@@ -82,11 +87,11 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 	// Aggiorno la propic del gruppo nel database
 	if err := rt.db.SetGroupPhoto(chatId, photoData); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithError(err).Errorf("Group chat <%d> not found in database", chatId)
+			context.Logger.WithError(err).Errorf("Group chat <%d> not found in database", chatId)
 			http.Error(writer, "Group chat not found", http.StatusNotFound)
 			return
 		}
-		rt.baseLogger.WithError(err).Error("Error changing group propic")
+		context.Logger.WithError(err).Error("Error changing group propic")
 		http.Error(writer, "Unable to change group propic", http.StatusBadRequest)
 		return
 	}
