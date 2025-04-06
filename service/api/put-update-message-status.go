@@ -2,7 +2,6 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
-	"errors"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
@@ -13,36 +12,16 @@ func (rt *_router) setMessageStatusToRead(writer http.ResponseWriter, _ *http.Re
 	// Recupero il valore di chat_id e msg_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		var numErr *strconv.NumError
-		if errors.As(err, &numErr) {
-			switch {
-			case errors.Is(numErr.Err, strconv.ErrSyntax):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
-			case errors.Is(numErr.Err, strconv.ErrRange):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
-			default:
-				context.Logger.WithError(err).Error("Error parsing param chat_id")
-			}
-			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
-			return
-		}
+		context.Logger.WithError(err).Error("Error parsing param chat_id")
+		http.Error(writer, "Bad request - Invalid param chat_id", http.StatusBadRequest)
+		return
 	}
 	var msgId int
 	msgId, err = strconv.Atoi(params.ByName("msg_id"))
 	if err != nil {
-		var numErr *strconv.NumError
-		if errors.As(err, &numErr) {
-			switch {
-			case errors.Is(numErr.Err, strconv.ErrSyntax):
-				context.Logger.WithError(numErr.Err).Error("the param msg_id is not a valid number")
-			case errors.Is(numErr.Err, strconv.ErrRange):
-				context.Logger.WithError(numErr.Err).Error("the param msg_id range is out of range")
-			default:
-				context.Logger.WithError(err).Error("Error parsing param msg_id")
-			}
-			http.Error(writer, "invalid param msg_id", http.StatusBadRequest)
-			return
-		}
+		context.Logger.WithError(err).Error("Error parsing param msg_id")
+		http.Error(writer, "Bad request - Invalid param msg_id", http.StatusBadRequest)
+		return
 	}
 
 	// Controllo se l'utente che ha effettuato l'accesso faccia parte della chat del messaggio che vuole impostare come letto
@@ -64,5 +43,5 @@ func (rt *_router) setMessageStatusToRead(writer http.ResponseWriter, _ *http.Re
 	}
 
 	// Invio la risposta senza corpo
-	writer.WriteHeader(http.StatusNoContent)
+	writer.WriteHeader(http.StatusAccepted)
 }
