@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )
@@ -20,28 +21,29 @@ func (rt *_router) setGroupName(writer http.ResponseWriter, request *http.Reques
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		rt.baseLogger.WithError(err).Error("invalid chat id")
-		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
-
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("usrId", token).Warnf("tried to change group name of group <%d> which he isn't a member of", chatId)
-			http.Error(writer, "Forbidden - can't change the name of another group", http.StatusForbidden)
-			return
-		} else if err != nil {
-			context.Logger.WithError(err).Errorf("Error while checking if the user <%s> is member of the group <%d>", token, chatId)
-			http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
-			return
-		}
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
+		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+	if !isParticipant {
+		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to change the name of a group of which he isn't a member of")
+		http.Error(writer, "Forbidden - can't  change a name of a group where you aren't part off", http.StatusForbidden)
+		return
 	}
 
 	// Controllo che la chat che si vuole modificare sia un gruppo
 	if isGroup, err := rt.db.IsAGroup(chatId); !isGroup {
 
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).Errorf("Chat <%d> not found", chatId)
-			http.Error(writer, "Not Found", http.StatusNotFound)
+			context.Logger.WithError(err).WithField("chatId", chatId).Error("Chat not found")
+			http.Error(writer, "Not Found - The chat doesn't exist", http.StatusNotFound)
 			return
 		} else if err != nil {
 			context.Logger.WithError(err).Errorf("Unable to check if the chat <%d> is a group", chatId)
@@ -57,7 +59,7 @@ func (rt *_router) setGroupName(writer http.ResponseWriter, request *http.Reques
 	// Decodifica del JSON nella richiesta
 	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
 		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
+		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
@@ -67,15 +69,15 @@ func (rt *_router) setGroupName(writer http.ResponseWriter, request *http.Reques
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
 			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
-			rt.baseLogger.Debug("Invalid name format")
+			context.Logger.Debug("Invalid name format")
 
 		case errors.Is(err, utilitytool.ErrNameShort):
 			http.Error(writer, "the name must be at least 3 character long", http.StatusBadRequest)
-			rt.baseLogger.Debug("name to short")
+			context.Logger.Debug("name to short")
 
 		case errors.Is(err, utilitytool.ErrNameLong):
 			http.Error(writer, "the name can be max 16 character long", http.StatusBadRequest)
-			rt.baseLogger.Debug("name to long")
+			context.Logger.Debug("name to long")
 		}
 		return
 	}
@@ -83,11 +85,11 @@ func (rt *_router) setGroupName(writer http.ResponseWriter, request *http.Reques
 	// Aggiorno l'username nel database
 	if err := rt.db.SetGroupName(chatId, requestJson.NewGroupName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithError(err).Errorf("Group chat: <%s> not found in database", token)
+			context.Logger.WithError(err).Errorf("Group chat: <%s> not found in database", token)
 			http.Error(writer, "Chat not found", http.StatusNotFound)
 			return
 		}
-		rt.baseLogger.WithError(err).Error("Error changing group name")
+		context.Logger.WithError(err).Error("Error changing group name")
 		http.Error(writer, "Unable to rename", http.StatusBadRequest)
 		return
 	}
