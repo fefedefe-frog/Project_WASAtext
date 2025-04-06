@@ -3,7 +3,6 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"Project_WASAtext/service/database"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
@@ -11,49 +10,50 @@ import (
 	"strconv"
 )
 
-func (rt *_router) getConversation(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+
+	var requestJson = struct {
+		MsgId int `json:"msgId"`
+	}{}
 
 	// Recupero il valore di chat_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		var numErr *strconv.NumError
-		if errors.As(err, &numErr) {
-			switch {
-			case errors.Is(numErr.Err, strconv.ErrSyntax):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id is not a valid number")
-			case errors.Is(numErr.Err, strconv.ErrRange):
-				context.Logger.WithError(numErr.Err).Error("the param chat_id range is out of range")
-			default:
-				context.Logger.WithError(err).Error("Error parsing param chat_id")
-			}
-			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
-			return
-		}
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
 
 	// Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare i messaggi
-	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil {
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
 		context.Logger.WithError(err).Error("Error checking if user is participant")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
-	} else if !exist {
+	}
+	if !isParticipant {
 		context.Logger.WithField("usrId", token).Warn("User is not a participant")
-		http.Error(writer, "Forbidden - The user logged in is not a participant of the chat", http.StatusForbidden)
+		http.Error(writer, "Forbidden - The user is not a participant of the chat", http.StatusForbidden)
+		return
+	}
+
+	// Decodifica il corpo della richiesta JSON
+	err = json.NewDecoder(request.Body).Decode(&requestJson)
+	if err != nil {
+		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
+		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
 	// Recupero i messaggi della chat dal database
 	var chatMessages []database.Message
-	chatMessages, err = rt.db.GetChatMessages(chatId, token)
+	chatMessages, err = rt.db.GetChatMessages(chatId, token, requestJson.MsgId)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			context.Logger.WithError(err).Warn("The chat have no messages, shouldn't be possible")
-			http.Error(writer, "The chat is empty", http.StatusNotFound)
-			return
-		case errors.Is(err, database.ErrUpdateMessageStatus):
+		if errors.Is(err, database.ErrUpdateMessageStatus) {
+
 			context.Logger.WithError(err).Warn("Error updating the message status of the messages retrived")
-		default:
+		} else {
 			context.Logger.WithError(err).Error("Error getting chat messages")
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			return
