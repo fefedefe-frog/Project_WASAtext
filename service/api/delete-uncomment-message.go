@@ -26,6 +26,19 @@ func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request,
 		return
 	}
 
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error while checking the user participant status")
+		http.Error(writer, "Internal Server Error - Unable to check the user participant status", http.StatusInternalServerError)
+		return
+	}
+	if !isParticipant {
+		context.Logger.Warn("the user is not a participant of the chat of the message that was try to comment")
+		http.Error(writer, "Forbidden - Can't uncomment a message of a chat where aren't a participant", http.StatusForbidden)
+		return
+	}
+
 	// Controllo che l'utente che vuole rimuovere il commento sia colui che l'ha commentato in precedenza
 	var isCommenter bool
 	isCommenter, err = rt.db.CheckCommentAuthor(chatId, token)
@@ -40,6 +53,8 @@ func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request,
 		http.Error(writer, "Forbidden - Can't uncomment a message that isn't yours", http.StatusForbidden)
 		return
 	}
+
+	// Controllo che l'utente che vuole commentare il messaggio faccia parte della chat di quel messaggio
 
 	if err := rt.db.UncommentMessage(commentId); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
