@@ -104,5 +104,9 @@ export default {
 		'ibm-requestbody-name': 'off',
 		'ibm-error-response-schemas': 'off',
 		'ibm-parameter-casing-convention': 'off',
+		'ibm-required-array-properties-in-response': 'off',
+		'ibm-required-enum-properties-in-response': 'off',
+		'ibm-required-enum-properties-in-response': 'off',
+		'ibm-anchored-patterns': 'off',
 	}
 };
