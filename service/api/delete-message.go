@@ -43,12 +43,12 @@ func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, pa
 	}
 
 	if senderId != token {
-		context.Logger.WithField("user", token).Warnf("Error while checking the sender id of a message")
+		context.Logger.WithField("user", token).Warnf("User tryied to delete a message of which he isn't the author")
 		http.Error(writer, "Forbidden - You can't delete the message of another user", http.StatusForbidden)
 		return
 	}
 
-	context.Logger.WithField("msgId", msgId).Debug("tryong to remove the message")
+	context.Logger.WithField("msgId", msgId).Debug("trying to remove the message")
 	err = rt.db.RemoveMessage(msgId, chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -61,6 +61,6 @@ func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, pa
 		return
 	}
 
-	context.Logger.WithField("msgId", msgId).Info("message removed successfully")
-	writer.WriteHeader(http.StatusNoContent)
+	context.Logger.WithField("msgId", msgId).Debug("message removed successfully")
+	writer.WriteHeader(http.StatusAccepted)
 }
