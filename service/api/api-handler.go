@@ -11,22 +11,22 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/session", rt.wrap(rt.doLogin)) // fatto
 
 	// User operations
-	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))            // fatto
-	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo))) // fatto
-	rt.router.PUT("/profile", rt.wrap(rt.BearerAuth(rt.setMyUserName)))     // fatto
-	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.setMyPhoto))) // fatto
+	rt.router.GET("/users", rt.wrap(rt.BearerAuth(rt.getUsers)))              // fatto
+	rt.router.GET("/users/:usr_id", rt.wrap(rt.BearerAuth(rt.getUserInfo)))   // fatto
+	rt.router.PUT("/profile", rt.wrap(rt.BearerAuth(rt.setUserName)))         // fatto
+	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.setUserPhoto))) // fatto
 
 	// Chat operations
-	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getMyConversations)))                 // fatto
-	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))                      // fatto
-	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))               // fatto
-	rt.router.GET("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.getChatParticipants))) // fatto
+	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getMyConversations)))          // fatto
+	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))               // fatto
+	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))        // fatto
+	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveChat))) // fatto
 
 	// Group operations
-	rt.router.PUT("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.setGroupName)))         // fatto
-	rt.router.PUT("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.setGroupPhoto))) // fatto
-	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addToGroup)))    // fatto
-	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveGroup)))  // fatto
+	rt.router.PUT("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.setGroupName)))              // fatto
+	rt.router.PUT("/chats/:chat_id/propic", rt.wrap(rt.BearerAuth(rt.setGroupPhoto)))      // fatto
+	rt.router.GET("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.getChatParticipants))) // fatto
+	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addToGroup)))         // fatto
 
 	// Message operations
 	rt.router.PUT("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getConversation)))                                    // fatto
