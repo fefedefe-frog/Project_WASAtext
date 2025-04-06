@@ -409,7 +409,9 @@ paths:
 
       responses:
         "201":
-          description: User log-in action successful
+          description:  |
+            User sign-in action successful, the user wasn't in the
+            db, so it was the first time login
           content:
             application/json:
               schema:
@@ -423,6 +425,23 @@ paths:
               
               example:
                 usrId: "ofnarc754"
+
+        "200":
+          description: User log-in acction succesful
+          content:
+            application/json:
+              schema:
+                description: |
+                  Response with the unique user id
+
+                type: object
+                properties:
+                  usrId:
+                    $ref: "#/components/schemas/User/properties/usrId"
+
+              example:
+                usrId: "ofnarc754"
+
         "400":
           $ref: "#/components/responses/BadRequestError"
 
@@ -577,9 +596,6 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
-        "403":
-          $ref: "#/components/responses/OperationNotAllowed"
-
         "404":
           $ref: "#/components/responses/NotFoundError"
 
@@ -634,9 +650,6 @@ paths:
 
         "401":
           $ref: "#/components/responses/UnauthorizedError"
-
-        "403":
-          $ref: "#/components/responses/OperationNotAllowed"
 
         "404":
           $ref: "#/components/responses/NotFoundError"
@@ -939,7 +952,7 @@ paths:
                   $ref: "#/components/schemas/Chat/properties/chatPhoto"
       
       responses:
-        "200":
+        "202":
           description: Photo updated successfully
           content:
             application/json:
@@ -978,14 +991,14 @@ paths:
         Retrive the participants of a chat
       summary: Get participants list
 
-      tags: ["Chat operation"]
+      tags: ["Group chat operation"]
       operationId: getChatParticipants
 
       security:
         - BearerAuth: []
 
       responses:
-        "201":
+        "200":
           description: |
             The response have the list of participants of the chat
 
@@ -1015,9 +1028,6 @@ paths:
                   - usrId: "artmat34"
                     userName: "marta"
                     userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-
-        "204":
-          description: No content, user is already in the chat
 
         "400":
           $ref: "#/components/responses/BadRequestError"
@@ -1056,27 +1066,14 @@ paths:
 
               type: object
               properties:
-                users:
-                  description: Users of the chat
-
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/User"
-
-                  minItems: 1
-                  maxItems: 32
+                usrId:
+                  $ref: "#/components/schemas/User/properties/usrId"
 
               example:
-                users:
-                  - usrId: "ofnarc754"
-                    userName: "franco"
-                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  - usrId: "artmat34"
-                    userName: "marta"
-                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                usrId: "artmat34"
       
       responses:
-        "201":
+        "202":
           description: User added successfully, return the list of participant refreshed
           content:
             application/json:
@@ -1086,18 +1083,24 @@ paths:
                 
                 type: object
                 properties:
-                  users:
-                    description: Users of the chat
+                  participants:
+                    description: Return the participants of the chat renewed
 
                     type: array
                     items:
-                        $ref: "#/components/schemas/User/properties/usrId"
+                        $ref: "#/components/schemas/User"
               
                     minItems: 1
                     maxItems: 32
               
               example:
-                users: ["franco245", "maria34"]
+                participants:
+                  - usr_id: "franco245"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usr_id: "maria34"
+                    userName: "maria"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "204":
           description: No content, user is already in the chat
@@ -1179,6 +1182,9 @@ paths:
               properties:
                 msgId:
                   $ref: "#/components/schemas/Message/properties/msgId"
+            
+            example:
+              msgId: 2
 
       responses:
         "200":
@@ -1201,32 +1207,30 @@ paths:
                     
                     minItems: 1
                     maxItems: 256
+              
               example:
                 messages:
-                  - Message1:
-                      msgId: 3
-                      senderId: "ofnarc754"
-                      contentType: "photo"
-                      content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      deliveryStatus: "sent"
-                      timestamp: "2021-06-01T14:10:27Z"
-                      comments: ["😒"]
-                  - Message2:
-                      msgId: 345
-                      senderId: "ordigro293"
-                      contentType: "text"
-                      content: "Ciao franco!!"
-                      deliveryStatus: "read"
-                      timestamp: "2021-06-01T16:10:27Z"
-                      comments: ["😊"]
-                  - Message3:
-                      msgId: 266
-                      senderId: "maria34"
-                      contentType: "photo"
-                      content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      deliveryStatus: "read"
-                      timestamp: "2021-06-01T18:10:27Z"
-                      comments: ["😊", "😒"]
+                  - msgId: 3
+                    senderId: "ofnarc754"
+                    contentType: "photo"
+                    content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    deliveryStatus: "sent"
+                    timestamp: "2021-06-01T14:10:27Z"
+                    comments: ["😒"]
+                  - msgId: 345
+                    senderId: "ordigro293"
+                    contentType: "text"
+                    content: "Ciao franco!!"
+                    deliveryStatus: "read"
+                    timestamp: "2021-06-01T16:10:27Z"
+                    comments: ["😊"]
+                  - msgId: 266
+                    senderId: "maria34"
+                    contentType: "photo"
+                    content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    deliveryStatus: "read"
+                    timestamp: "2021-06-01T18:10:27Z"
+                    comments: ["😊", "😒"]
         
         "400":
           $ref: "#/components/responses/BadRequestError"
@@ -1257,10 +1261,8 @@ paths:
       requestBody:
         description:  |
           The message that the user want to send, in the request are present: <br>
-          - User id of the user that send the message
           - the content type of the message
           - the content of the message
-          - timestamp
         content: 
           application/json:
             schema:
@@ -1275,9 +1277,29 @@ paths:
 
         
       responses:
-        "204":
+        "201":
           description: Message sent succesfully
-        
+          content:
+            applicatio/json:
+              schema:
+                description:  |
+                  The message just sended
+                
+                type: object
+                properties:
+                  message:
+                    $ref: "#/components/schemas/Message"
+              
+              example:
+                message:
+                  msgId: 999
+                  senderId: "ofnarc754"
+                  contentType: "text"
+                  content: "Ciao franco, come stai?"
+                  deliveryStatus: "sent"
+                  timestamp: "2021-06-01T14:10:27Z"
+                  comments: []
+
         "400":
           $ref: "#/components/responses/BadRequestError"
 
@@ -1309,7 +1331,7 @@ paths:
         - BearerAuth: []
 
       responses:
-        "204":
+        "202":
           description: Message deleted successfully
 
         "400":
@@ -1339,7 +1361,7 @@ paths:
         - BearerAuth: []
 
       responses:
-        "204":
+        "202":
           description: Message status updated to read correctly
 
         "400":
@@ -1380,6 +1402,9 @@ paths:
                 chatToForward:
                   $ref: "#/components/schemas/Chat/properties/chatId"
 
+            example:
+              chatToForward: 4
+      
       responses:
         "204":
           description: Message forwarded correctly
@@ -1441,12 +1466,10 @@ paths:
               
               example:
                 comments:
-                  - comment1:
-                      commenterId: "ofnarc754"
-                      content: "😊"
-                  - comment2:
-                      commenterId: "ordigro293"
-                      content: "😒"
+                  - commenterId: "ofnarc754"
+                    content: "😊"
+                  - commenterId: "ordigro293"
+                    content: "😒"
 
         "204":
           description: No comments for the message
@@ -1520,6 +1543,8 @@ paths:
         schema:
           type: integer
           readOnly: true
+          minimum: 1
+          maximum: 32
         description:  |
           Id of the user that made the comment
 
