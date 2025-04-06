@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewUserName string `json:"newUserName"`
@@ -28,19 +28,27 @@ func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Reque
 
 	// Controllo se il nome è valido secondo i requisiti richiesti
 	if err := utilitytool.NameIsValid(requestJson.NewUserName); err != nil {
+		var httpErrorResponse string
+		var loggerString string
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
-			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
-			context.Logger.Debug("Invalid name format")
+			httpErrorResponse = "Bad Request - The name can not contain space at the start or end of the name"
+			loggerString = "Invalid name format"
 
 		case errors.Is(err, utilitytool.ErrNameShort):
-			http.Error(writer, "the name must be at least 3 character long", http.StatusBadRequest)
-			context.Logger.Debug("login name to short")
+			httpErrorResponse = "Bad Request - The name must be at least 3 character long"
+			loggerString = "username to short"
 
 		case errors.Is(err, utilitytool.ErrNameLong):
-			http.Error(writer, "the name can be max 16 character long", http.StatusBadRequest)
-			context.Logger.Debug("login name to long")
+			httpErrorResponse = "Bad Request - The name can be max 16 character long"
+			loggerString = "username to long"
+
+		default:
+			httpErrorResponse = "Bad Request - Username not valid"
+			loggerString = "username not valid"
 		}
+		http.Error(writer, httpErrorResponse, http.StatusBadRequest)
+		context.Logger.WithField("username", requestJson.NewUserName).Debug(loggerString)
 		return
 	}
 
@@ -55,7 +63,7 @@ func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Reque
 			return
 		}
 	} else if idFinded != "" { // La ricerca tramite usename ha dato risultato quindi l'username è già usato da altri
-		http.Error(writer, "Username already exists", http.StatusBadRequest)
+		http.Error(writer, "Bad Request - Username already exists", http.StatusBadRequest)
 		context.Logger.Debug("username selected is not available")
 		return
 	}
@@ -63,17 +71,17 @@ func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Reque
 	// Aggiorno l'username nel database
 	if err := rt.db.SetUserName(token, requestJson.NewUserName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).Errorf("User: %s not found in database", token)
-			http.Error(writer, "User not found", http.StatusNotFound)
+			context.Logger.WithError(err).WithField("usrId", token).Errorf("User not found in database")
+			http.Error(writer, "Not found - User not found", http.StatusNotFound)
 			return
 		}
 		context.Logger.WithError(err).Error("Error changing user name")
-		http.Error(writer, "Unable to rename", http.StatusBadRequest)
+		http.Error(writer, "Internal server error - Unable to rename", http.StatusInternalServerError)
 		return
 	}
 
 	// Preparo la risposta
-	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatName": requestJson.NewUserName})
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"userName": requestJson.NewUserName})
 	if marshalErr != nil {
 		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new username")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
@@ -82,7 +90,7 @@ func (rt *_router) setMyUserName(writer http.ResponseWriter, request *http.Reque
 
 	writer.Header().Set("Content-Type", "application/json")
 	if _, err := writer.Write(responseJSON); err != nil {
-		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
+		context.Logger.WithError(err).Error("Errore preaparazione risposta http")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
