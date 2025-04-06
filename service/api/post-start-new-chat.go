@@ -28,6 +28,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 		} `json:"firstMessage"`
 	}{}
 
+	// Uso delle variabili puntatore per comodità
 	chatInfo := &requestJson.ChatInfo
 	firstMessage := &requestJson.FirstMessage
 
@@ -92,7 +93,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 			return
 		}
 		context.Logger.WithError(err).Error("Error getting chat info")
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		http.Error(writer, "Internal server error - Error while recovering the info of the chat just created", http.StatusInternalServerError)
 		return
 	}
 
@@ -113,7 +114,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 				return
 			}
 			context.Logger.WithError(err).Warn("Error getting other participant info")
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			http.Error(writer, "Internal server error - Error while recovering the info of the chat just created", http.StatusInternalServerError)
 			return
 		}
 

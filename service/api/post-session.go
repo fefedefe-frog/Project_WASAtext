@@ -66,7 +66,6 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 				return
 			}
-
 			rt.sendJsonResponse(writer, user.UsrId)
 			return
 		} else {

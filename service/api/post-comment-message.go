@@ -34,10 +34,9 @@ func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Requ
 		http.Error(writer, "Internal Server Error - Unable to check the user participant status", http.StatusInternalServerError)
 		return
 	}
-
 	if !isParticipant {
 		context.Logger.Warn("the user is not a participant of the chat of the message that was try to comment")
-		http.Error(writer, "Forbidden - Can't comment a message of a group where aren't participant of", http.StatusForbidden)
+		http.Error(writer, "Forbidden - Can't comment a message from a chat where aren't a participant", http.StatusForbidden)
 		return
 	}
 

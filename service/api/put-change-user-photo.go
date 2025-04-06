@@ -11,7 +11,7 @@ import (
 	"regexp"
 )
 
-func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
 		NewUserPhoto string `json:"newUserPhoto"`
@@ -20,7 +20,7 @@ func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request,
 	// Decodifico la richiesta
 	err := json.NewDecoder(request.Body).Decode(&requestJson)
 	if err != nil {
-		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
+		http.Error(writer, "Bad Request - Invalid JSON format", http.StatusBadRequest)
 		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
@@ -34,7 +34,7 @@ func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request,
 		return
 	}
 
-	// Verifica che la stringa sia in formato base64 valido
+	// Verifica che la stringa sia in formato base64 valido e la converto in byte
 	var photoData []byte
 	photoData, err = base64.StdEncoding.DecodeString(requestJson.NewUserPhoto)
 	if err != nil {
@@ -48,16 +48,16 @@ func (rt *_router) setMyPhoto(writer http.ResponseWriter, request *http.Request,
 	if err := rt.db.SetUserPhoto(token, photoData); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Errorf("User: %s not found in database", token)
-			http.Error(writer, "User not found", http.StatusNotFound)
+			http.Error(writer, "Not found - User not found", http.StatusNotFound)
 			return
 		}
 		context.Logger.WithError(err).Error("Error changing user propic")
-		http.Error(writer, "Unable to change propic", http.StatusBadRequest)
+		http.Error(writer, "Bad request - Unable to change propic", http.StatusBadRequest)
 		return
 	}
 
 	// Preparo la risposta
-	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatName": requestJson.NewUserPhoto})
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"userPhoto": requestJson.NewUserPhoto})
 	if marshalErr != nil {
 		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new user photo")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
