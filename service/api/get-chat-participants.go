@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )
@@ -16,18 +17,20 @@ func (rt *_router) getChatParticipants(writer http.ResponseWriter, _ *http.Reque
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		rt.baseLogger.WithError(err).Error("invalid chat id")
-		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
 		return
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("usrId", token).Warnf("tried to change group photo of group <%d> which he isn't a member of", chatId)
-			http.Error(writer, "Forbidden - can't change the photo of another group", http.StatusForbidden)
-			return
-		}
-		context.Logger.WithError(err).Errorf("Error while checking if the user <%s> is member of the group <%d>", token, chatId)
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+	if !isParticipant {
+		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to retrive the participants of a group which he isn't a member of")
+		http.Error(writer, "Forbidden - can't retrive the info of a group where you aren't part off", http.StatusForbidden)
 		return
 	}
 
@@ -35,8 +38,13 @@ func (rt *_router) getChatParticipants(writer http.ResponseWriter, _ *http.Reque
 	var participants []database.User
 	participants, err = rt.db.GetChatParticipantsInfo(chatId)
 	if err != nil {
-		context.Logger.WithError(err).WithField("chatId", chatId).Errorf("Error getting chat participants")
-		http.Error(writer, "Unable to retrive participants of the chat", http.StatusInternalServerError)
+		if errors.Is(err, sql.ErrNoRows) {
+			context.Logger.WithError(err).Error("Error getting chat participants")
+			http.Error(writer, "Not found - The participants of the chat doesn't exist", http.StatusNotFound)
+			return
+		}
+		context.Logger.WithError(err).WithField("chatId", chatId).Error("Error getting chat participants")
+		http.Error(writer, "Internal server error - Unable to retrive participants of the chat", http.StatusInternalServerError)
 		return
 	}
 
