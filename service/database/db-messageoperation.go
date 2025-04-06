@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error) {
+func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error) {
 	var messages []Message
 
 	tx, err := db.c.Begin()
@@ -23,15 +23,15 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error
 		}
 	}()
 
-	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti
-	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId=?) AND receiverId=?`, chatId, usrId)
+	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId= ? AND msgId > ?) AND receiverId= ?`, chatId, msgId, usrId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	var rows *sql.Rows
-	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? ORDER BY timestamp DESC, msgId;`, chatId)
+	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp DESC, msgId;`, chatId, msgId)
 	if err != nil {
 		return nil, err
 	}
@@ -76,11 +76,11 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string) ([]Message, error
 	return messages, err
 }
 
-func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
+func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 
 	tx, err := db.c.Begin()
 	if err != nil {
-		return err
+		return -1, err
 	}
 	defer func() {
 		if err != nil {
@@ -93,10 +93,10 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 
 	// Controllo il tipo di contenuto che ha il messaggio
 	var messageContent interface{}
-	if message.ContentType == "photo" {
+	if message.ContentType == TypePhoto {
 		messageContent, err = base64.StdEncoding.DecodeString(message.Content)
 		if err != nil {
-			return err
+			return -1, err
 		}
 	} else {
 		messageContent = message.Content
@@ -108,12 +108,12 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 	}
 
 	// Inserisco il messaggio nella tabella dei messaggi
-	message.DeliveryStatus = "sent"
+	message.DeliveryStatus = TypePhoto
 	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	var result sql.Result
 	result, err = tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	// Recuper l'id del messaggio appena inserito
@@ -127,18 +127,21 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) error {
 			WHERE chatId=? AND usrId != ?;`
 	_, err = tx.Exec(query, msgId, chatId, message.SenderId)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return -1, err
 	}
-	return nil
+	return int(msgId), nil
 }
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
 
 	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?;`, msgId, chatId)
+
+	// Controllo se la chat ha altri messaggi sennò la elimino
+	_, err = db.c.Exec(`DELETE FROM chats_table WHERE chatId= ? AND (SELECT COUNT(*) FROM chat_messages_table WHERE chatId= ?) = 0;`, chatId, chatId)
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,7 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	}
 
 	// Converto il contenuto del messaggio
-	if message.ContentType == "photo" {
+	if message.ContentType == TypePhoto {
 		message.Content = base64.StdEncoding.EncodeToString(contentBytes)
 	} else {
 		message.Content = string(contentBytes)
@@ -166,7 +169,7 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	message.SenderId = forwarderId
 	message.IsForwarded = true
 
-	if err := db.InsertMessage(message, chatIdToForwatd); err != nil {
+	if _, err := db.InsertMessage(message, chatIdToForwatd); err != nil {
 		return err
 	}
 	return nil
@@ -235,12 +238,9 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 	}
 
 	// Controllo se il contenuto è una foto e la elaboro
-	switch message.ContentType {
-	case "photo":
+	if message.ContentType == TypePhoto {
 		message.Content = base64.StdEncoding.EncodeToString(rawContent)
-	case "text":
-		message.Content = string(rawContent)
-	default:
+	} else {
 		message.Content = string(rawContent)
 	}
 
@@ -265,9 +265,6 @@ func (db *appdbimpl) GetMessageComments(msgId int) ([]Comment, error) {
 
 	rows, err := db.c.Query(`SELECT commentId, commenterId, content FROM message_comments_table WHERE msgId=?;`, msgId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrMessageHaveNoComments
-		}
 		return nil, err
 	}
 

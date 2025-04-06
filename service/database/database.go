@@ -13,6 +13,7 @@ var (
 	ErrUserNoChat            = errors.New("user doesn't have any chat")
 	ErrMessageHaveNoComments = errors.New("message don't have any comments")
 	ErrUpdateMessageStatus   = errors.New("unable to update message status")
+	TypePhoto                = "photo"
 )
 
 /*
@@ -126,10 +127,10 @@ type AppDatabase interface {
 
 	// Message operations
 
-	// GetChatMessages Message, retrive all the messages of a chat by passing the chat id
-	GetChatMessages(chatId int, usrId string) ([]Message, error)
+	// GetChatMessages Message, retrive the messages starting from a specified msgId of a chat
+	GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error)
 	// InsertMessage error, insert a message in the database
-	InsertMessage(message Message, chatId int) error
+	InsertMessage(message Message, chatId int) (int, error)
 	// RemoveMessage error, remove a message from the database
 	RemoveMessage(msgId int, chatId int) error
 	// ForwardMessage error, forward an existing message with the msgId gived in input to another chat
@@ -204,7 +205,8 @@ func New(db *sql.DB) (AppDatabase, error) {
     			usrId TEXT, 
     			FOREIGN KEY (chatId) REFERENCES chats_table(chatId) ON DELETE CASCADE, 
     			FOREIGN KEY (usrId) REFERENCES users_table(usrId) ON DELETE CASCADE, 
-    			PRIMARY KEY (chatId, usrId)
+    			PRIMARY KEY (chatId, usrId),
+    			CONSTRAINT unique_participant UNIQUE  (chatId, usrId)
         );`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -272,13 +274,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	// Trigger for auto deleting a chat with no messages
-	_, err = db.Exec(`CREATE TRIGGER IF NOT EXISTS delete_empty_chats
-						AFTER UPDATE ON chat_messages_table
+	// Trigger for auto deleting a chat with only one member
+	_, err = db.Exec(`CREATE TRIGGER IF NOT EXISTS delete_chats_with_one_member
+						AFTER DELETE ON chat_participants_table
 						BEGIN
 							DELETE FROM chats_table
 							WHERE chatId = OLD.chatId
-							AND NOT EXISTS (SELECT 1 FROM chat_messages_table WHERE chatId = OLD.chatId);
+							AND (SELECT COUNT(*) FROM chat_participants_table WHERE chatId = OLD.chatId) = 1;
 						END;`)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing db trigger: %w", err)

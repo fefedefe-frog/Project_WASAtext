@@ -260,8 +260,8 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 		return err
 	}
 
-	// Rimuovo tutti i messaggi mandati dall'utente in quella chat
-	_, err = tx.Exec(`DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ?;`, usrId, chatId)
+	// Rimuovo tutti i messaggi mandati dall'utente in quella chat se la chat non è già stata eliminata
+	_, err = tx.Exec(`DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ? AND EXISTS (SELECT 1 FROM chats_table WHERE chatId= ?);`, usrId, chatId, chatId)
 	if err != nil {
 		return err
 	}
