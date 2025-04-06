@@ -3,6 +3,7 @@ package main
 import (
 	"Project_WASAtext/service/api"
 	"Project_WASAtext/service/database"
+	"Project_WASAtext/service/globaltime"
 	"context"
 	"database/sql"
 	"errors"
@@ -10,7 +11,7 @@ import (
 	"github.com/ardanlabs/conf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
-	_ "math/rand"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,6 +37,7 @@ func main() {
 // * closes the principal web server
 func run() error {
 
+	rand.Seed(globaltime.Now().UnixNano())
 	// Load Configuration and defaults
 	cfg, err := loadConfiguration()
 	if err != nil {
@@ -97,13 +99,11 @@ func run() error {
 	}
 	router := apirouter.Handler()
 
-	/*
-		router, err = registerWebUI(router)
-		if err != nil {
-			logger.WithError(err).Error("error registering web UI handler")
-			return fmt.Errorf("registering web UI handler: %w", err)
-		}
-	*/
+	router, err = registerWebUI(router)
+	if err != nil {
+		logger.WithError(err).Error("error registering web UI handler")
+		return fmt.Errorf("registering web UI handler: %w", err)
+	}
 
 	// Apply CORS policy
 	router = applyCORSHandler(router)
