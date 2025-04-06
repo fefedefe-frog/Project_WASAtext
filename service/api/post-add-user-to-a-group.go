@@ -15,44 +15,49 @@ import (
 func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	var requestJson = struct {
-		UsrIdToAdd string `json:"usrIdToAdd"`
+		UsrIdToAdd string `json:"usrId"`
 	}{}
 
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		rt.baseLogger.WithError(err).Error("invalid chat id")
-		http.Error(writer, "invalid chat_id parameter", http.StatusBadRequest)
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, token); !isParticipant {
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to modify group members of group which he isn't a member of")
-			http.Error(writer, "Forbidden - can't add users to a group where you aren't part off", http.StatusForbidden)
-			return
-		}
+
+	var isParticipant bool
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	if err != nil {
 		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+	if !isParticipant {
+		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried add a particpiant to a group which he isn't a member of")
+		http.Error(writer, "Forbidden - can't add users to a group where you aren't part off", http.StatusForbidden)
 		return
 	}
 
 	// Decodifico la richiesta
 	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
 		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
+		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
-	context.Logger.Infof("user <%s> request to add user <%s> to the group", token, requestJson.UsrIdToAdd)
+	context.Logger.WithField("usrId", token).Info("user request to add user/s to the group")
 
 	// Controllo che l'utente da aggiungere non faccia già parte del gruppo
-	if isParticipant, err := rt.db.CheckIfUserIsParticipant(chatId, requestJson.UsrIdToAdd); !isParticipant {
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithFields(logrus.Fields{"usrId": requestJson.UsrIdToAdd, "groupId": chatId}).Warn("The user you are trying to add is already part of the group")
-			http.Error(writer, "Forbidden - can't add users to a group that he is already a member of", http.StatusForbidden)
-			return
-		}
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, requestJson.UsrIdToAdd)
+	if err != nil {
 		context.Logger.WithFields(logrus.Fields{"usrId": requestJson.UsrIdToAdd, "groupId": chatId}).Error("Error while checking if the user is a member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
+		return
+	}
+	if isParticipant {
+		context.Logger.WithFields(logrus.Fields{"usrId": requestJson.UsrIdToAdd, "groupId": chatId}).Warn("The user you are trying to add is already part of the group")
+		http.Error(writer, "Can't add users to a group that he is already a member of", http.StatusNoContent)
 		return
 	}
 
@@ -63,19 +68,19 @@ func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request,
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	rt.baseLogger.Debug("Successfully added user to group")
+	context.Logger.Debug("Successfully added user to group")
 
 	// Tento di recuperare le info degli utenti
 	var participants []database.User
 	participants, err = rt.db.GetChatParticipantsInfo(chatId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("chatId", chatId).Error("chat not found in the chat_participants_table")
-			http.Error(writer, "Chat not found", http.StatusNotFound)
+			context.Logger.WithError(err).Error("Unable to retrive one or more user info from the db")
+			http.Error(writer, "Not found - Not found one or more user info from the db", http.StatusNotFound)
 			return
 		}
-		context.Logger.WithError(err).Error("Error getting chat participants")
-		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
+		context.Logger.WithError(err).Error("Error getting chat participants info")
+		http.Error(writer, "Internal Server Error - Unable to retrive the info", http.StatusInternalServerError)
 		return
 	}
 
