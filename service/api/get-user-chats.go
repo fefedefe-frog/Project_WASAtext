@@ -10,6 +10,7 @@ import (
 	"net/http"
 )
 
+// TODO la risposta deve contenere un array così [{chatInfo:{}, lastMessage:{}}, {chatInfo:{}, lastMessage:{}}]
 func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Tento di recuperare le chat di quell'user
@@ -17,11 +18,11 @@ func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Reques
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, database.ErrUserNoChat) {
 			context.Logger.Info("User doesn't have chat")
-			http.Error(writer, "The user doesn't have any chat", http.StatusNotFound)
+			http.Error(writer, "Not found - The user doesn't have any chat", http.StatusNotFound)
 			return
 		}
 		context.Logger.WithError(err).Errorf("Error getting user %s chats", token)
-		http.Error(writer, "Unable to retrive info", http.StatusInternalServerError)
+		http.Error(writer, "Internal server error - Unable to retrive info", http.StatusInternalServerError)
 		return
 	}
 

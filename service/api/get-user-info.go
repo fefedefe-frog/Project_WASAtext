@@ -15,8 +15,8 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 	// Recupero l'user id dell'user interessato
 	usrId := params.ByName("usr_id")
 	if err := utilitytool.UsrIdIsValid(usrId); err != nil {
-		context.Logger.Infof("Invalid usrId : %v", err)
-		http.Error(writer, "Invalid usrId", http.StatusBadRequest)
+		context.Logger.WithError(err).WithField("usrId", usrId).Info("Invalid usrId")
+		http.Error(writer, "Bad Request - Invalid usrId", http.StatusBadRequest)
 		return
 	}
 
@@ -24,12 +24,12 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 	user, err := rt.db.GetUserInfo(usrId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.Infof("User id  not found: %s", usrId)
-			http.NotFound(writer, request)
+			context.Logger.WithField("usrId", usrId).Info("User id not found")
+			http.Error(writer, "Not found - The user doesn't exist", http.StatusNotFound)
 			return
 		}
-		context.Logger.WithError(err).Errorf("Error getting %s info", usrId)
-		http.Error(writer, "Unable to retrive info", http.StatusBadRequest)
+		context.Logger.WithError(err).WithField("usrId", usrId).Error("Error getting user info")
+		http.Error(writer, "Bad Request - Unable to retrive info", http.StatusBadRequest)
 		return
 	}
 
@@ -38,14 +38,14 @@ func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request
 	responseUserJSON, err = json.Marshal(user)
 	if err != nil {
 		context.Logger.WithError(err).Errorf("Failed to marshal the user")
-		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		http.Error(writer, "Internal server error - Failed json conversion", http.StatusInternalServerError)
 		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	if _, err := writer.Write(responseUserJSON); err != nil {
-		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		context.Logger.WithError(err).Error("Errore preaparazione risposta http")
+		http.Error(writer, "Internal server error - Error while preparing the http response", http.StatusInternalServerError)
 		return
 	}
 }

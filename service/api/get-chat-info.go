@@ -17,27 +17,15 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	// Recupero il valore di chat_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
-		var numErr *strconv.NumError
-		if errors.As(err, &numErr) {
-			var errVal string
-			switch {
-			case errors.Is(numErr.Err, strconv.ErrSyntax):
-				errVal = "the param chat_id is not a valid number"
-			case errors.Is(numErr.Err, strconv.ErrRange):
-				errVal = "the param chat_id range is out of range"
-			default:
-				errVal = "Error parsing param chat_id"
-			}
-			context.Logger.WithError(err).Error(errVal)
-			http.Error(writer, "invalid param chat_id", http.StatusBadRequest)
-			return
-		}
+		context.Logger.WithError(err).Error("invalid chat id")
+		http.Error(writer, "Bad request - Invalid chat_id parameter", http.StatusBadRequest)
+		return
 	}
 
 	// Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare le informazioni
 	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil {
 		context.Logger.WithError(err).Error("Error checking if user is participant")
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		http.Error(writer, "Internal server error - Error while checking if user is a member of the chat", http.StatusInternalServerError)
 		return
 	} else if !exist {
 		context.Logger.WithField("usrId", token).Warn("User is not a participant")
@@ -92,7 +80,6 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-
 	if _, err := writer.Write(responseChatJSON); err != nil {
 		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
