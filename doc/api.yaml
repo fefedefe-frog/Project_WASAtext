@@ -685,52 +685,20 @@ paths:
                 type: object
                 properties:
                   chats:
-                    description: array of chat info and one message
-
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        chatInfo:
-                          $ref: "#/components/schemas/Chat"
-                        lastMessage:
-                          $ref: "#/components/schemas/Message"
-
-
-                    minItems: 0
-                    maxItems: 32
+                    $ref: "#/components/schemas/Chat"
               
               example:
                 chats:
-                  - chatInfo:
-                      chat_id: 234
-                      chatName: "Chat Uni"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      isGroup: true
-                      participants: ["ofnarc754", "arima53", "odfn34"]
-                    lastMessage:
-                      msgId: 3
-                      senderId: "ofnarc754"
-                      contentType: "photo"
-                      content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      deliveryStatus: "sent"
-                      timestamp: "2021-06-01T14:10:27Z"
-                      comments: [ "😒" ]
-
-                  - chatInfo:
-                      chat_id: 254
-                      chatName: "Roberto"
-                      chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                      isGroup: false
-                      participants: ["ofnarc754", "ordigro293"]
-                    lastMessage:
-                      msgId: 5
-                      senderId: "ordigro293"
-                      contentType: "text"
-                      content: "ciao"
-                      deliveryStatus: "sent"
-                      timestamp: "2021-06-01T14:10:27Z"
-                      comments: []
+                  - chat_id: 234
+                    chatName: "Chat Uni"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    isGroup: true
+                    participants: ["ofnarc754", "arima53", "odfn34"]
+                  - chat_id: 254
+                    chatName: "Roberto"
+                    chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    isGroup: false
+                    participants: ["ofnarc754", "ordigro293"]
 
         "401":
           $ref: "#/components/responses/UnauthorizedError"

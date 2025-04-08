@@ -82,7 +82,7 @@ Content-Type: application/json
   },
   "firstMessage": {
       "contentType": "text",
-      "content": "ciao"
+      "content": "ciao amico"
   }
 }
 
@@ -109,7 +109,7 @@ Content-Type: application/json
       "chatName": "",
       "chatPhoto": "",
       "isGroup": false,
-      "participants": ["{{client_token_5}}"]
+      "participants": ["{{client_token_4}}"]
   },
   "firstMessage": {
       "contentType": "text",
@@ -119,3 +119,22 @@ Content-Type: application/json
 
 > {% client.global.set("fede_chatId", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ (response.body["chatPhoto"]).substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
 
+### POST request for starting a new group chat
+POST localhost:3000/chats
+Authorization: Bearer {{client_token}}
+Content-Type: application/json
+
+{
+  "chatInfo": {
+      "chatName": "Gruppo gay",
+      "chatPhoto": "",
+      "isGroup": true,
+      "participants": ["{{id_amico}}", "{{client_token_2}}", "{{client_token_3}}", "{{client_token_4}}"]
+  },
+  "firstMessage": {
+      "contentType": "text",
+      "content": "ciao ragazzi"
+  }
+}
+
+> {% client.global.set("fede_chatId", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ (response.body["chatPhoto"]).substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
