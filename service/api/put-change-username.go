@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -24,7 +25,7 @@ func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	context.Logger.Infof("Richiesta di cambio nome da parte dell'user: %s || nuovo nome: %s", token, requestJson.NewUserName)
+	context.Logger.WithFields(logrus.Fields{"usrId": token, "username": requestJson.NewUserName}).Info("Richiesta di cambio nome da parte dell'utente")
 
 	// Controllo se il nome è valido secondo i requisiti richiesti
 	if err := utilitytool.NameIsValid(requestJson.NewUserName); err != nil {

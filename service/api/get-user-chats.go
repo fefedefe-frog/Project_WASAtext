@@ -10,7 +10,6 @@ import (
 	"net/http"
 )
 
-// TODO la risposta deve contenere un array così [{chatInfo:{}, lastMessage:{}}, {chatInfo:{}, lastMessage:{}}]
 func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
 	// Tento di recuperare le chat di quell'user

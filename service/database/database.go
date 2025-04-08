@@ -94,7 +94,7 @@ type AppDatabase interface {
 	// GetUserNameById string, retrive the name of an user by its id
 	GetUserNameById(usrId string) (string, error)
 	// GetUsers User, get an array of all the users present in the db
-	GetUsers() ([]User, error)
+	GetUsers(usrIdToIgnore string) ([]User, error)
 	// UsrIdExist bool, check if a user in present in the db by its user id
 	UsrIdExist(usrId string) (bool, error)
 

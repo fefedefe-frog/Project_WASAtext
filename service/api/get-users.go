@@ -10,9 +10,9 @@ import (
 	"net/http"
 )
 
-func (rt *_router) getUsers(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, _ string) {
+func (rt *_router) getUsers(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
-	users, err := rt.db.GetUsers()
+	users, err := rt.db.GetUsers(usrId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Error("no users in database")

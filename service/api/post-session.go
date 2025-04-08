@@ -13,7 +13,6 @@ import (
 )
 
 func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext) {
-	rt.baseLogger.Debugf("Received request: %s %s\n", request.Method, request.URL.Path)
 
 	var requestJson = struct {
 		UserName string `json:"userName"`
@@ -23,7 +22,7 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 	err := json.NewDecoder(request.Body).Decode(&requestJson)
 	if err != nil {
 		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		rt.baseLogger.WithError(err).Error("Invalid JSON in requestBody")
+		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
 		return
 	}
 
@@ -36,15 +35,15 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 		switch {
 		case errors.Is(err, utilitytool.ErrInvalidRegex):
 			http.Error(writer, "Invalid name format, the name can't contain space at the start or end of the name", http.StatusBadRequest)
-			rt.baseLogger.Debug("Invalid name format")
+			context.Logger.Debug("Invalid name format")
 
 		case errors.Is(err, utilitytool.ErrNameShort):
 			http.Error(writer, "the name must be at least 3 character long", http.StatusBadRequest)
-			rt.baseLogger.Debug("login name to short")
+			context.Logger.Debug("login name to short")
 
 		case errors.Is(err, utilitytool.ErrNameLong):
 			http.Error(writer, "the name can be max 16 character long", http.StatusBadRequest)
-			rt.baseLogger.Debug("login name to long")
+			context.Logger.Debug("login name to long")
 		}
 		return
 	}
@@ -56,30 +55,30 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 	// in caso di riuscita preparo la rosposta http e la invio
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			rt.baseLogger.WithField("db error", err).Debug("utente non presente nel database")
+			context.Logger.WithField("db error", err).Debug("utente non presente nel database")
 
-			rt.baseLogger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", usernameLower))
+			context.Logger.Debug(fmt.Sprintf("Creazione e aggiunta del nuovo utente '%s' al database", usernameLower))
 			user, err := rt.db.InsertNewUser(requestJson.UserName)
 
 			if err != nil {
-				rt.baseLogger.WithError(err).Error("Impossibile aggiungere nuovo user al database")
+				context.Logger.WithError(err).Error("Impossibile aggiungere nuovo user al database")
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 				return
 			}
-			rt.sendJsonResponse(writer, user.UsrId)
+			rt.sendJsonResponse(writer, user.UsrId, context)
 			return
 		} else {
-			rt.baseLogger.WithError(err).Error("Errore durante il recupero dei dati")
+			context.Logger.WithError(err).Error("Errore durante il recupero dei dati")
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	context.Logger.WithField("usrId", usrId).Info("login effettuato")
-	rt.sendJsonResponse(writer, usrId)
+	rt.sendJsonResponse(writer, usrId, context)
 }
 
-func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
+func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string, context reqcontext.RequestContext) {
 
 	// Creo la risposta http contentente il token di autorizzazione e l'usrId (in questo caso entrambi sono la stessa cosa
 	response := map[string]string{
@@ -93,7 +92,7 @@ func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string) {
 	writer.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(writer).Encode(response)
 	if err != nil {
-		rt.baseLogger.WithError(err).Error("Json encoding error")
+		context.Logger.WithError(err).Error("Json encoding error")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
