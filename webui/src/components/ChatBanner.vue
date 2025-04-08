@@ -8,25 +8,75 @@ export default {
   },
   data() {
     return {
+      errormsg: null,
+      token: "",
       chatId: -1,
-      message: {}
+      messages: [],
+      lastMessage: {
+        msgId: 3,
+        senderId: "ofnarc754",
+        contentType: "text",
+        content: "abcdefghijklm",
+        deliveryStatus: "sent",
+        timestamp: "2021-06-01T14:10:27Z",
+        comments: ["😒"],
+      },
+      lastMsgId: -1
     }
   },
   mounted() {
     this.chatId= this.chatData['chatId'];
-    console.log(this.chatData)
+    this.token= sessionStorage.getItem('authToken');
+
+    this.getChatMessages()
+  },
+  computed: {
+    messageContent(){
+      if (this.lastMessage){
+        let content= this.lastMessage['content'];
+        if (this.lastMessage['contentType'] == "photo"){
+          return `<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>`;
+        }else {
+          return `<span class="last-message-text">${content.length > 10 ? content.substring(0, 10)+"..." : content}</span>`;
+        }
+      }else {
+        return '';
+      }
+    }
   },
   methods: {
-    // TODO
-    loadChat(){
-      console.log("caricamento chat: "+ this.chatId)
+    async getChatMessages(){
+      this.errormsg= null;
+
+      try {
+        let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
+          msgId: this.lastMsgId
+        }, {
+          headers: {Authorization: this.token},
+        });
+
+        if (response.data) {
+          if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
+            response.data['messages'].forEach(message => {
+              this.messages.push(message);
+            })
+            this.lastMessage= this.messages[this.messages.length-1];
+            this.lastMsgId= this.lastMessage['msgId'];
+          }
+        }
+      }catch(e) {
+        this.$emit('error', e)
+      }
+    },
+    bannerClicked(){
+      this.$emit('chatBannerData', {chatData: this.chatData, messages: this.messages})
     }
   },
 };
 </script>
 
 <template>
-  <div class="chat-banner" @click="loadChat">
+  <div class="chat-banner" @click="bannerClicked">
     <!-- Foto Profilo a destra -->
     <div class="chat-image-container">
       <img :src="'data:image/png;base64,'+this.chatData['chatPhoto']" alt="Chat Image">
@@ -35,7 +85,9 @@ export default {
     <!-- Contenuto del banner -->
     <div class="text-container">
       <div class="chat-name">{{ chatData['chatName'] }}</div>
-      <div class="last-message"> messaggio tem...</div>
+      <div class="last-message">
+        <div v-html="messageContent"></div>
+      </div>
     </div>
   </div>
 </template>
