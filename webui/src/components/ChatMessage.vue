@@ -5,14 +5,17 @@ export default {
       type: Object,
       required: true
     },
+    senderName: {
+      type: String
+    }
   },
   data: function () {
     return{
       deliveryStatus: 'minus',
       date: '',
-      messageContentType: '',
+      contentType: '',
       token: '',
-      username: '',
+      sender: '',
     }
   },
   computed: {
@@ -22,12 +25,9 @@ export default {
       }
     }
   },
-  created () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
-    this.prepMessage()
-  },
   mounted () {
-    this.token= localStorage.getItem('authToken').split(' ')[1];
+    this.token= sessionStorage.getItem('authToken').split(' ')[1];
+
     this.prepMessage()
   },
   methods: {
@@ -43,9 +43,10 @@ export default {
           this.deliveryStatus = 'chevrons-up';
           break;
         default:
-          this.deliveryStatus = 'minus';  // Default fallback value
+          this.deliveryStatus = 'minus';
       }
       const dateObject= new Date(this.message['timestamp']);
+
       // Formatto giorno mese anno dal timestamp
       let dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'short' });
       let formattedDate = dateFormatter.format(dateObject);
@@ -57,7 +58,13 @@ export default {
       // Unisco nel formato che mi interessa
       this.date= formattedDate +" "+ formattedTime;
 
-      this.messageContentType = this.message['contentType'];
+      this.contentType = this.message['contentType'];
+
+      // Imposto l'autore del messaggio
+      this.sender= this.message['senderId'];
+      if(this.senderName != ""){
+        this.sender= this.senderName;
+      }
     }
   }
 };
@@ -67,17 +74,17 @@ export default {
   <div class="message-div">
     <div class="message-container" :style="dynamicMarginSide">
       <div class="message-info">
-        <div class="sender-id">{{ message['senderId'] }}</div>
+        <div class="sender-id">{{ sender }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
           <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus" /></svg>
         </div>
       </div>
       <div class="message-content">
-        <div v-if="messageContentType === 'text' " class="message-content-text-container">
+        <div v-if="contentType === 'text' " class="message-content-text-container">
           <p>{{ message["content"] }}</p>
         </div>
-        <div v-if="messageContentType === 'photo'" class="message-content-image-container">
+        <div v-if="contentType === 'photo'" class="message-content-image-container">
           <img :src="'data:image/png;base64,'+message['content']" alt="Image">
         </div>
       </div>
