@@ -3,17 +3,39 @@ export default {
   data: function () {
     return {
       token: '',
-      search: '',
+      usrId: '',
+      searchQuery: '',
       errormsg: null,
       loading: false,
       userChats: [],
-      users: []
+      users: [],
+
+      currentTab: 'chat',
+      showChat: false,
+      loadedChatInfo: {},
+      loadedChatMessages: []
     }
   },
   mounted() {
     this.token= sessionStorage.getItem('authToken');
-    this.getUsers()
-    this.getUserChats()
+    this.usrId= sessionStorage.getItem('usrId');
+
+    this.getUsers();
+    this.getUserChats();
+  },
+  computed: {
+    filteredResult(){
+      let searchPool= this.currentTab === 'chat' ? this.userChats : this.users;
+      let searchElement= this.currentTab === 'chat' ? 'chatName' : 'userName';
+      let query= this.searchQuery.trim();
+
+      if (query === ''){
+        return searchPool;
+      }
+      return searchPool.filter(item =>
+        item[searchElement].toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    }
   },
   methods: {
     async getUsers() {
@@ -23,13 +45,18 @@ export default {
       try {
         let response= await this.$axios.get(`/users`, {headers: {Authorization: this.token}});
         if (response.data) {
-          this.users= []
+          this.users= [];
+
           response.data['users'].forEach(user => {
-            this.users.push(user)
-          })
+            this.users.push(user);
+          });
         }
       }catch(e) {
-        this.errormsg = e.toString();
+        if (e.status === 404){
+          this.users= [];
+        }else {
+          this.errormsg = e.toString();
+        }
       }finally {
         this.loading = false
       }
@@ -40,18 +67,50 @@ export default {
 
       try {
         let response= await this.$axios.get(`/chats`, {headers: {Authorization: this.token}});
+        this.userChats= [];
         if (response.data) {
-          this.userChats= []
-          response.data['chats'].forEach(chat => {
-            this.userChats.push(chat)
-          })
+          if (response.data['chats']){
+            response.data['chats'].forEach(chat => {
+              this.userChats.push(chat);
+            });
+          }
         }
+
       }catch(e) {
-        this.errormsg = e.toString();
+        if (e.status === 404){
+          this.userChats= [];
+          console.log("user doesn't have any chat");
+        }else {
+          this.errormsg = e.toString();
+        }
       }finally {
         this.loading = false
       }
+    },
+    loadChat(bannerData){
+      this.showChat= false;
+      setTimeout( 1000);
+      this.loadedChatInfo= bannerData['chatData'];
+      this.loadedChatMessages= bannerData['messages'];
+      this.showChat= true
+    },
+    componentsErrorHandler(error){
+      this.errormsg= error.toString;
+    },
+    async closeChat(leave){
+      this.showChat= false
+      if (leave){
+        this.errormsg = null
 
+        try {
+          let response= await this.$axios.delete(`/chats/${this.chatId}/users`, {
+            headers: {Authorization: this.token}
+          });
+        }catch(e) {
+          this.errormsg = e.toString();
+        }
+        this.getUserChats();
+      }
     }
   }
 }
@@ -59,20 +118,36 @@ export default {
 
 <template>
   <div class="container">
-    <div class="lists">
+    <div class="lists bobby">
       <div class="search-box">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#search" /></svg>
-        <input v-model="search" type="text" placeholder="Inserisci nome utente o chat" required>
+        <input v-model="searchQuery" type="text" placeholder="Inserisci nome utente o chat" required>
       </div>
-      <div v-if="false" class="users-list">
-        <userBanner v-for="user in users" :key="user.usrId" :userData="user"/>
-      </div>
-      <div v-if="true" class="chat-list">
-        <chatBanner v-for="chat in userChats" :key="chat.chatId" :chatData="chat"/>
+
+      <ul class="nav nav-tabs" id="tab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#chats" type="button" @click="this.currentTab = 'chat'">Chats</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" @click="this.currentTab = 'user'">Users</button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="tabContent">
+        <div class="tab-pane fade show active" id="chats" role="tabpanel">
+          <div class="chats-list">
+            <chatBanner v-for="chat in filteredResult" :key="chat.chatId" :chatData="chat" @error="componentsErrorHandler" @chatBannerData="loadChat"/>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="users" role="tabpanel">
+          <div class="users-list">
+            <userBanner v-for="user in filteredResult" :key="user.usrId" :userData="user"/>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="chat-container">
-
+    <div class="chat-container bobby">
+      <Chat v-if="showChat" :initialMessages="loadedChatMessages" :chatData="loadedChatInfo" @closeChat="closeChat"/>
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
@@ -80,10 +155,7 @@ export default {
 </template>
 
 <style scoped>
-
 .container {
-  border: 2px cyan solid;
-
   display: flex;
   flex-direction: row;
 
@@ -97,17 +169,17 @@ export default {
   flex-direction: column;
 
   height: 100%;
-  width: fit-content;
+  width: 25%;
   padding: 5px;
 
-  border: 2px cornflowerblue solid;
-  border-radius: 10px;
+  margin-right: 5px;
 }
 
 .search-box {
   position: relative;
   width: 100%;
   max-width: 300px;
+  margin-bottom: 5px;
 }
 
 .search-box input {
@@ -127,38 +199,34 @@ export default {
   color: #888;
 }
 
-.users-list {
-  border: 2px darkmagenta solid;
-  border-radius: 10px;
 
+.tab-content {
   height: 100%;
-  width: 100%;
-  padding: 5px;
 
-  overflow: hidden;
-  overflow-y: scroll;
+  justify-content: center;
+  align-items: center;
+
+  padding-top: 5px;
+
+  overflow-y: auto;
+
 }
 
-.chat-list {
-  border: 2px magenta solid;
-  border-radius: 10px;
-
+.chats-list .users-list{
   height: 100%;
   width: 100%;
   padding: 5px;
 
   overflow: hidden;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 
 .chat-container {
-  border: 2px peru solid;
-  border-radius: 10px;
-
   height: 100%;
   width: 100%;
 
+  overflow: hidden;
 }
 
 </style>
