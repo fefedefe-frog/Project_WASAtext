@@ -24,14 +24,14 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	}()
 
 	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
-	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId= ? AND msgId > ?) AND receiverId= ?`, chatId, msgId, usrId)
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId= ? AND msgId > ? AND status != 'received') AND receiverId= ?`, chatId, msgId, usrId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	var rows *sql.Rows
-	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp DESC, msgId;`, chatId, msgId)
+	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
 	if err != nil {
 		return nil, err
 	}

@@ -124,10 +124,10 @@ func (db *appdbimpl) GetUserNameById(usrId string) (string, error) {
 	return username, err
 }
 
-func (db *appdbimpl) GetUsers() ([]User, error) {
+func (db *appdbimpl) GetUsers(usrIdToIgnore string) ([]User, error) {
 	var users []User
 
-	rows, err := db.c.Query(`SELECT usrId, userName, userPhoto FROM users_table;`)
+	rows, err := db.c.Query(`SELECT usrId, userName, userPhoto FROM users_table WHERE usrId != ?;`, usrIdToIgnore)
 	if err != nil {
 		return nil, err
 	}

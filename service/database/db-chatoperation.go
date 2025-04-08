@@ -16,9 +16,7 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 		tramite il join nella tabella chats_table e quella dei partecipanti, associando il chatId
 		successivamente faccio un join della tabella dei partecipanti su se stessa per trovare gli id dei
 		partecipanti di una chat, che poi aggiungerò all'output finale tramite la funzione GROUP_CONCAT
-		che restituisce una colonna di id concatenate dal carattere speciale ␟ (in questo caso).
-
-		Infine recupero anche il message id del messaggio più recente della chat tramite il left join
+		che restituisce una colonna di id concatenate dal carattere speciale ␟.
 	*/
 	query := `
 			SELECT C.chatId, C.chatName, C.chatPhoto, C.isGroup, GROUP_CONCAT(P2.usrId, '␟') AS participantsString
