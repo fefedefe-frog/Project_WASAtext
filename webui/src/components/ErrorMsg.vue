@@ -10,10 +10,16 @@ export default {
 </script>
 
 <template>
-  <div class="alert alert-danger" role="alert">
+  <div class="alert alert-danger error-div" role="alert">
     {{ msg }}
   </div>
 </template>
 
-<style>
+<style scoped>
+.error-div {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+  user-select: none;
+}
 </style>
