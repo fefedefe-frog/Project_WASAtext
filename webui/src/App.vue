@@ -29,4 +29,11 @@ import {RouterView} from 'vue-router'
   justify-content: center;
   align-items: center;
 }
+
+.bobby{
+  border-radius: 10px;
+  border: groove 2px solid;
+
+  background: linear-gradient(45deg, #666666, #999999);
+}
 </style>
