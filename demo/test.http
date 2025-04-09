@@ -82,7 +82,7 @@ Content-Type: application/json
   },
   "firstMessage": {
       "contentType": "text",
-      "content": "ciao amico"
+      "content": "ciao zio"
   }
 }
 
@@ -109,11 +109,11 @@ Content-Type: application/json
       "chatName": "",
       "chatPhoto": "",
       "isGroup": false,
-      "participants": ["{{client_token_4}}"]
+      "participants": ["{{client_token_2}}"]
   },
   "firstMessage": {
       "contentType": "text",
-      "content": "ciao"
+      "content": "ciao "
   }
 }
 
