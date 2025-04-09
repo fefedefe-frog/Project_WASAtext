@@ -27,7 +27,7 @@ router.beforeEach((to, from, next) => {
 	} else if (to.path === "/session" && isAuthenticated) {
 		// Se l'utente invece è già autenticato e vuole accedere alla pagina per il login,
 		// verrà reindirizzato direttamente alla pagina principale, ovvero in questo caso, la lista di chat
-		next("/chats");
+		next("/home");
 	} else {
 		next(); // Altrimenti, continua normalmente verso la pagina selezionata
 	}
