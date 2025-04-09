@@ -33,6 +33,11 @@ export default {
 
     this.getParticipants()
   },
+  unmounted(){
+    this.chatId= -1;
+    this.lastMsgId= -1;
+    this.messages= [];
+  },
   methods: {
     async getChatInfo() {
       this.errormsg= null;
