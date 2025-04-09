@@ -125,7 +125,6 @@ func (db *appdbimpl) GetUserNameById(usrId string) (string, error) {
 }
 
 func (db *appdbimpl) GetUsers(usrIdToIgnore string) ([]User, error) {
-	var users []User
 
 	rows, err := db.c.Query(`SELECT usrId, userName, userPhoto FROM users_table WHERE usrId != ?;`, usrIdToIgnore)
 	if err != nil {
@@ -142,6 +141,7 @@ func (db *appdbimpl) GetUsers(usrIdToIgnore string) ([]User, error) {
 	}()
 
 	// Itero su tutte le righe della tabella degli user
+	var users []User
 	for rows.Next() {
 		var user User
 
