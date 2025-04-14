@@ -10,10 +10,11 @@ export default {
       userChats: [],
       users: [],
 
-      currentTab: 'chat',
       showChat: false,
       loadedChatInfo: {},
-      loadedChatMessages: []
+      loadedChatMessages: [],
+
+      setIntervalId: null,
     }
   },
   mounted() {
@@ -22,6 +23,13 @@ export default {
 
     this.getUsers();
     this.getUserChats();
+    this.setIntervalId= setInterval(async () => {
+      this.getUsers();
+      this.getUserChats();
+    }, 19000);
+  },
+  beforeUnmount() {
+    clearInterval(this.setIntervalId);
   },
   computed: {
     chatFilteredResult(){
@@ -49,7 +57,6 @@ export default {
   },
   methods: {
     async getUsers() {
-      this.loading= true
       this.errormsg= null
 
       try {
@@ -65,19 +72,19 @@ export default {
         if (e.status === 404){
           this.users= [];
         }else {
-          this.errormsg = e.toString();
+          this.errormsg = e;
         }
       }finally {
         this.loading = false
       }
     },
     async getUserChats() {
-      this.loading= true
       this.errormsg= null
 
       try {
         let response= await this.$axios.get(`/chats`, {headers: {Authorization: this.token}});
         this.userChats= [];
+
         if (response.data) {
           if (response.data['chats']){
             response.data['chats'].forEach(chat => {
@@ -91,21 +98,11 @@ export default {
           this.userChats= [];
           console.log("user doesn't have any chat");
         }else {
-          this.errormsg = e.toString();
+          this.errormsg = e;
         }
       }finally {
         this.loading = false
       }
-    },
-    loadChat(bannerData){
-      this.showChat= false;
-      console.log(bannerData)
-      this.loadedChatInfo= bannerData['chatData'];
-      this.loadedChatMessages= bannerData['messages'];
-      this.showChat= true
-    },
-    componentsErrorHandler(error){
-      this.errormsg= error.toString;
     },
     async closeChat(leave){
       this.showChat= false
@@ -120,9 +117,19 @@ export default {
             await this.getUserChats();
           }
         }catch(e) {
-          this.errormsg = e.toString();
+          this.errormsg = e;
         }
       }
+    },
+    loadChat(bannerData){
+      this.showChat= false
+      this.loadedChatInfo= bannerData['chatData'];
+      this.loadedChatMessages= bannerData['messages'];
+
+      this.showChat= true;
+    },
+    componentsErrorHandler(error){
+      this.errormsg= error.toString;
     }
   }
 }
@@ -138,10 +145,10 @@ export default {
 
       <ul class="nav nav-tabs" id="tab" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#chats" type="button" @click="this.currentTab = 'chat'">Chats</button>
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#chats" type="button">Chats</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" @click="this.currentTab = 'user'">Users</button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button">Users</button>
         </li>
       </ul>
 
@@ -159,7 +166,7 @@ export default {
       </div>
     </div>
     <div class="chat-container bobby">
-      <Chat v-if="showChat" :initialMessages="loadedChatMessages" :chatData="loadedChatInfo" @closeChat="closeChat"/>
+      <Chat v-if="showChat" :initialMessages="loadedChatMessages" :chatData="loadedChatInfo" :key="loadedChatInfo['chatId']" @closeChat="closeChat"/>
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
