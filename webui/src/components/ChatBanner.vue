@@ -12,32 +12,47 @@ export default {
       token: "",
       chatId: -1,
       messages: [],
+
       lastMessage: {
         msgId: 3,
-        senderId: "ofnarc754",
-        contentType: "text",
-        content: "abcdefghijklm",
-        deliveryStatus: "sent",
-        timestamp: "2021-06-01T14:10:27Z",
-        comments: ["😒"],
+        senderId: "",
+        contentType: "",
+        content: "",
+        deliveryStatus: "",
+        timestamp: "",
+        comments: [],
       },
-      lastMsgId: -1
+      lastMsgId: -1,
+
+      setIntervalId: null
     }
   },
   mounted() {
     this.chatId= this.chatData['chatId'];
     this.token= sessionStorage.getItem('authToken');
 
-    this.getChatMessages()
+    this.getChatMessages();
+    this.setIntervalId= setInterval(async () => {
+      this.getChatMessages();
+    }, 7000)
+  },
+  beforeUnmount() {
+    clearInterval(this.setIntervalId);
+  },
+  deactivated() {
+    clearInterval(this.setIntervalId);
   },
   computed: {
     messageContent(){
       if (this.lastMessage){
         let content= this.lastMessage['content'];
+        let sender= this.lastMessage['senderId'];
+        let messsagePreview= sender + ": " + content;
+
         if (this.lastMessage['contentType'] == "photo"){
-          return `<svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>`;
+          return `<span class="last-message-text">${sender}: </span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>`;
         }else {
-          return `<span class="last-message-text">${content.length > 10 ? content.substring(0, 10)+"..." : content}</span>`;
+          return `<span class="last-message-text">${messsagePreview.length > (10 + sender.length) ? messsagePreview.substring(0, (10 + sender.length))+ "..." : messsagePreview}</span>`;
         }
       }else {
         return '';
