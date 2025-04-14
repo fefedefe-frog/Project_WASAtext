@@ -11,11 +11,10 @@ export default {
   },
   data: function () {
     return{
-      deliveryStatus: 'minus',
+      status: 'minus',
       date: '',
       contentType: '',
       token: '',
-      sender: '',
     }
   },
   computed: {
@@ -34,16 +33,16 @@ export default {
     prepMessage() {
       switch (this.message['deliveryStatus']) {
         case 'sent':
-          this.deliveryStatus = 'minus';
+          this.status = 'minus';
           break;
         case 'received':
-          this.deliveryStatus = 'chevron-up';
+          this.status = 'chevron-up';
           break;
         case 'read':
-          this.deliveryStatus = 'chevrons-up';
+          this.status = 'chevrons-up';
           break;
         default:
-          this.deliveryStatus = 'minus';
+          this.status = 'minus';
       }
       const dateObject= new Date(this.message['timestamp']);
 
@@ -60,11 +59,6 @@ export default {
 
       this.contentType = this.message['contentType'];
 
-      // Imposto l'autore del messaggio
-      this.sender= this.message['senderId'];
-      if(this.senderName != ""){
-        this.sender= this.senderName;
-      }
     }
   }
 };
@@ -74,10 +68,10 @@ export default {
   <div class="message-div">
     <div class="message-container" :style="dynamicMarginSide">
       <div class="message-info">
-        <div class="sender-id">{{ sender }}</div>
+        <div class="sender-id">{{ senderName }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
-          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ deliveryStatus" /></svg>
+          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
         </div>
       </div>
       <div class="message-content">
