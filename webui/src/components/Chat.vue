@@ -8,7 +8,7 @@ export default {
     initialMessages: {
       type: Array,
       required: true
-    }
+    },
   },
   data: function () {
     return {
@@ -20,23 +20,42 @@ export default {
       textContent: '',
       participantsNames: {},
 
+      setIntervalId: null,
+      getMessagesIntervalId: null,
+      getMessagesIsRunning: false,
     }
   },
   mounted() {
     this.token= sessionStorage.getItem('authToken');
-
     this.chatId= this.chatData['chatId'];
 
     this.lastMsgId= this.initialMessages[this.initialMessages.length - 1]['msgId'];
     this.messages= this.initialMessages;
-    console.log(this.initialMessages)
 
-    this.getParticipants()
+    this.getChatInfo();
+    this.getParticipants();
+    this.getMessages();
+
+    this.setIntervalId= setInterval( async () => {
+      this.lastMsgId= -1;
+      await this.getChatInfo();
+      await this.getParticipants();
+      await this.getMessages();
+    }, 30000);
+
+    this.getMessagesIntervalId= setInterval( async () => {
+      await this.getMessages();
+      await this.updateReadStatus();
+    }, 5000);
+
   },
-  unmounted(){
-    this.chatId= -1;
-    this.lastMsgId= -1;
-    this.messages= [];
+  beforeUnmount() {
+    clearInterval(this.setIntervalId);
+    clearInterval(this.getMessagesIntervalId);
+  },
+  deactivated() {
+    clearInterval(this.setIntervalId);
+    clearInterval(this.getMessagesIntervalId);
   },
   methods: {
     async getChatInfo() {
@@ -54,11 +73,15 @@ export default {
           this.chatData['participants']= response.data['participants'];
         }
       } catch (e) {
-        this.errormsg = e.toString();
+        this.errormsg = e;
       }
     },
     async getMessages() {
-      this.errormsg = null
+      // Evito la sovrapposizione della funzione quando chiamata dagli intervalli
+      if (this.getMessagesIsRunning) return;
+      this.getMessagesIsRunning= true;
+
+      this.errormsg = null;
 
       try {
         let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
@@ -66,8 +89,10 @@ export default {
         }, {
           headers: {Authorization: this.token}
         });
-
         if (response.data) {
+          if (this.lastMsgId == -1){
+            this.messages= [];
+          }
           if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
             response.data['messages'].forEach(message => {
               this.messages.push(message);
@@ -77,8 +102,25 @@ export default {
           }
         }
       }catch(e) {
-        this.errormsg = e.toString();
+        this.errormsg = e;
       }
+      this.getMessagesIsRunning= false;
+    },
+    async updateReadStatus() {
+      this.errormsg = null;
+
+      try {
+        let response= await this.$axios.put(`/chats/${this.chatId}/messages/${this.lastMsgId}`, {}, {
+          headers: {Authorization: this.token}
+        });
+        if (response.status > 400) {
+          throw new Error("unable to update the messages status");
+        }
+      }catch(e) {
+        this.errormsg = e;
+      }
+      this.getMessagesIsRunning= false;
+
     },
     async getParticipants() {
       this.errormsg = null
@@ -101,7 +143,7 @@ export default {
       this.$emit('closeChat', leaveChat);
     },
     errorHandler(e){
-      this.errormsg = e.toString();
+      this.errormsg = e;
     },
   }
 }
@@ -122,14 +164,17 @@ export default {
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-          <button type="button" class="btn btn-sm btn-outline-dark" @click="getMessages">
-            Refresh messages
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessages(-1)">
+            Ricarica Messaggi
           </button>
-          <button type="button" class="btn btn-sm btn-outline-dark" @click="closeChat(false)">
-            Close
+          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="getMessages">
+            Info
           </button>
-          <button type="button" class="btn btn-sm btn-outline-danger" @click="closeChat(true)">
-            Leave chat
+          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="closeChat(false)">
+            Chiudi
+          </button>
+          <button type="button" class="btn btn-sm btn-danger shadow-none" @click="closeChat(true)">
+            Abbandona
           </button>
         </div>
       </div>
@@ -195,26 +240,6 @@ export default {
 }
 /* fine barra superiore */
 
-
-.messages-main {
-  position: relative;
-  width: 100%;
-  height: 70vh;
-  overflow-y: scroll;
-  overflow-x: hidden;
-}
-
-/* gestione dei messaggi */
-.messages-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: auto;
-  min-height: 100%;
-  margin-left: 2px;
-  margin-right: 2px;
-}
-
 /* invio messaggio */
 .message-sender{
   position: sticky;
@@ -232,4 +257,25 @@ export default {
 
   user-select: none;
 }
+/* fine invio messaggio */
+
+/* gestione dei messaggi */
+.messages-main {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.messages-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  min-height: 100%;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+/* fine gestione messaggi */
 </style>
