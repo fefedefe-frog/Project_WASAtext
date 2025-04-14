@@ -24,7 +24,7 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 			JOIN chats_table C ON P.chatId = C.chatId
 			JOIN chat_participants_table P2 ON C.chatId = P2.chatId
 			WHERE P.usrId = ?
-			GROUP BY C.chatId, C.chatName, C.chatPhoto;`
+			GROUP BY C.chatId`
 
 	// Eseguo la query descritta primia
 	rows, err := db.c.Query(query, usrId)
@@ -39,11 +39,6 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 			}
 		}
 	}()
-
-	// Controllo se la query ha restituito righe, se no, l'utente non fa parte di alcuna chat
-	if !rows.Next() {
-		return nil, ErrUserNoChat
-	}
 
 	// Inserisco i vari id trovati nell'array di output
 	var userChats []Chat
