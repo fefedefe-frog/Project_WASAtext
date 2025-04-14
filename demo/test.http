@@ -44,19 +44,25 @@ Authorization: Bearer {{client_token}}
 
 > {% response.body["users"].forEach(user =>{
     console.log("userId <"+ user.usrId +">:\n\tuserName -> "+ user.userName +"\n\tuserPhoto -> "+ (user.userPhoto).substring(0,10))
-    }); client.global.set("id_amico", response.body["users"][1]["usrId"]); console.log("id amico: ", client.global.get("id_amico")) %}
+    }); console.log("id amico: ", client.global.get("id_amico")) %}
 
 
-### GET request for listing the user info
+### GET request for listing the friend info
 GET http://localhost:3000/users/{{id_amico}}
 Authorization: Bearer {{client_token}}
 
 > {% console.log("nome: "+ response.body["userName"] +"\nfoto: "+ response.body["userPhoto"] +"\nid: "+ response.body["usrId"]) %}
 
-
 ### GET request for retriving fede's chats
 GET localhost:3000/chats
 Authorization: Bearer {{client_token}}
+
+> {% console.log("chats:"); if(response.body["chats"]){response.body["chats"].forEach(chat => { console.log("\n\tchatId <"+ chat.chatId +">:\n\t\tchatName -> "+ chat.chatName +"\n\t\tchatPhoto -> "+ (chat.chatPhoto).substring(0,10) +"...\n\t\tisGroup -> "+ chat.isGroup +"\n\t\tparticipants-> "+ chat.participants)}); client.global.set("fede_chatId", response.body["chats"][0]["chatId"]);}else{console.log("no chat")} %}
+
+
+### GET request for retriving friend's chats
+GET localhost:3000/chats
+Authorization: Bearer {{id_amico}}
 
 > {% console.log("chats:"); if(response.body["chats"]){response.body["chats"].forEach(chat => { console.log("\n\tchatId <"+ chat.chatId +">:\n\t\tchatName -> "+ chat.chatName +"\n\t\tchatPhoto -> "+ (chat.chatPhoto).substring(0,10) +"...\n\t\tisGroup -> "+ chat.isGroup +"\n\t\tparticipants-> "+ chat.participants)}); client.global.set("fede_chatId", response.body["chats"][0]["chatId"]);}else{console.log("no chat")} %}
 
@@ -109,7 +115,7 @@ Content-Type: application/json
       "chatName": "",
       "chatPhoto": "",
       "isGroup": false,
-      "participants": ["{{client_token_2}}"]
+      "participants": ["{{client_token_4}}"]
   },
   "firstMessage": {
       "contentType": "text",
