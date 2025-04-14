@@ -2,7 +2,6 @@ package api
 
 import (
 	"Project_WASAtext/service/api/reqcontext"
-	"Project_WASAtext/service/database"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -15,14 +14,14 @@ func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Reques
 	// Tento di recuperare le chat di quell'user
 	chats, err := rt.db.GetChatsOfUser(token)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, database.ErrUserNoChat) {
-			context.Logger.Info("User doesn't have chat")
-			http.Error(writer, "Not found - The user doesn't have any chat", http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			context.Logger.WithField("usrId", token).Debug("User doesn't have chat")
+			chats = nil
+		} else {
+			context.Logger.WithError(err).WithField("usrId", token).Error("Error getting user chats")
+			http.Error(writer, "Internal server error - Unable to retrive info", http.StatusInternalServerError)
 			return
 		}
-		context.Logger.WithError(err).Errorf("Error getting user %s chats", token)
-		http.Error(writer, "Internal server error - Unable to retrive info", http.StatusInternalServerError)
-		return
 	}
 
 	// Preparo la risposta json
