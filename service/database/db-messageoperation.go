@@ -216,7 +216,7 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 								)
 								  AND ms.status != 'read'
 							)
-							  AND receiverId = ?;`, usrId, chatId, usrId, chatId)
+							  AND receiverId = ?;`, usrId, chatId, usrId, chatId, usrId)
 	if err != nil {
 		return err
 	}
