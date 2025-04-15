@@ -17,20 +17,6 @@ export default {
       setIntervalId: null,
     }
   },
-  mounted() {
-    this.token= sessionStorage.getItem('authToken');
-    this.usrId= sessionStorage.getItem('usrId');
-
-    this.getUsers();
-    this.getUserChats();
-    this.setIntervalId= setInterval(async () => {
-      this.getUsers();
-      this.getUserChats();
-    }, 19000);
-  },
-  beforeUnmount() {
-    clearInterval(this.setIntervalId);
-  },
   computed: {
     chatFilteredResult(){
       let searchPool= this.userChats
@@ -54,6 +40,20 @@ export default {
         user['userName'].toLowerCase().includes(this.searchQuery.toLowerCase())
       );
     }
+  },
+  mounted() {
+    this.token= sessionStorage.getItem('authToken');
+    this.usrId= sessionStorage.getItem('usrId');
+
+    this.getUsers();
+    this.getUserChats();
+    this.setIntervalId= setInterval(async () => {
+      this.getUsers();
+      this.getUserChats();
+    }, 19000);
+  },
+  beforeUnmount() {
+    clearInterval(this.setIntervalId);
   },
   methods: {
     async getUsers() {
@@ -143,7 +143,7 @@ export default {
         <input v-model="searchQuery" type="text" placeholder="Inserisci nome utente o chat" required>
       </div>
 
-      <ul class="nav nav-tabs" id="tab" role="tablist">
+      <ul id="tab" class="nav nav-tabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#chats" type="button">Chats</button>
         </li>
@@ -152,21 +152,21 @@ export default {
         </li>
       </ul>
 
-      <div class="tab-content" id="tabContent">
-        <div class="tab-pane fade show active" id="chats" role="tabpanel">
+      <div id="tabContent" class="tab-content">
+        <div id="chats" class="tab-pane fade show active" role="tabpanel">
           <div class="chats-list">
-            <chatBanner v-for="chat in chatFilteredResult" :key="chat.chatId" :chatData="chat" @error="componentsErrorHandler" @chatBannerData="loadChat"/>
+            <chatBanner v-for="chat in chatFilteredResult" :key="chat.chatId" :chat-data="chat" @error="componentsErrorHandler" @chat-banner-data="loadChat" />
           </div>
         </div>
-        <div class="tab-pane fade" id="users" role="tabpanel">
+        <div id="users" class="tab-pane fade" role="tabpanel">
           <div class="users-list">
-            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :userData="user"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" />
           </div>
         </div>
       </div>
     </div>
     <div class="chat-container bobby">
-      <Chat v-if="showChat" :initialMessages="loadedChatMessages" :chatData="loadedChatInfo" :key="loadedChatInfo['chatId']" @closeChat="closeChat"/>
+      <Chat v-if="showChat" :key="loadedChatInfo['chatId']" :initial-messages="loadedChatMessages" :chat-data="loadedChatInfo" @close-chat="closeChat" />
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />

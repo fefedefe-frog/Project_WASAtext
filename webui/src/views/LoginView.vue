@@ -60,7 +60,7 @@ export default {
 
 <template>
   <div class="container">
-    <div class="login-container" v-if="!loading">
+    <div v-if="!loading" class="login-container">
       <!-- Form di login -->
       <form class="login-form" @submit.prevent="doLogin">
         <h3 class="h3">Login</h3>

@@ -14,11 +14,19 @@ export default {
     return {
       token: '',
       errormsg: null,
-      chatId: -1,
-      messages: [],
-      lastMsgId: -1,
-      textContent: '',
+
+      chat: {
+        chatId: -1,
+        chatName: "",
+        chatPhoto: "",
+        isGroup: false,
+        participants: []
+      },
       participantsNames: {},
+
+      lastMsgId: -1,
+      messages: [],
+      textContent: '',
 
       setIntervalId: null,
       getMessagesIntervalId: null,
@@ -160,7 +168,7 @@ export default {
         <div class="chat-name">
           <h3>{{ chatData['chatName'] }}</h3>
         </div>
-        <div class="participants">{{ chatData['isGroup'] ? Object.values(participantsNames).join(", ") : "..."}}</div>
+        <div class="participants">{{ chatData['isGroup'] ? Object.values(participantsNames).join(", ") : "..." }}</div>
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
@@ -193,11 +201,9 @@ export default {
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" :senderName="participantsNames[message['senderId']]" />
+        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" :sender-name="participantsNames[message['senderId']]" />
       </div>
     </div>
-
-
   </div>
 </template>
 

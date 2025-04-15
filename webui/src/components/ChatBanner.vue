@@ -27,21 +27,6 @@ export default {
       setIntervalId: null
     }
   },
-  mounted() {
-    this.chatId= this.chatData['chatId'];
-    this.token= sessionStorage.getItem('authToken');
-
-    this.getChatMessages();
-    this.setIntervalId= setInterval(async () => {
-      this.getChatMessages();
-    }, 7000)
-  },
-  beforeUnmount() {
-    clearInterval(this.setIntervalId);
-  },
-  deactivated() {
-    clearInterval(this.setIntervalId);
-  },
   computed: {
     messageContent(){
       if (this.lastMessage){
@@ -58,6 +43,21 @@ export default {
         return '';
       }
     }
+  },
+  mounted() {
+    this.chatId= this.chatData['chatId'];
+    this.token= sessionStorage.getItem('authToken');
+
+    this.getChatMessages();
+    this.setIntervalId= setInterval(async () => {
+      this.getChatMessages();
+    }, 7000)
+  },
+  beforeUnmount() {
+    clearInterval(this.setIntervalId);
+  },
+  deactivated() {
+    clearInterval(this.setIntervalId);
   },
   methods: {
     async getChatMessages(){
@@ -94,14 +94,14 @@ export default {
   <div class="chat-banner" @click="bannerClicked">
     <!-- Foto Profilo a destra -->
     <div class="chat-image-container">
-      <img :src="'data:image/png;base64,'+this.chatData['chatPhoto']" alt="Chat Image">
+      <img :src="'data:image/png;base64,'+chatData['chatPhoto']" alt="Chat Image">
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
       <div class="chat-name">{{ chatData['chatName'] }}</div>
       <div class="last-message">
-        <div v-html="messageContent"></div>
+        <div v-html="messageContent" />
       </div>
     </div>
   </div>

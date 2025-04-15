@@ -139,6 +139,9 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
 
 	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?;`, msgId, chatId)
+	if err != nil {
+		return err
+	}
 
 	// Controllo se la chat ha altri messaggi sennò la elimino
 	_, err = db.c.Exec(`DELETE FROM chats_table WHERE chatId= ? AND (SELECT COUNT(*) FROM chat_messages_table WHERE chatId= ?) = 0;`, chatId, chatId)

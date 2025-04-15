@@ -42,12 +42,13 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	if chatInfo.IsGroup {
 		if chatInfo.ChatPhoto == "" {
 			chatInfo.ChatPhoto = database.DefaultGroupPhotoBase64
-		} else {
-
 		}
 		if chatInfo.ChatName == "" {
 			chatInfo.ChatName = "Gruppo"
 		}
+	} else {
+		chatInfo.ChatPhoto = ""
+		chatInfo.ChatName = ""
 	}
 
 	// Decodifica la stringa Base64 in byte
