@@ -35,7 +35,11 @@ export default {
   },
   mounted() {
     this.token= sessionStorage.getItem('authToken');
-    this.chatId= this.chatData['chatId'];
+    this.chat['chatId']= this.chatData['chatId'];
+    this.chat['chatName']= this.chatData['chatName'];
+    this.chat['chatPhoto']= this.chatData['chatPhoto'];
+    this.chat['isGroup']= this.chatData['isGroup'];
+    this.chat['participants']= this.chatData['participants'];
 
     this.lastMsgId= this.initialMessages[this.initialMessages.length - 1]['msgId'];
     this.messages= this.initialMessages;
@@ -75,10 +79,10 @@ export default {
         });
 
         if (response.data) {
-          this.chatData['chatName']= response.data['chatName'];
-          this.chatData['chatPhoto']= response.data['chatPhoto'];
-          this.chatData['isGroup']= response.data['isGroup'];
-          this.chatData['participants']= response.data['participants'];
+          this.chat['chatName']= response.data['chatName'];
+          this.chat['chatPhoto']= response.data['chatPhoto'];
+          this.chat['isGroup']= response.data['isGroup'];
+          this.chat['participants']= response.data['participants'];
         }
       } catch (e) {
         this.errormsg = e;
@@ -97,8 +101,9 @@ export default {
         }, {
           headers: {Authorization: this.token}
         });
+
         if (response.data) {
-          if (this.lastMsgId == -1){
+          if (this.lastMsgId === -1){
             this.messages= [];
           }
           if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
