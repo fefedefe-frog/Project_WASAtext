@@ -15,8 +15,9 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 	// Preparo la variabile che conterrà i valori della richiesta http
 	// che mi aspetto di ricevere per questo metodo dell'endpoint
 	requestJson := struct {
-		ContentType string `json:"contentType"`
-		Content     string `json:"content"`
+		ContentType string	`json:"contentType"`
+		Content     string	`json:"content"`
+		RespondTo   int		`json:"respondTo"`
 	}{}
 
 	// Recupero il chat id dai parametri dell'endpoint
@@ -52,6 +53,7 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 	// Aggiungo il messaggio al db
 	var newMessage database.Message
 	newMessage.SenderId = token
+	newMessage.RespondTo= requestJson.RespondTo
 	newMessage.ContentType = requestJson.ContentType
 	newMessage.Content = requestJson.Content
 	newMessage.DeliveryStatus = "sent"
