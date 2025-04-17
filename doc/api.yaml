@@ -199,6 +199,16 @@ components:
           maxLength: 32
           readOnly: true
 
+        respondTo:
+          description:  |
+            If the message is in response of another message, this field
+            corresponds of the id of that messages, the message is not
+            responding to other messages if this field have -1
+
+          type: integer
+          minimum: -1
+          maximum: 1000
+
         contentType:
           description:  |
             Describe if the content of the message is a photo o a text
@@ -1235,13 +1245,16 @@ paths:
           application/json:
             schema:
               description:  |
-                  The request body contain the content type and the content of the message
+                  The request body contain the content type, the content of the message
+                  and the respondTo
               type: object
               properties:
                 contentType:
                   $ref: "#/components/schemas/Message/properties/contentType"
                 content:
                   $ref: "#/components/schemas/Message/properties/content"
+                respondTo:
+                  $ref: "#/components/schemas/Message/properties/respondTo"
 
         
       responses:
@@ -1262,6 +1275,7 @@ paths:
                 message:
                   msgId: 999
                   senderId: "ofnarc754"
+                  respondTo: -1
                   contentType: "text"
                   content: "Ciao franco, come stai?"
                   deliveryStatus: "sent"
