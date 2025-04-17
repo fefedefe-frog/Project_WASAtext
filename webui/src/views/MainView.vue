@@ -48,8 +48,8 @@ export default {
     this.getUsers();
     this.getUserChats();
     this.setIntervalId= setInterval(async () => {
-      this.getUsers();
-      this.getUserChats();
+      await this.getUsers();
+      await this.getUserChats();
     }, 19000);
   },
   beforeUnmount() {
