@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TODO AGIGORNARE E AGGIUNGERE RESPONDTO
 func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error) {
 	var messages []Message
 

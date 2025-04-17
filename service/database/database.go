@@ -57,6 +57,7 @@ IsForwarded boolean value that indicate if the message is forwarded or not
 type Message struct {
 	MsgId          int       `json:"msgId"`          // Unique message id
 	SenderId       string    `json:"senderId"`       // User id of the user that send the message
+	RespondTo	   int64     `json:"respondTo"`		 // Msg Id of the message at which is responding
 	ContentType    string    `json:"contentType"`    // Define the type of the content if text OR photo
 	Content        string    `json:"content"`        // Content of the message which can be text or a photo as a string in base64
 	DeliveryStatus string    `json:"deliveryStatus"` // Indicate the status of the message
@@ -219,10 +220,11 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		sqlStmt := `CREATE TABLE chat_messages_table(
     			msgId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-    			senderId TEXT, 
-    			chatId INTEGER, 
+    			senderId TEXT NOT NULL,
+    			respondTo INTEGER NOT NULL DEFAULT -1, 
+    			chatId INTEGER NOT NULL, 
     			contentType TEXT NOT NULL CHECK (contentType IN ('text', 'photo')), 
-    			content BLOB,
+    			content BLOB NOT NULL,
 				deliveryStatus TEXT NOT NULL CHECK (deliveryStatus IN ('sent', 'received', 'read')),
     			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     			isForwarded INTEGER NOT NULL CHECK (isForwarded IN (0, 1)),
