@@ -10,6 +10,9 @@ export default {
       required: true
     },
   },
+  emits: [
+      'closeChat'
+  ],
   data: function () {
     return {
       token: '',

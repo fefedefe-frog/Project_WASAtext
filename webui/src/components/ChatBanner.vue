@@ -6,6 +6,9 @@ export default {
       required: true
     },
   },
+  emits: [
+    'error', 'chatBannerData'
+  ],
   data() {
     return {
       errormsg: null,
@@ -25,23 +28,6 @@ export default {
       lastMsgId: -1,
 
       setIntervalId: null
-    }
-  },
-  computed: {
-    messageContent(){
-      if (this.lastMessage){
-        let content= this.lastMessage['content'];
-        let sender= this.lastMessage['senderId'];
-        let messsagePreview= sender + ": " + content;
-
-        if (this.lastMessage['contentType'] == "photo"){
-          return `<span class="last-message-text">${sender}: </span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>`;
-        }else {
-          return `<span class="last-message-text">${messsagePreview.length > (10 + sender.length) ? messsagePreview.substring(0, (10 + sender.length))+ "..." : messsagePreview}</span>`;
-        }
-      }else {
-        return '';
-      }
     }
   },
   mounted() {
@@ -101,7 +87,8 @@ export default {
     <div class="text-container">
       <div class="chat-name">{{ chatData['chatName'] }}</div>
       <div class="last-message">
-        <div v-html="messageContent" />
+        <span v-if="lastMessage['contentType'] == 'photo'" class="last-message-text">{{ sender }}: </span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+        <span v-if="lastMessage['contentType'] == 'text'" class="last-message-text">{{ messsagePreview.length > (10 + sender.length) ? messsagePreview.substring(0, (10 + sender.length)) + "..." : messsagePreview }}</span>
       </div>
     </div>
   </div>
