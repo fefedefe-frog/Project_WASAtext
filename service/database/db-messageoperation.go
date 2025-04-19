@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TODO AGIGORNARE E AGGIUNGERE RESPONDTO
 func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error) {
 	var messages []Message
 
@@ -32,7 +31,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	var rows *sql.Rows
-	rows, err = tx.Query(`SELECT msgId, senderId, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
+	rows, err = tx.Query(`SELECT msgId, senderId, respondTo, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 		var message Message
 
 		var contentRaw []byte
-		err := rows.Scan(&message.MsgId, &message.SenderId, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
+		err := rows.Scan(&message.MsgId, &message.SenderId, &message.RespondTo, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
 		if err != nil {
 			return nil, err
 		}
@@ -110,9 +109,9 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 
 	// Inserisco il messaggio nella tabella dei messaggi
 	message.DeliveryStatus = TypePhoto
-	query := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+	query := `INSERT INTO chat_messages_table (senderId, respondTo, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	var result sql.Result
-	result, err = tx.Exec(query, message.SenderId, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded)
+	result, err = tx.Exec(query, message.SenderId, message.RespondTo, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded)
 	if err != nil {
 		return -1, err
 	}
@@ -235,8 +234,8 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 	var message Message
 	var rawContent []byte
 	var isForwarded int
-	query := `SELECT senderId, contentType, content, deliveryStatus, timestamp, isForwarded FROM chat_messages_table WHERE msgId= ?;`
-	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
+	query := `SELECT senderId, respondTo,contentType, content, deliveryStatus, timestamp, isForwarded FROM chat_messages_table WHERE msgId= ?;`
+	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.RespondTo, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
 	if err != nil {
 		return message, err
 	}
