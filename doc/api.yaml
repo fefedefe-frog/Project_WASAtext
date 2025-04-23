@@ -222,7 +222,7 @@ components:
           description:  |
             Content of the message, can be a text OR a photo
           
-          oneOf:
+          anyOf:
             - description:  |
                 Text content
               
@@ -695,7 +695,11 @@ paths:
                 type: object
                 properties:
                   chats:
-                    $ref: "#/components/schemas/Chat"
+                    type: array
+                    minItems: 0
+                    maxItems: 1000
+                    items:
+                      $ref: "#/components/schemas/Chat"
               
               example:
                 chats:
@@ -1194,21 +1198,29 @@ paths:
                     content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "sent"
                     timestamp: "2021-06-01T14:10:27Z"
-                    comments: ["😒"]
+                    comments:
+                      - commenterId: "ofnarc754"
+                        content: "😒"
                   - msgId: 345
                     senderId: "ordigro293"
                     contentType: "text"
                     content: "Ciao franco!!"
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T16:10:27Z"
-                    comments: ["😊"]
+                    comments:
+                      - commenterId: "ofnarc754"
+                        content: "😒"
                   - msgId: 266
                     senderId: "maria34"
                     contentType: "photo"
                     content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T18:10:27Z"
-                    comments: ["😊", "😒"]
+                    comments:
+                      - commenterId: "ofnarc754"
+                        content: "😒"
+                      - commenterId: "maria34"
+                        content: "😒"
         
         "400":
           $ref: "#/components/responses/BadRequestError"
