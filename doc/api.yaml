@@ -690,11 +690,13 @@ paths:
           content:
             application/json:
               schema:
-                description: List with all the chats of the user with the last message for that chat.
+                description: List with all the chats of the user.
 
                 type: object
                 properties:
                   chats:
+                    description:  |
+                      Array of chats
                     type: array
                     minItems: 0
                     maxItems: 1000
@@ -1055,7 +1057,7 @@ paths:
                 usrId: "artmat34"
       
       responses:
-        "202":
+        "200":
           description: User added successfully, return the list of participant refreshed
           content:
             application/json:
@@ -1083,7 +1085,7 @@ paths:
                   - usr_id: "maria34"
                     userName: "maria"
                     userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-        
+
         "204":
           description: No content, user is already in the chat
         
