@@ -34,7 +34,7 @@ export default {
 
         // Estraggo il token dall'header
         const token = response.headers["authorization"];
-        const usrId = response.data.usrId;
+        const usrId = response.data["usrId"];
         this.usrId = usrId;
 
         if (token && usrId) {
