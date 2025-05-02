@@ -52,14 +52,14 @@ func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Requ
 		http.Error(writer, "Forbidden - can't forward a message of a chat where you aren't part off", http.StatusForbidden)
 		return
 	}
-	isParticipant = false
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(requestJson.ChatToForward, token)
+	var isParticipatForward bool
+	isParticipatForward, err = rt.db.CheckIfUserIsParticipant(requestJson.ChatToForward, token)
 	if err != nil {
 		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": requestJson.ChatToForward}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
-	if !isParticipant {
+	if !isParticipatForward {
 		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": requestJson.ChatToForward}).Warn("user tried to forward a message to a chat which he isn't a member of")
 		http.Error(writer, "Forbidden - can't forward a message to a chat where you aren't part off", http.StatusForbidden)
 		return

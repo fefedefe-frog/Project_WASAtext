@@ -267,6 +267,15 @@ func (db *appdbimpl) GetMessageComments(msgId int) ([]Comment, error) {
 	var comments []Comment
 
 	rows, err := db.c.Query(`SELECT commentId, commenterId, content FROM message_comments_table WHERE msgId=?;`, msgId)
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				logrus.WithError(closeErr).Error("rows.Close()")
+			}
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
