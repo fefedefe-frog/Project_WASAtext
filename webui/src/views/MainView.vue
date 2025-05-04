@@ -14,6 +14,8 @@ export default {
       loadedChatInfo: {},
       loadedChatMessages: [],
 
+      loadedUserInfo: {},
+
       setIntervalId: null,
     }
   },
@@ -61,12 +63,14 @@ export default {
 
       try {
         let response= await this.$axios.get(`/users`, {headers: {Authorization: this.token}});
-        if (response.data) {
-          this.users= [];
 
-          response.data['users'].forEach(user => {
-            this.users.push(user);
-          });
+        if (response.data) {
+          if(response.data['users']){
+            this.users= [];
+            response.data['users'].forEach(user => {
+              this.users.push(user);
+            });
+          }
         }
       }catch(e) {
         if (e.status === 404){
@@ -121,12 +125,34 @@ export default {
         }
       }
     },
+    doLogout(){
+      sessionStorage.removeItem("authToken");
+      sessionStorage.removeItem("usrId");
+      this.$router.push('/login');
+    },
     loadChat(bannerData){
       this.showChat= false
       this.loadedChatInfo= bannerData['chatData'];
       this.loadedChatMessages= bannerData['messages'];
 
       this.showChat= true;
+    },
+    async loadUserInfo(usrId){
+      this.errormsg= null;
+      this.loadedUserInfo= null;
+
+      console.log("user to load: "+ usrId);
+      try{
+        let response= await this.$axios.get(`/users/${usrId}`, {
+          headers: {Authorization: this.token}
+        });
+
+        if(response.data){
+          this.loadedUserInfo= response.data;
+        }
+      }catch(e) {
+        this.errormsg= e;
+      }
     },
     componentsErrorHandler(error){
       this.errormsg= error.toString;
@@ -160,13 +186,27 @@ export default {
         </div>
         <div id="users" class="tab-pane fade" role="tabpanel">
           <div class="users-list">
-            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" />
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="loadUserInfo"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-footer">
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary shadow-none" @click="console.log('TODO: PROFILO')">
+              Profilo
+            </button>
+            <button type="button" class="btn btn-sm btn-danger shadow-none" @click="doLogout">
+              Logout
+            </button>
           </div>
         </div>
       </div>
     </div>
     <div class="chat-container bobby">
       <Chat v-if="showChat" :key="loadedChatInfo['chatId']" :initial-messages="loadedChatMessages" :chat-data="loadedChatInfo" @close-chat="closeChat" />
+      <UserInfo :user-data="loadedUserInfo" />
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
@@ -218,7 +258,6 @@ export default {
   color: #888;
 }
 
-
 .tab-content {
   height: 100%;
 
@@ -240,11 +279,21 @@ export default {
   overflow-y: auto;
 }
 
+.list-footer{
+  border-top: 2px solid grey;
+  padding: 5px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 
 .chat-container {
   height: 100%;
   width: 100%;
 
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
 }
 

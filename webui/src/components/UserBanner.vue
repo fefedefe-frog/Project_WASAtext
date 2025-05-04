@@ -6,6 +6,7 @@ export default {
       required: true,
     }
   },
+  emits: ['userClicked'],
   data() {
     return {
       usrId: '',
@@ -17,12 +18,17 @@ export default {
     this.usrId= this.userData['usrId'];
     this.userName= this.userData['userName'];
     this.userPhoto= this.userData['userPhoto'];
+  },
+  methods: {
+    loadUser(){
+      this.$emit("userClicked", this.usrId);
+    }
   }
 };
 </script>
 
 <template>
-  <div class="user-banner">
+  <div class="user-banner" @click="loadUser">
     <!-- Foto Profilo a destra -->
     <div v-if="userPhoto" class="user-image-container">
       <img :src="'data:image/png;base64,'+userPhoto" alt="Profile Image">
