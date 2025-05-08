@@ -10,6 +10,7 @@ import UserBanner from './components/UserBanner.vue'
 import ChatMessage from './components/ChatMessage.vue'
 import Chat from './components/Chat.vue'
 import UserInfo from './components/UserInfo.vue'
+import MessageForm from "./components/MessageForm.vue";
 
 import './assets/dashboard.css'
 import './assets/main.css'
@@ -24,6 +25,7 @@ app.component("UserBanner", UserBanner);
 app.component("ChatMessage", ChatMessage);
 app.component("Chat", Chat);
 app.component("UserInfo", UserInfo);
+app.component("MessageForm", MessageForm);
 
 app.use(router)
 app.mount('#app')
