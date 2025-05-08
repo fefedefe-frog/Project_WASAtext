@@ -50,10 +50,10 @@ export default {
 
     this.getUsers();
     this.getUserChats();
-    this.setIntervalId= setInterval(async () => {
-      await this.getUsers();
-      await this.getUserChats();
-    }, 20000);
+    // this.setIntervalId= setInterval(async () => {
+    //   await this.getUsers();
+    //   await this.getUserChats();
+    // }, 20000);
   },
   beforeUnmount() {
     clearInterval(this.setIntervalId);
@@ -109,13 +109,6 @@ export default {
         this.loading = false
       }
     },
-    loadChat(bannerData){
-      this.showChat= false
-      this.loadedChatInfo= bannerData['chatData'];
-      this.loadedChatMessages= bannerData['messages'];
-
-      this.showChat= true;
-    },
     async closeChat(leave){
       this.showChat= false
       if (leave){
@@ -132,6 +125,97 @@ export default {
           this.errormsg = e;
         }
       }
+    },
+    prepSendMessage(rawInput){
+      console.log(rawInput)
+      let userToSend= rawInput['sendTo'];
+      let messageData= rawInput['messageData']
+
+      // Controllo se ho già una chat diretta con l'utente a cui voglio mandare il messaggio
+      let chatToSend= -1;
+      if (this.userChats.length > 0){
+        let filteredChat= this.userChats.filter(chat => chat['isGroup'] === false);
+        filteredChat.forEach(chat => {
+          if(chat['participants'].includes(userToSend)){
+            console.log("la chat esiste già: "+ chat['chatId']);
+            chatToSend= chat['chatId'];
+          }
+        });
+      }
+
+      // Preparo il formData per la richiesta
+      const requestFormData= new FormData();
+      if (chatToSend === -1){ // Non esiste una chat diretta con l'utente
+
+        // Assegno le informazioni sulla chat
+        requestFormData.append('chatInfo', JSON.stringify({
+          chatName: "",
+          chatPhoto: "",
+          isGroup: false,
+          participants: [userToSend]
+        }));
+
+        // Assegno le informazioni sul messaggio
+        requestFormData.append('contentType', messageData['contentType']);
+        requestFormData.append('content', messageData['content']);
+
+        this.startNewChat(requestFormData);
+      }else { // La chat esiste già e quindi procedo a preparare il form per l'invio del messaggio
+        // Assegno le informazioni sul messaggio
+        requestFormData.append('contentType', messageData['contentType']);
+        requestFormData.append('content', messageData['content']);
+        requestFormData.append('respondTo', -1);
+
+        this.sendMessage(chatToSend, requestFormData);
+      }
+
+
+    },
+    async startNewChat(formData){
+      console.log("nuova chat");
+      console.log(formData);
+      this.errormsg= null;
+      try{
+        console.log("invio dati")
+        let response= await this.$axios.post(`/chats`, formData, {
+          headers: {
+            Authorization: this.token,
+          }
+        });
+
+        if(response.data){
+          console.log("risposta")
+          console.log(response.data);
+        }
+      }catch (e){
+        console.log(e)
+        this.errormsg= e;
+      }
+    },
+    async sendMessage(chatId, formData){
+      console.log("invio messaggio")
+      this.errormsg= null;
+
+      try{
+        let response= await this.$axios.post(`/chats/${chatId}/messages`, formData, {
+          headers: {
+           Authorization: this.token,
+          }
+        });
+
+        if(response.data){
+          console.log(response.data);
+        }
+      }catch (e){
+        this.errormsg= e;
+      }
+    },
+    loadChat(bannerData){
+      this.showChat= false
+      this.loadedChatInfo= bannerData['chatData'];
+      this.loadedChatMessages= bannerData['messages'];
+
+      this.showChat= true;
     },
     doLogout(){
       sessionStorage.removeItem("authToken");
@@ -157,7 +241,7 @@ export default {
 </script>
 
 <template>
-  <div class="container">
+  <div class="main-container">
     <div class="lists bobby">
       <div class="search-box">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#search" /></svg>
@@ -200,7 +284,7 @@ export default {
       </div>
     </div>
     <div class="chat-container bobby">
-      <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="closeUserInfo"/>
+      <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="closeUserInfo" @reqNewChat="prepSendMessage"/>
       <Chat v-if="showChat" :key="loadedChatInfo['chatId']" :initial-messages="loadedChatMessages" :chat-data="loadedChatInfo" @close-chat="closeChat" />
     </div>
 
@@ -209,13 +293,20 @@ export default {
 </template>
 
 <style scoped>
-.container {
+.main-container {
+  padding: 0.7rem;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: row;
 
   position: relative;
-  height: 100%;
-  width: 100%;
+}
+
+@media (min-width: 2000px) {
+  .main-container {
+    max-width: 1400px;
+  }
 }
 
 .lists {
