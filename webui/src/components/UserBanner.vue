@@ -9,19 +9,21 @@ export default {
   emits: ['userClicked'],
   data() {
     return {
-      usrId: '',
-      userName: '',
-      userPhoto: '',
+      user: {
+        usrId: '',
+        userName: '',
+        userPhoto: '',
+      }
     }
   },
   mounted() {
-    this.usrId= this.userData['usrId'];
-    this.userName= this.userData['userName'];
-    this.userPhoto= this.userData['userPhoto'];
+    this.user['usrId']= this.userData['usrId'];
+    this.user['userName']= this.userData['userName'];
+    this.user['userPhoto']= this.userData['userPhoto'];
   },
   methods: {
     loadUser(){
-      this.$emit("userClicked", this.usrId);
+      this.$emit("userClicked", this.user);
     }
   }
 };
@@ -30,13 +32,13 @@ export default {
 <template>
   <div class="user-banner" @click="loadUser">
     <!-- Foto Profilo a destra -->
-    <div v-if="userPhoto" class="user-image-container">
-      <img :src="'data:image/png;base64,'+userPhoto" alt="Profile Image">
+    <div v-if="user['userPhoto']" class="user-image-container">
+      <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
     </div>
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <p>{{ userName }}</p>
+      <p>{{ user['userName'] }}</p>
     </div>
   </div>
 </template>
@@ -61,18 +63,18 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
+.user-image-container {
+  max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
+  max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
+  object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
+}
+
 .user-image-container img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
   user-select: none;
-}
-
-.user-image-container {
-  max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
-  max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
-  object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
 }
 
 .text-container {
