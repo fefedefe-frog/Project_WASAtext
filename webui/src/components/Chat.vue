@@ -31,7 +31,7 @@ export default {
       messages: [],
       textContent: '',
 
-      setIntervalId: null,
+      getChatInfoIntervalId: null,
       getMessagesIntervalId: null,
       getMessagesIsRunning: false,
     }
@@ -51,25 +51,24 @@ export default {
     this.getParticipants();
     this.getMessages();
 
-    this.setIntervalId= setInterval( async () => {
-      this.lastMsgId= -1;
+    this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
       await this.getParticipants();
-      await this.getMessages();
     }, 30000);
 
     this.getMessagesIntervalId= setInterval( async () => {
+      this.lastMsgId= -1; //Per ora recupero tutti i messagi della chat in ogni caso
       await this.getMessages();
       await this.updateReadStatus();
     }, 5000);
 
   },
   beforeUnmount() {
-    clearInterval(this.setIntervalId);
+    clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
   },
   deactivated() {
-    clearInterval(this.setIntervalId);
+    clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
   },
   methods: {
@@ -155,6 +154,9 @@ export default {
         this.errormsg = e.toString();
       }
     },
+    async sendMessage(){
+      // TODO
+    },
     closeChat(leaveChat){
       this.$emit('closeChat', leaveChat);
     },
@@ -201,7 +203,7 @@ export default {
         <label for="text">
           <input id="textContent" v-model="textContent" type="text" placeholder="Scrivi un messaggio" required>
         </label>
-        <button type="submit" :disabled="!textContent || loading" :class="{ disabled: !textContent}">
+        <button type="submit" :disabled="!textContent" :class="{ disabled: !textContent}">
           <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator" /></svg>
         </button>
       </form>
