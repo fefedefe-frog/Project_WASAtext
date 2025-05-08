@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -14,31 +15,59 @@ import (
 
 func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
 
-	requestJson := struct {
-		ChatInfo struct {
-			ChatName     string   `json:"chatName"`
-			ChatPhoto    string   `json:"chatPhoto"`
-			IsGroup      bool     `json:"isGroup"`
-			Participants []string `json:"participants"`
-		} `json:"chatInfo"`
-
-		FirstMessage struct {
-			ContentType string `json:"contentType"`
-			Content     string `json:"content"`
-		} `json:"firstMessage"`
-	}{}
-
-	// Uso delle variabili puntatore per comodità
-	chatInfo := &requestJson.ChatInfo
-	firstMessage := &requestJson.FirstMessage
-
-	err := json.NewDecoder(request.Body).Decode(&requestJson)
+	// Limito la memoria per il parsing del form
+	err := request.ParseMultipartForm(32 << 20)
 	if err != nil {
-		context.Logger.WithError(err).Error("error while decoding body request")
-		http.Error(writer, "Bad Request - invalid json format", http.StatusBadRequest)
+		context.Logger.WithError(err).Error("Error parsing multipart form")
+		http.Error(writer, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
 
+	// Recupero le info della chat dai dati del form
+	rawChatInfo := request.FormValue("chatInfo")
+	var chatInfo struct {
+		ChatName     string   `json:"chatName"`
+		ChatPhoto    string   `json:"chatPhoto"`
+		IsGroup      bool     `json:"isGroup"`
+		Participants []string `json:"participants"`
+	}
+	if err := json.Unmarshal([]byte(rawChatInfo), &chatInfo); err != nil {
+		context.Logger.WithError(err).Error("Error unmarshalling chatInfo")
+		http.Error(writer, "errore recuper informazioni dal form", http.StatusBadRequest)
+		return
+	}
+
+	// Recupero i dati del messaggio da inviare per iniziare la chat
+	contentType := request.FormValue("contentType")
+	var messageContent []byte
+	if contentType == "photo" {
+		// Carico l'immagine contenuta nella richiesta http
+		file, _, err := request.FormFile("content")
+		if err != nil {
+			context.Logger.WithError(err).Error("Error getting file content")
+			http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
+			return
+		}
+		defer func() {
+			err := file.Close()
+			if err != nil {
+				context.Logger.WithError(err).Error("Error closing file")
+			}
+		}()
+
+		// Leggo il contenuto dell'immagine
+		messageContent, err = io.ReadAll(file)
+		if err != nil {
+			context.Logger.WithError(err).Error("Error reading file")
+			http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
+			return
+		}
+
+	} else {
+		messageContent = []byte(request.FormValue("content"))
+	}
+
+	// Preparo i dati della chat
 	if chatInfo.IsGroup {
 		if chatInfo.ChatPhoto == "" {
 			chatInfo.ChatPhoto = database.DefaultGroupPhotoBase64
@@ -60,23 +89,9 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	// Assegno il valore di messageContent a seconda del contenuto del messaggio
-	var messageContent interface{}
-	if firstMessage.ContentType == "photo" {
-		var convErr error
-		messageContent, convErr = base64.StdEncoding.DecodeString(firstMessage.Content)
-		if convErr != nil {
-			http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
-			context.Logger.WithError(convErr).Error("Unable to decode the base64 string of the photo")
-			return
-		}
-	} else {
-		messageContent = firstMessage.Content
-	}
-
 	var newChatId int
 	chatInfo.Participants = append(chatInfo.Participants, token)
-	newChatId, err = rt.db.InsertNewChat(token, chatInfo.ChatName, groupPhotoData, chatInfo.Participants, chatInfo.IsGroup, messageContent)
+	newChatId, err = rt.db.InsertNewChat(token, chatInfo.ChatName, groupPhotoData, chatInfo.Participants, chatInfo.IsGroup, contentType, messageContent)
 	if err != nil {
 		context.Logger.WithError(err).Error("unable to insert a new chat in the db")
 		http.Error(writer, "Internal server error - unable to create the chat", http.StatusInternalServerError)
