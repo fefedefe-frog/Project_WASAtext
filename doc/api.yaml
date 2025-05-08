@@ -740,7 +740,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               description:  |
                 The request body expect to retrieve the chat type, (name and photo if it's a group
@@ -766,17 +766,10 @@ paths:
                     participants:
                       $ref: "#/components/schemas/Chat/properties/participants"
                 
-                firstMessage:
-                  description: |
-                    First message required for creating the chat
-
-                  type: object
-                  
-                  properties:
-                    contentType:
-                      $ref: "#/components/schemas/Message/properties/contentType"
-                    content:
-                      $ref: "#/components/schemas/Message/properties/content"
+                contentType:
+                  $ref: "#/components/schemas/Message/properties/contentType"
+                content:
+                  $ref: "#/components/schemas/Message/properties/content"
 
       responses:
         "201":
@@ -1256,7 +1249,7 @@ paths:
           - the content type of the message
           - the content of the message
         content: 
-          application/json:
+          multipart/form-data:
             schema:
               description:  |
                   The request body contain the content type, the content of the message
