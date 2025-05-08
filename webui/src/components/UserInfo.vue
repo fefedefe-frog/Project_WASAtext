@@ -6,7 +6,7 @@ export default {
       required: true
     }
   },
-  emits: ['closeUserInfo', 'reqToSendMessage'],
+  emits: ['closeUserInfo', 'reqNewChat'],
   data: function () {
     return {
       errormsg: null,
@@ -16,22 +16,14 @@ export default {
         userName: "",
         userPhoto: "",
       },
-
-      messageContent: "",
     }
   },
   methods: {
-    sendMessage(){
-      let usrId= this.user['usrId']
-      let rawMess= {
-        contentType: "text",
-        content: this.messageContent
-      }
-
-      this.$emit('reqToSendMessage', {sendTo: usrId, rawMess: rawMess})
-    }
+    sendMessage(rawMessage){
+      this.$emit('reqNewChat', {sendTo: this.user['usrId'], messageData: rawMessage});
+    },
   },
-  mounted (){
+  mounted () {
     this.user['usrId']= this.userData['usrId'];
     this.user['userName']= this.userData['userName'];
     this.user['userPhoto']= this.userData['userPhoto'];
@@ -52,30 +44,22 @@ export default {
       <div v-if="user['userPhoto']" class="user-image-container">
         <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
       </div>
-
-      <div class="text-container">
-        <p>{{ user['userName'] }}</p>
-      </div>
+      <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
     </div>
 
     <div class="send-message">
-      <h4>Invia un messaggio</h4>
-      <form class="sendMessage-form" @submit.prevent="sendMessage">
-        <label for="text">
-          <input id="textContent" v-model="messageContent" type="text" placeholder="Scrivi un messaggio" required>
-        </label>
-        <button type="submit" :disabled="!messageContent" :class="{ disabled: !messageContent}">
-          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator" /></svg>
-        </button>
-      </form>
+      <span>Invia un messaggio</span>
+      <div class="message-form">
+        <messageForm @prepMessage="sendMessage"/>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .user-container {
-  height: 70%;
-  width: 50%;
+  height: 70vh;
+  width: 80vh;
 
   display: flex;
   flex-direction: column;
@@ -97,35 +81,29 @@ export default {
   flex-direction: column;
   align-items: center;
 
+
   width: 80%;
+  height: fit-content;
 }
 
 .user-image-container {
-  max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
-  max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
-  object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .user-image-container img {
-  width: 150px;
-  height: 150px;
+  width: 20vh;
+  height: 20vh;
   border-radius: 50%;
   object-fit: cover;
   user-select: none;
 }
 
-.text-container {
+.user-info span{
   flex: 1;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-left: 10px;
   user-select: none;
-}
-
-.text-container p{
-  font-size: 2rem;
+  font-size: 7vh;
   color: #333;
 }
 
@@ -135,9 +113,18 @@ export default {
   flex-direction: column;
 
   align-items: center;
-  border: 2px violet solid;
 
-  width: 100%;
-  height: 20%;
+  width: 80%;
+  height: auto;
+}
+
+.send-message span {
+  font-size: 3.5vh;
+  text-align: center;
+  margin-bottom: 1vh;
+}
+
+.message-form {
+  width: 70%;
 }
 </style>
