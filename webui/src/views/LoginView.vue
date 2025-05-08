@@ -59,7 +59,7 @@ export default {
 </script>
 
 <template>
-  <div class="container">
+  <div class="main-container">
     <div v-if="!loading" class="login-container">
       <!-- Form di login -->
       <form class="login-form" @submit.prevent="doLogin">
@@ -80,10 +80,16 @@ export default {
 
 
 <style scoped>
-.container {
+.main-container {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (min-width: 2000px) {
+  .main-container {
+    max-width: 1400px;
+  }
 }
 
 form {
