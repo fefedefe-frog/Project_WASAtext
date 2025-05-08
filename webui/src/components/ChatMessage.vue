@@ -14,18 +14,18 @@ export default {
       status: 'minus',
       date: '',
       contentType: '',
-      token: '',
+      usrId: '',
     }
   },
   computed: {
     dynamicMarginSide(){
       return{
-        'margin-left': this.token === this.message.senderId ? 'auto' : '0',
+        'margin-left': this.usrId === this.message.senderId ? 'auto' : '0',
       }
     }
   },
   mounted () {
-    this.token= sessionStorage.getItem('authToken').split(' ')[1];
+    this.usrId= sessionStorage.getItem('usrId');
 
     this.prepMessage()
   },
@@ -68,7 +68,7 @@ export default {
   <div class="message-div">
     <div class="message-container" :style="dynamicMarginSide">
       <div class="message-info">
-        <div class="sender-id">{{ senderName }}</div>
+        <div class="sender-id">{{ senderName === usrId ? "tu" : senderName }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
           <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>

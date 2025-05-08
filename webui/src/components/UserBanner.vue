@@ -38,7 +38,7 @@ export default {
 
     <!-- Contenuto del banner -->
     <div class="text-container">
-      <p>{{ user['userName'] }}</p>
+      <span>{{ user['userName'] }}</span>
     </div>
   </div>
 </template>
@@ -64,9 +64,9 @@ export default {
 }
 
 .user-image-container {
-  max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
-  max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
-  object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .user-image-container img {
@@ -87,7 +87,8 @@ export default {
   user-select: none;
 }
 
-.text-container p{
+.text-container span{
+  width: 100%;
   font-size: 1.1em;
   font-weight: bold;
   color: #333;

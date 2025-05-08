@@ -84,7 +84,7 @@ export default {
     </div>
 
     <!-- Contenuto del banner -->
-    <div class="text-container">
+    <div class="chat-text-container">
       <div class="chat-name">{{ chatData['chatName'] }}</div>
       <div class="last-message">
         <span v-if="lastMessage['contentType'] == 'photo'" class="last-message-text">{{ sender }}: </span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
@@ -123,12 +123,12 @@ export default {
 }
 
 .chat-image-container {
-  max-width: 100%;  /* L'immagine non andrà mai oltre la larghezza del suo contenitore */
-  max-height: 100%; /* L'immagine non andrà mai oltre l'altezza del suo contenitore */
-  object-fit: contain; /* L'immagine si adatta dentro il box senza distorsioni */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
-.text-container {
+.chat-text-container {
   flex: 1;
   padding: 10px;
   display: flex;
