@@ -14,6 +14,7 @@ export default {
       loadedChatInfo: {},
       loadedChatMessages: [],
 
+      showUserInfo: false,
       loadedUserInfo: {},
 
       setIntervalId: null,
@@ -108,6 +109,13 @@ export default {
         this.loading = false
       }
     },
+    loadChat(bannerData){
+      this.showChat= false
+      this.loadedChatInfo= bannerData['chatData'];
+      this.loadedChatMessages= bannerData['messages'];
+
+      this.showChat= true;
+    },
     async closeChat(leave){
       this.showChat= false
       if (leave){
@@ -130,30 +138,17 @@ export default {
       sessionStorage.removeItem("usrId");
       this.$router.push('/login');
     },
-    loadChat(bannerData){
-      this.showChat= false
-      this.loadedChatInfo= bannerData['chatData'];
-      this.loadedChatMessages= bannerData['messages'];
+    loadUserInfo(bannerData){
+      this.showUserInfo= false;
+      this.loadedUserInfo= bannerData;
 
-      this.showChat= true;
+      this.showUserInfo= true;
     },
-    async loadUserInfo(usrId){
-      this.errormsg= null;
+    closeUserInfo(){
+      this.showUserInfo= false;
       this.loadedUserInfo= null;
-
-      console.log("user to load: "+ usrId);
-      try{
-        let response= await this.$axios.get(`/users/${usrId}`, {
-          headers: {Authorization: this.token}
-        });
-
-        if(response.data){
-          this.loadedUserInfo= response.data;
-        }
-      }catch(e) {
-        this.errormsg= e;
-      }
     },
+
     componentsErrorHandler(error){
       this.errormsg= error.toString;
     }
@@ -205,8 +200,8 @@ export default {
       </div>
     </div>
     <div class="chat-container bobby">
+      <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="closeUserInfo"/>
       <Chat v-if="showChat" :key="loadedChatInfo['chatId']" :initial-messages="loadedChatMessages" :chat-data="loadedChatInfo" @close-chat="closeChat" />
-      <UserInfo :user-data="loadedUserInfo" />
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
