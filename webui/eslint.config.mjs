@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
  * @author ENDERZOMBI102 <enderzombi102.end@gmail.com> 2024
- * @description Quick and dirty `eslint` config to better conform to the Prof's requests and style.
+ * @description Quick and dirty `lint-openapi` config to better conform to the Prof's requests and style.
  */
 import vue from 'eslint-plugin-vue';
 

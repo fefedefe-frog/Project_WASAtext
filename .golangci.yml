@@ -22,6 +22,7 @@ linters:
     - unused        # checks for unused types, functions, variables and constants
     - rowserrcheck  # sql rows.Err() checks
     - staticcheck   # simplify code and replacement for `go vet` and `go lint`
+    - errorlint    # find code that will cause problems with Go's error wrapping scheme
     - sqlclosecheck # Checks that sql.Rows, sql.Stmt, sqlx.NamedStmt, pgx.Query are closed
     - wastedassign
     - ineffassign
