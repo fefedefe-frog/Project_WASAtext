@@ -50,7 +50,8 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 		var message Message
 
 		var contentRaw []byte
-		err := rows.Scan(&message.MsgId, &message.SenderId, &message.RespondTo, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
+		var respondTo sql.NullInt64
+		err := rows.Scan(&message.MsgId, &message.SenderId, &respondTo, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
 		if err != nil {
 			return nil, err
 		}
@@ -62,6 +63,11 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 			message.Content = string(contentRaw)
 		}
 
+		if respondTo.Valid {
+			message.RespondTo = int(respondTo.Int64)
+		} else {
+			message.RespondTo = -1
+		}
 		// Aggiungo l'utente all'array
 		messages = append(messages, message)
 	}
