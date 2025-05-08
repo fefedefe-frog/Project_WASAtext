@@ -94,7 +94,7 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 	return userChats, nil
 }
 
-func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPhotoData []byte, participants []string, isGroup bool, messageContent interface{}) (int, error) {
+func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPhotoData []byte, participants []string, isGroup bool, contentType string, messageContent []byte) (int, error) {
 
 	tx, err := db.c.Begin()
 	if err != nil {
@@ -139,17 +139,6 @@ func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPho
 	query := `INSERT OR IGNORE INTO chat_participants_table (chatId, usrId) SELECT ?, usrId FROM users_table WHERE usrId IN (` + strings.Repeat("?,", len(usrIds)-1) + `?);`
 	if _, err := tx.Exec(query, append([]interface{}{int(newChatId64)}, usrIds...)...); err != nil {
 		return -1, err
-	}
-
-	// Inserisco il messaggio iniziale nella tabella dei messaggi
-	var contentType string
-	switch value := messageContent.(type) {
-	case []byte:
-		contentType = "photo"
-	case string:
-		contentType = "text"
-	default:
-		return -1, fmt.Errorf("unsupported message content type: %T", value)
 	}
 
 	queryMessage := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
