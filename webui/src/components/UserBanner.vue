@@ -37,7 +37,7 @@ export default {
     </div>
 
     <!-- Contenuto del banner -->
-    <div class="text-container">
+    <div class="username-container">
       <span>{{ user['userName'] }}</span>
     </div>
   </div>
@@ -77,7 +77,7 @@ export default {
   user-select: none;
 }
 
-.text-container {
+.username-container {
   flex: 1;
   padding: 10px;
   display: flex;
@@ -87,7 +87,7 @@ export default {
   user-select: none;
 }
 
-.text-container span{
+.username-container span{
   width: 100%;
   font-size: 1.1em;
   font-weight: bold;
