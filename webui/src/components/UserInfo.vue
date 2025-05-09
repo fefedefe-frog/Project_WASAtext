@@ -32,32 +32,43 @@ export default {
 </script>
 
 <template>
-  <div class="user-container">
-    <div class="btn-toolbar mb-2 mb-md-0 w-100">
-      <div class="btn-group me-2">
-        <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$emit('closeUserInfo')">
-          Chiudi
-        </button>
+  <div class="info-background">
+    <div class="info-container">
+      <div class="btn-toolbar mb-2 mb-md-0 w-100">
+        <div class="btn-group me-2">
+          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$emit('closeUserInfo')">
+            Chiudi
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="user-info">
-      <div v-if="user['userPhoto']" class="user-image-container">
-        <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
+      <div class="user-info">
+        <div v-if="user['userPhoto']" class="user-image-container">
+          <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
+        </div>
+        <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
       </div>
-      <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
-    </div>
 
-    <div class="send-message">
-      <span>Invia un messaggio</span>
-      <div class="message-form">
-        <messageForm @prepMessage="sendMessage"/>
+      <div class="send-message">
+        <span>Invia un messaggio</span>
+        <div class="message-form">
+          <messageForm @prepMessage="sendMessage"/>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.user-container {
+.info-background {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  justify-content: center;
+  border: 1px solid purple;
+}
+
+.info-container {
   height: 70vh;
   width: 80vh;
 
