@@ -76,7 +76,7 @@ export default {
       this.errormsg= null;
 
       try {
-        let response = await this.$axios.get(`/chats/${this.chatId}`, {
+        let response = await this.$axios.get(`/chats/${this.chat['chatId']}`, {
           headers: {Authorization: `${this.token}`}
         });
 
@@ -98,22 +98,24 @@ export default {
       this.errormsg = null;
 
       try {
-        let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
+        let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages`, {
           msgId: this.lastMsgId
         }, {
           headers: {Authorization: this.token}
         });
 
         if (response.data) {
-          if (this.lastMsgId === -1){
-            this.messages= [];
-          }
+          //if (this.lastMsgId === -1){
+          //  this.messages= [];
+          //}
           if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
+            this.messages= [];
             response.data['messages'].forEach(message => {
               this.messages.push(message);
             });
 
-            this.lastMsgId= this.messages[this.messages.length-1]['msgId'];
+            //this.lastMsgId= this.messages[this.messages.length-1]['msgId'];
+            this.lastMsgId= -1;
           }
         }
       }catch(e) {
@@ -125,7 +127,7 @@ export default {
       this.errormsg = null;
 
       try {
-        let response= await this.$axios.put(`/chats/${this.chatId}/messages/${this.lastMsgId}`, {}, {
+        let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages/${this.lastMsgId}`, {}, {
           headers: {Authorization: this.token}
         });
         if (response.status > 400) {
@@ -141,7 +143,7 @@ export default {
       this.errormsg = null
 
       try {
-        let response= await this.$axios.get(`/chats/${this.chatId}/users`, {
+        let response= await this.$axios.get(`/chats/${this.chat['chatId']}/users`, {
           headers: {Authorization: this.token}
         });
 
