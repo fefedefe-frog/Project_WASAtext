@@ -602,7 +602,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               description:  |
                 The request body expects to receive the photo field compatible
@@ -684,12 +684,24 @@ paths:
                     chatName: "Chat Uni"
                     chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     isGroup: true
-                    participants: ["ofnarc754", "arima53", "odfn34"]
+                    participants:
+                      - usr_id: "franco245"
+                        userName: "franco"
+                        userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                      - usr_id: "maria34"
+                        userName: "maria"
+                        userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                   - chat_id: 254
                     chatName: "Roberto"
                     chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     isGroup: false
-                    participants: ["ofnarc754", "ordigro293"]
+                    participants:
+                    - usr_id: "franco245"
+                      userName: "franco"
+                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    - usr_id: "maria34"
+                      userName: "maria"
+                      userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
 
         "401":
           $ref: "#/components/responses/UnauthorizedError"
@@ -724,28 +736,24 @@ paths:
 
               type: object
               properties:
-                chatInfo:
-                  description: |
-                    Info of the chat
-                  
-                  type: object
-                  properties:
-                    chatName:
-                      $ref: "#/components/schemas/Chat/properties/chatName"
+                chatName:
+                  $ref: "#/components/schemas/Chat/properties/chatName"
 
-                    chatPhoto:
-                      $ref: "#/components/schemas/Chat/properties/chatPhoto"
-
-                    isGroup:
-                      $ref: "#/components/schemas/Chat/properties/isGroup"
-
-                    participants:
-                      $ref: "#/components/schemas/Chat/properties/participants"
+                chatPhoto:
+                  $ref: "#/components/schemas/Chat/properties/chatPhoto"
                 
+                isGroup:
+                  $ref: "#/components/schemas/Chat/properties/isGroup"
+
+                participantsId:
+                  $ref: "#/components/schemas/User/properties/usrId"
+                
+
                 messageTextContent:
                   $ref: "#/components/schemas/Message/properties/textContent"
-                messageImageContent:
-                  $ref: "#/components/schemas/Message/properties/imageContent"
+                
+                messagephotoContent:
+                  $ref: "#/components/schemas/Message/properties/photoContent"
 
       responses:
         "201":
@@ -760,7 +768,13 @@ paths:
                 chatName: "Franco"
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                 isGroup: false
-                participants: ["ofnarc754", "arima53"]
+                participants:
+                  - usr_id: "franco245"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usr_id: "maria34"
+                    userName: "maria"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
         
         "400":
           $ref: "#/components/responses/BadRequestError"
@@ -800,7 +814,13 @@ paths:
                 chatName: "Franco"
                 chatPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                 isGroup: false
-                participants: ["ofnarc754", "arima53"]
+                participants:
+                  - usr_id: "franco245"
+                    userName: "franco"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  - usr_id: "maria34"
+                    userName: "maria"
+                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
 
         "400":
           $ref: "#/components/responses/BadRequestError"
@@ -881,7 +901,7 @@ paths:
     
     put:
       description:  |
-        Update only the group chat leaving invariated the other properties
+        Update only the group chat photo leaving invariated the other properties
       summary: Change the group chat photo
 
       tags: ["Group chat operation"]
@@ -893,7 +913,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               description:  |
                 The request body expects to receive the chatPhoto field compatible
@@ -938,64 +958,6 @@ paths:
   /chats/{chat_id}/users:                                         #Endpoint degli utenti di una chat
     parameters:
       - $ref: "#/components/parameters/chat_id"
-
-    get:
-      description:  |
-        Retrive the participants of a chat
-      summary: Get participants list
-
-      tags: ["Group chat operation"]
-      operationId: getChatParticipants
-
-      security:
-        - BearerAuth: []
-
-      responses:
-        "200":
-          description: |
-            The response have the list of participants of the chat
-
-          content:
-            application/json:
-              schema:
-                description: |
-                  List with the participants of the chat
-
-                type: object
-                properties:
-                  users:
-                    description: Users of the chat
-
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/User"
-
-                    minItems: 1
-                    maxItems: 32
-
-              example:
-                users:
-                  - usrId: "ofnarc754"
-                    userName: "franco"
-                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-                  - usrId: "artmat34"
-                    userName: "marta"
-                    userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-
-        "400":
-          $ref: "#/components/responses/BadRequestError"
-
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-        "403":
-          $ref: "#/components/responses/OperationNotAllowed"
-
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-
-        "500":
-          $ref: "#/components/responses/InternalError"
 
     post:
       description:  |
@@ -1147,7 +1109,8 @@ paths:
             application/json:
               schema:
                 description:  |
-                  Array of message composed by id, senderId, timestamp and content of the message
+                  Array of messages
+                
                 type: object
                 properties:
                   messages:
@@ -1165,8 +1128,8 @@ paths:
                 messages:
                   - msgId: 3
                     senderId: "ofnarc754"
-                    textContent: ""
-                    imageContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    textContent: "ga"
+                    photoContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "sent"
                     timestamp: "2021-06-01T14:10:27Z"
                     comments:
@@ -1175,7 +1138,7 @@ paths:
                   - msgId: 345
                     senderId: "ordigro293"
                     textContent: "Ciao franco!!"
-                    imageContent: ""
+                    photoContent: ""
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T16:10:27Z"
                     comments:
@@ -1183,8 +1146,8 @@ paths:
                         content: "😒"
                   - msgId: 266
                     senderId: "maria34"
-                    textContent: ""
-                    imageContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    textContent: "go"
+                    photoContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T18:10:27Z"
                     comments:
@@ -1230,16 +1193,17 @@ paths:
               description:  |
                   The request body contain the content type, the content of the message
                   and the respondTo
+              
               type: object
               properties:
                 textContent:
                   $ref: "#/components/schemas/Message/properties/textContent"
-                imageContent:
-                  $ref: "#/components/schemas/Message/properties/imageContent"
+                photoContent:
+                  $ref: "#/components/schemas/Message/properties/photoContent"
                 respondTo:
                   $ref: "#/components/schemas/Message/properties/respondTo"
 
-        
+      
       responses:
         "201":
           description: Message sent succesfully
@@ -1260,7 +1224,7 @@ paths:
                   senderId: "ofnarc754"
                   respondTo: -1
                   textContent: "Ciao franco, come stai?"
-                  imageContent: ""
+                  photoContent: ""
                   deliveryStatus: "sent"
                   timestamp: "2021-06-01T14:10:27Z"
                   comments: []
