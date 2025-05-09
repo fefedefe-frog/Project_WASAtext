@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"github.com/sirupsen/logrus"
 )
@@ -56,13 +55,6 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 			return nil, err
 		}
 
-		// controllo se il contenuto è una foto
-		if message.ContentType == "photo" {
-			message.Content = base64.StdEncoding.EncodeToString(contentRaw)
-		} else {
-			message.Content = string(contentRaw)
-		}
-
 		if respondTo.Valid {
 			message.RespondTo = int(respondTo.Int64)
 		} else {
@@ -97,17 +89,6 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 		}
 	}()
 
-	// Controllo il tipo di contenuto che ha il messaggio
-	var messageContent interface{}
-	if message.ContentType == TypePhoto {
-		messageContent, err = base64.StdEncoding.DecodeString(message.Content)
-		if err != nil {
-			return -1, err
-		}
-	} else {
-		messageContent = message.Content
-	}
-
 	var isForwarded = 0
 	if message.IsForwarded {
 		isForwarded = 1
@@ -117,7 +98,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 	message.DeliveryStatus = TypePhoto
 	query := `INSERT INTO chat_messages_table (senderId, respondTo, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	var result sql.Result
-	result, err = tx.Exec(query, message.SenderId, message.RespondTo, chatId, message.ContentType, messageContent, message.DeliveryStatus, isForwarded)
+	result, err = tx.Exec(query, message.SenderId, message.RespondTo, chatId, message.ContentType, message.Content, message.DeliveryStatus, isForwarded)
 	if err != nil {
 		return -1, err
 	}
@@ -165,13 +146,6 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	err := db.c.QueryRow(`SELECT contentType, content FROM chat_messages_table WHERE msgId=?;`, msgId).Scan(&message.ContentType, contentBytes)
 	if err != nil {
 		return err
-	}
-
-	// Converto il contenuto del messaggio
-	if message.ContentType == TypePhoto {
-		message.Content = base64.StdEncoding.EncodeToString(contentBytes)
-	} else {
-		message.Content = string(contentBytes)
 	}
 
 	// Imposto il nuovo senderId del messaggio, e aggiorno il valore di isForwarded a true
@@ -244,13 +218,6 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.RespondTo, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
 	if err != nil {
 		return message, err
-	}
-
-	// Controllo se il contenuto è una foto e la elaboro
-	if message.ContentType == TypePhoto {
-		message.Content = base64.StdEncoding.EncodeToString(rawContent)
-	} else {
-		message.Content = string(rawContent)
 	}
 
 	// Converto il valore di isForwarded

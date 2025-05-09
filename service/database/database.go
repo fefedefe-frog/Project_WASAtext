@@ -58,7 +58,7 @@ type Message struct {
 	SenderId       string    `json:"senderId"`       // User id of the user that send the message
 	RespondTo      int       `json:"respondTo"`      // Msg Id of the message at which is responding
 	ContentType    string    `json:"contentType"`    // Define the type of the content if text OR photo
-	Content        string    `json:"content"`        // Content of the message which can be text or a photo as a string in base64
+	Content        []byte    `json:"content"`        // Content of the message which can be text or a photo as a string in base64
 	DeliveryStatus string    `json:"deliveryStatus"` // Indicate the status of the message
 	Timestamp      string    `json:"timestamp"`      // Date when the message is sent
 	Comments       []Comment `json:"comments"`       // Array of Comment that store the reaction of other users

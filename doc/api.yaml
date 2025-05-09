@@ -209,40 +209,28 @@ components:
           minimum: -1
           maximum: 1000
 
-        contentType:
+        textContent:
           description:  |
-            Describe if the content of the message is a photo o a text
+            Contain the text content of the message
           
           type: string
-          enum:
-          - photo
-          - text
-        
-        content:
+          pattern: '^(?!\s*$).+'
+          example: "Ciao franco, come stai?"
+
+          minLength: 1
+          maxLength: 1024
+
+        imageContent:
           description:  |
-            Content of the message, can be a text OR a photo
-          
-          anyOf:
-            - description:  |
-                Text content
+            Photo content
+
+          type: string
+          format: binary
+          pattern: '^.*$'
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
               
-              type: string
-              pattern: '^(?!\s*$).+'
-              example: "Ciao franco, come stai?"
-
-              minLength: 1
-              maxLength: 1024
-
-            - description:  |
-                Photo content
-
-              type: string
-              format: binary
-              pattern: '^.*$'
-              example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
-              
-              minLength: 0
-              maxLength: 2787949
+          minLength: 0
+          maxLength: 2787949
         
         deliveryStatus:
           description:  |
@@ -744,7 +732,8 @@ paths:
             schema:
               description:  |
                 The request body expect to retrieve the chat type, (name and photo if it's a group
-                if isn't a group they can be empty) and it's participants minus the user that is starting the chat
+                if isn't a group they can be empty) the participants of the future chat and the
+                first message
 
               type: object
               properties:
@@ -766,10 +755,10 @@ paths:
                     participants:
                       $ref: "#/components/schemas/Chat/properties/participants"
                 
-                contentType:
-                  $ref: "#/components/schemas/Message/properties/contentType"
-                content:
-                  $ref: "#/components/schemas/Message/properties/content"
+                messageTextContent:
+                  $ref: "#/components/schemas/Message/properties/textContent"
+                messageImageContent:
+                  $ref: "#/components/schemas/Message/properties/imageContent"
 
       responses:
         "201":
@@ -1189,8 +1178,8 @@ paths:
                 messages:
                   - msgId: 3
                     senderId: "ofnarc754"
-                    contentType: "photo"
-                    content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    textContent: ""
+                    imageContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "sent"
                     timestamp: "2021-06-01T14:10:27Z"
                     comments:
@@ -1198,8 +1187,8 @@ paths:
                         content: "😒"
                   - msgId: 345
                     senderId: "ordigro293"
-                    contentType: "text"
-                    content: "Ciao franco!!"
+                    textContent: "Ciao franco!!"
+                    imageContent: ""
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T16:10:27Z"
                     comments:
@@ -1207,8 +1196,8 @@ paths:
                         content: "😒"
                   - msgId: 266
                     senderId: "maria34"
-                    contentType: "photo"
-                    content: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                    textContent: ""
+                    imageContent: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
                     deliveryStatus: "read"
                     timestamp: "2021-06-01T18:10:27Z"
                     comments:
@@ -1256,10 +1245,10 @@ paths:
                   and the respondTo
               type: object
               properties:
-                contentType:
-                  $ref: "#/components/schemas/Message/properties/contentType"
-                content:
-                  $ref: "#/components/schemas/Message/properties/content"
+                textContent:
+                  $ref: "#/components/schemas/Message/properties/textContent"
+                imageContent:
+                  $ref: "#/components/schemas/Message/properties/imageContent"
                 respondTo:
                   $ref: "#/components/schemas/Message/properties/respondTo"
 
@@ -1283,8 +1272,8 @@ paths:
                   msgId: 999
                   senderId: "ofnarc754"
                   respondTo: -1
-                  contentType: "text"
-                  content: "Ciao franco, come stai?"
+                  textContent: "Ciao franco, come stai?"
+                  imageContent: ""
                   deliveryStatus: "sent"
                   timestamp: "2021-06-01T14:10:27Z"
                   comments: []
