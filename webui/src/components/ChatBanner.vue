@@ -36,7 +36,7 @@ export default {
 
     this.getChatMessages();
     this.setIntervalId= setInterval(async () => {
-      this.getChatMessages();
+      await this.getChatMessages();
     }, 7000)
   },
   beforeUnmount() {
@@ -45,8 +45,22 @@ export default {
   deactivated() {
     clearInterval(this.setIntervalId);
   },
+  computed: {
+    messagePreview() {
+      let message= this.lastMessage
+      let messagePreview= message['senderId']+ ":"
+      if (message['contentType'] === 'text'){
+        if (message['content'].length > 10){
+          messagePreview= `${messagePreview} ${message['content'].substring(0, 10)}...`;
+        }
+        messagePreview= `${messagePreview} ${message['content']}`;
+      }
+      return messagePreview
+    }
+  },
   methods: {
     async getChatMessages(){
+      console.log(this.chatData)
       this.errormsg= null;
 
       try {
@@ -78,18 +92,15 @@ export default {
 
 <template>
   <div class="chat-banner" @click="bannerClicked">
-    <!-- Foto Profilo a destra -->
+    <!-- Immagine chat a destra -->
     <div class="chat-image-container">
       <img :src="'data:image/png;base64,'+chatData['chatPhoto']" alt="Chat Image">
     </div>
 
-    <!-- Contenuto del banner -->
+    <!-- Nome della chat e ultimo messaggio -->
     <div class="chat-text-container">
-      <div class="chat-name">{{ chatData['chatName'] }}</div>
-      <div class="last-message">
-        <span v-if="lastMessage['contentType'] == 'photo'" class="last-message-text">{{ sender }}: </span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
-        <span v-if="lastMessage['contentType'] == 'text'" class="last-message-text">{{ messsagePreview.length > (10 + sender.length) ? messsagePreview.substring(0, (10 + sender.length)) + "..." : messsagePreview }}</span>
-      </div>
+      <span class="chat-name"> {{ chatData['chatName'] }} </span>
+      <span class="last-message-text">{{this.messagePreview}}</span><svg v-if="lastMessage['contentType'] === 'photo' " class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
     </div>
   </div>
 </template>
@@ -101,17 +112,23 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 5px;
-  margin: 5px;
+  margin-bottom: 5px;
   background-color: lightgray;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   height: 70px;
-  width: 200px;
+  width: 100%;
 }
 
 .chat-banner:hover {
   background-color: darkgray;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.chat-image-container {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .chat-image-container img {
@@ -122,30 +139,36 @@ export default {
   user-select: none;
 }
 
-.chat-image-container {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
 .chat-text-container {
+  height: 100%;
+
   flex: 1;
-  padding: 10px;
+  padding: 0 0 0 5px;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
+
   margin-left: 10px;
   user-select: none;
 }
 
 .chat-name {
-  font-size: 1.1em;
+  height: fit-content;
+  user-select: none;
+
+  color: black;
   font-weight: bold;
-  color: #333;
+  font-size: 1rem;
 }
 
-.last-message {
+.last-message-text {
+  user-select: none;
+  height: fit-content;
+
+  margin-left: 10px;
+  color: dimgray;
   font-size: 0.9em;
-  color: #777;
+  font-weight: normal;
 }
 </style>
