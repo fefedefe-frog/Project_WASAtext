@@ -14,7 +14,7 @@ export default {
     prepMessage() {
       if (this.messageContent.trim() || this.image){
         let rawMessageData= {
-          contentType: this.image ? "image" : "text",
+          contentType: this.image ? "photo" : "text",
           content: this.image ? this.image : this.messageContent
         };
         this.$emit('prepMessage', rawMessageData);
