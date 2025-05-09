@@ -166,7 +166,7 @@ components:
           minItems: 2
           maxItems: 64
           items:
-            $ref: "#/components/schemas/User/properties/usrId"
+            $ref: "#/components/schemas/User"
 
     Message:
       description:  |
@@ -220,7 +220,7 @@ components:
           minLength: 1
           maxLength: 1024
 
-        imageContent:
+        photoContent:
           description:  |
             Photo content
 
@@ -414,31 +414,18 @@ paths:
             application/json:
               schema:
                 description:  |
-                    Response with the unique user id
+                    Response with the user info
 
                 type: object
                 properties:
-                  usrId: 
-                    $ref: "#/components/schemas/User/properties/usrId"
+                  user: 
+                    $ref: "#/components/schemas/User"
               
               example:
-                usrId: "ofnarc754"
-
-        "200":
-          description: User log-in acction succesful
-          content:
-            application/json:
-              schema:
-                description: |
-                  Response with the unique user id
-
-                type: object
-                properties:
-                  usrId:
-                    $ref: "#/components/schemas/User/properties/usrId"
-
-              example:
-                usrId: "ofnarc754"
+                user:
+                  usr_id: "franco245"
+                  userName: "franco"
+                  userPhoto: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
 
         "400":
           $ref: "#/components/responses/BadRequestError"
