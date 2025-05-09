@@ -6,19 +6,12 @@ import (
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/http"
 	"strconv"
 )
 
 func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-
-	// Preparo la variabile che conterrà i valori della richiesta http
-	// che mi aspetto di ricevere per questo metodo dell'endpoint
-	requestJson := struct {
-		ContentType string `json:"contentType"`
-		Content     string `json:"content"`
-		RespondTo   int    `json:"respondTo"`
-	}{}
 
 	// Recupero il chat id dai parametri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -41,10 +34,50 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	// Decodifico la richiesta
-	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
-		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
+	// Limito la memoria per il parsing del form
+	err = request.ParseMultipartForm(32 << 20)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error parsing multipart form")
+		http.Error(writer, "Error parsing multipart form", http.StatusBadRequest)
+		return
+	}
+
+	// Recupero i dati del messaggio da inviare per iniziare la chat
+	contentType := request.FormValue("contentType")
+	var messageContent []byte
+	if contentType == "photo" {
+		// Carico l'immagine contenuta nella richiesta http
+		file, _, err := request.FormFile("content")
+		if err != nil {
+			context.Logger.WithError(err).Error("Error getting file content")
+			http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
+			return
+		}
+		defer func() {
+			err := file.Close()
+			if err != nil {
+				context.Logger.WithError(err).Error("Error closing file")
+			}
+		}()
+
+		// Leggo il contenuto dell'immagine
+		messageContent, err = io.ReadAll(file)
+		if err != nil {
+			context.Logger.WithError(err).Error("Error reading file")
+			http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
+			return
+		}
+
+	} else {
+		messageContent = []byte(request.FormValue("content"))
+	}
+
+	// Recupero e converto in intero l'id del messaggio a cui sto rispondendo
+	respondToStr := request.FormValue("respondTo")
+	respondTo, err := strconv.Atoi(respondToStr)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error converting respondTo to int")
+		http.Error(writer, "Internal server error - Error converting string to int", http.StatusInternalServerError)
 		return
 	}
 
@@ -53,9 +86,9 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 	// Aggiungo il messaggio al db
 	var newMessage database.Message
 	newMessage.SenderId = token
-	newMessage.RespondTo = requestJson.RespondTo
-	newMessage.ContentType = requestJson.ContentType
-	newMessage.Content = requestJson.Content
+	newMessage.RespondTo = respondTo
+	newMessage.ContentType = contentType
+	newMessage.Content = messageContent
 	newMessage.DeliveryStatus = "sent"
 	newMessage.IsForwarded = false
 
