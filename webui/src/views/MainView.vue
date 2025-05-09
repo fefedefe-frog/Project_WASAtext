@@ -50,10 +50,10 @@ export default {
 
     this.getUsers();
     this.getUserChats();
-    // this.setIntervalId= setInterval(async () => {
-    //   await this.getUsers();
-    //   await this.getUserChats();
-    // }, 20000);
+    this.setIntervalId= setInterval(async () => {
+      await this.getUsers();
+      await this.getUserChats();
+    }, 20000);
   },
   beforeUnmount() {
     clearInterval(this.setIntervalId);
@@ -127,7 +127,6 @@ export default {
       }
     },
     prepSendMessage(rawInput){
-      console.log(rawInput)
       let userToSend= rawInput['sendTo'];
       let messageData= rawInput['messageData']
 
@@ -172,8 +171,6 @@ export default {
 
     },
     async startNewChat(formData){
-      console.log("nuova chat");
-      console.log(formData);
       this.errormsg= null;
       try{
         console.log("invio dati")
@@ -356,7 +353,17 @@ export default {
 
 }
 
-.chats-list .users-list{
+.chats-list{
+  height: 100%;
+  width: 100%;
+  padding: 5px;
+
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+
+.users-list {
   height: 100%;
   width: 100%;
   padding: 5px;
