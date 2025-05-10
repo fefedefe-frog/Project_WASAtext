@@ -2,8 +2,12 @@
 export default {
   data() {
     return {
-      username: '',
-      usrId: '',
+      username: "",
+      user: {
+        usrId: "",
+        userName: "",
+        userPhoto: ""
+      },
       errormsg: null, // Messaggio di errore
       loading: false, // Stato di caricamento
       welcomeMsg: false,
@@ -23,35 +27,36 @@ export default {
 
       // Controllo se il nome inserito rispetta le regex prestabilite
       const regex= /^\S.*\S$/;
-      if (!regex.test(this.username)) {
-      }else
+      if (regex.test(this.username)) {
+        try {
+          // Esegui la richiesta POST e aspetta la risposta con `await`
+          const response = await this.$axios.post('/session', {
+            userName: (this.username).toLowerCase(),
+          });
 
-      try {
-        // Esegui la richiesta POST e aspetta la risposta con `await`
-        const response = await this.$axios.post('/session', {
-          userName: (this.username).toLowerCase(),
-        });
+          // Estraggo il token dall'header
+          const token = response.headers['authorization'];
+          if (response.data && response.data['user']){
 
-        // Estraggo il token dall'header
-        const token = response.headers["authorization"];
-        const usrId = response.data["usrId"];
-        this.usrId = usrId;
-
-        if (token && usrId) {
-
-          // Salvo il token e usrId
-          sessionStorage.setItem('authToken', token);
-          sessionStorage.setItem('usrId', usrId);
+            this.user["usrId"]= response.data['user']['usrId'];
+            this.user["userName"]= response.data['user']['userName'];
+            this.user["userPhoto"]= response.data['user']['userPhoto'];
 
 
-          // Ritarda la redirezione per consentire il caricamento
-          setTimeout(() => {
-            this.$router.push('/home'); // Redirigi alla schermata principale delle chat
-          }, 1000); // Attendi 2 secondi
+            // Salvo il token e usrId
+            sessionStorage.setItem('authToken', token);
+            sessionStorage.setItem('usrId', this.user['usrId']);
+            sessionStorage.setItem('loggedUser', JSON.stringify(this.user));
+
+            // Ritarda la redirezione per consentire il caricamento
+            setTimeout(() => {
+              this.$router.push('/home'); // Redirigi alla schermata principale delle chat
+            }, 1000); // Attendi 2 secondi
+          }
+        } catch (error) {
+          // Gestisci errori di rete o di altro tipo
+          this.errormsg = error.toString();
         }
-      } catch (error) {
-        // Gestisci errori di rete o di altro tipo
-        this.errormsg = error.toString();
       }
     },
   }
