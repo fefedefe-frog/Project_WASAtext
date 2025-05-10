@@ -7,47 +7,47 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"io"
 	"net/http"
-	"regexp"
 )
 
-func (rt *_router) setUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setUserPhoto(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
-	var requestJson = struct {
-		NewUserPhoto string `json:"newUserPhoto"`
-	}{}
-
-	// Decodifico la richiesta
-	err := json.NewDecoder(request.Body).Decode(&requestJson)
+	// Limito la memoria per il parsing del form
+	err := request.ParseMultipartForm(32 << 20)
 	if err != nil {
-		http.Error(writer, "Bad Request - Invalid JSON format", http.StatusBadRequest)
-		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
+		context.Logger.WithError(err).Error("Error parsing multipart form")
+		http.Error(writer, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
 
-	// Semplice controllo della stringa base64 per assicurarsi
-	// che la stringa contenga solo caratteri usati dalla codifica base64
-	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(requestJson.NewUserPhoto) {
-		http.Error(writer, "Bad request - The photo isn't codified correctly, or is not a photo", http.StatusBadRequest)
-		context.Logger.Debug("The photo received in input is not in the base64 format")
+	// Recupero il valore della nuova foto
+	photoFile, _, err := request.FormFile("newUserPhoto")
+	if err != nil {
+		context.Logger.WithError(err).Error("Error getting file content")
+		http.Error(writer, "Bad request - Error getting file content", http.StatusBadRequest)
 		return
 	}
+	defer func() {
+		err := photoFile.Close()
+		if err != nil {
+			context.Logger.WithError(err).Error("Error closing file")
+		}
+	}()
 
-	// Verifica che la stringa sia in formato base64 valido e la converto in byte
-	var photoData []byte
-	photoData, err = base64.StdEncoding.DecodeString(requestJson.NewUserPhoto)
+	// Leggo il contenuto dell'immagine
+	var newUserPhoto []byte
+	newUserPhoto, err = io.ReadAll(photoFile)
 	if err != nil {
-		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
-		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		context.Logger.WithError(err).Error("Error reading file")
+		http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
 		return
 	}
 
 	// Aggiorno la propic nel database
-	context.Logger.Infof("Richiesta di cambio propic da parte dell'user: %s || nuova propic: %s...", token, requestJson.NewUserPhoto[:10])
-	if err := rt.db.SetUserPhoto(token, photoData); err != nil {
+	if err := rt.db.SetUserPhoto(usrId, newUserPhoto); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).Errorf("User: %s not found in database", token)
+			context.Logger.WithError(err).Errorf("User: %s not found in database", usrId)
 			http.Error(writer, "Not found - User not found", http.StatusNotFound)
 			return
 		}
@@ -57,7 +57,7 @@ func (rt *_router) setUserPhoto(writer http.ResponseWriter, request *http.Reques
 	}
 
 	// Preparo la risposta
-	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"userPhoto": requestJson.NewUserPhoto})
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"userPhoto": base64.StdEncoding.EncodeToString(newUserPhoto)})
 	if marshalErr != nil {
 		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new user photo")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)

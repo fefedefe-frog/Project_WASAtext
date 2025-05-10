@@ -3,21 +3,16 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 )
 
-func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
-
-	var requestJson = struct {
-		NewGroupPhoto string `json:"newGroupPhoto"`
-	}{}
+func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero il chatId dai paramentri del'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -27,15 +22,15 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
 
-		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipant {
-		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to change a photo of group which he isn't a member of")
+		context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Warn("user tried to change a photo of group which he isn't a member of")
 		http.Error(writer, "Forbidden - can't change the photo of a group where you aren't part off", http.StatusForbidden)
 		return
 	}
@@ -58,34 +53,40 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	// Decodifico la richiesta
-	if err := json.NewDecoder(request.Body).Decode(&requestJson); err != nil {
-		http.Error(writer, "Invalid JSON format", http.StatusBadRequest)
-		context.Logger.WithError(err).Error("Invalid JSON in requestBody")
-		return
-	}
-
-	// Semplice controllo della stringa base64 per assicurarsi
-	// che la stringa contenga solo caratteri usati dalla codifica base64
-	re := regexp.MustCompile(`^([A-Za-z0-9+/=]+)$`)
-	if !re.MatchString(requestJson.NewGroupPhoto) {
-		http.Error(writer, "Bad request - The photo isn't codified correctly, or is not a photo", http.StatusBadRequest)
-		context.Logger.Debug("The photo received in input is not in the base64 format")
-		return
-	}
-
-	// Verifica che la stringa sia in formato base64 valido
-	var photoData []byte
-	photoData, err = base64.StdEncoding.DecodeString(requestJson.NewGroupPhoto)
+	// Limito la memoria per il parsing del form
+	err = request.ParseMultipartForm(32 << 20)
 	if err != nil {
-		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
-		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		context.Logger.WithError(err).Error("Error parsing multipart form")
+		http.Error(writer, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
 
-	context.Logger.Infof("user <%s> request to change group photo of group <%d>", token, chatId)
+	// Recupero il valore della nuova foto
+	photoFile, _, err := request.FormFile("newGroupPhoto")
+	if err != nil {
+		context.Logger.WithError(err).Error("Error getting file content")
+		http.Error(writer, "Bad request - Error getting file content", http.StatusBadRequest)
+		return
+	}
+	defer func() {
+		err := photoFile.Close()
+		if err != nil {
+			context.Logger.WithError(err).Error("Error closing file")
+		}
+	}()
+
+	// Leggo il contenuto dell'immagine
+	var newGroupPhoto []byte
+	newGroupPhoto, err = io.ReadAll(photoFile)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error reading file")
+		http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
+		return
+	}
+
+	context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Info("request to change group photo")
 	// Aggiorno la propic del gruppo nel database
-	if err := rt.db.SetGroupPhoto(chatId, photoData); err != nil {
+	if err := rt.db.SetGroupPhoto(chatId, newGroupPhoto); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Errorf("Group chat <%d> not found in database", chatId)
 			http.Error(writer, "Group chat not found", http.StatusNotFound)
@@ -97,7 +98,7 @@ func (rt *_router) setGroupPhoto(writer http.ResponseWriter, request *http.Reque
 	}
 
 	// Preparo la risposta
-	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatPhoto": requestJson.NewGroupPhoto})
+	responseJSON, marshalErr := json.Marshal(map[string]interface{}{"chatPhoto": newGroupPhoto})
 	if marshalErr != nil {
 		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the new group chat photo")
 		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
