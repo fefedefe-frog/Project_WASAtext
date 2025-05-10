@@ -81,18 +81,27 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 func (rt *_router) sendJsonResponse(writer http.ResponseWriter, usrId string, context reqcontext.RequestContext) {
 
 	// Creo la risposta http contentente il token di autorizzazione e l'usrId (in questo caso entrambi sono la stessa cosa
-	response := map[string]string{
-		"usrId": usrId,
+	user, err := rt.db.GetUserInfo(usrId)
+	if err != nil {
+		context.Logger.WithError(err).Error("unable to retrive user info")
+		http.Error(writer, "Internal server error - unable to retrive user info after login", http.StatusInternalServerError)
+		return
+	}
+
+	responseJSON, marshalErr := json.Marshal(user)
+	if marshalErr != nil {
+		context.Logger.WithError(marshalErr).Errorf("Failed to marshal the user")
+		http.Error(writer, "Internal server error - failed json conversion", http.StatusInternalServerError)
+		return
+
 	}
 
 	// Scrivo nell'header della risposta il token bearer che in questo caso corrisponde all'usrId
 	writer.Header().Set("Authorization", "Bearer "+usrId)
 
-	// Scrivo nella risposta l'usrId
 	writer.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(writer).Encode(response)
-	if err != nil {
-		context.Logger.WithError(err).Error("Json encoding error")
+	if _, err := writer.Write(responseJSON); err != nil {
+		context.Logger.WithError(err).Error("Errore preaparazione risposta html")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
