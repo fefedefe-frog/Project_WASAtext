@@ -4,6 +4,7 @@ import (
 	"Project_WASAtext/service/api"
 	"Project_WASAtext/service/database"
 	"Project_WASAtext/service/globaltime"
+	"Project_WASAtext/service/utilitytool"
 	"context"
 	"database/sql"
 	"errors"
@@ -57,6 +58,12 @@ func run() error {
 	}
 
 	logger.Infof("application initializing")
+
+	// Convert Default propic photo to []bytes
+	if err := utilitytool.InizializeConversion(); err != nil {
+		logger.WithError(err).Error("unable to convert some media")
+		return fmt.Errorf("creating default photos: %w", err)
+	}
 
 	// Start Database
 	logger.Println("initializing database support")
