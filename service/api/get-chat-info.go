@@ -12,7 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero il valore di chat_id dai parametri dell'enpoint e controllo che sia un numero valido
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -23,12 +23,12 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	}
 
 	// Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare le informazioni
-	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, token); err != nil {
+	if exist, err := rt.db.CheckIfUserIsParticipant(chatId, usrId); err != nil {
 		context.Logger.WithError(err).Error("Error checking if user is participant")
 		http.Error(writer, "Internal server error - Error while checking if user is a member of the chat", http.StatusInternalServerError)
 		return
 	} else if !exist {
-		context.Logger.WithField("usrId", token).Warn("User is not a participant")
+		context.Logger.WithField("usrId", usrId).Warn("User is not a participant")
 		http.Error(writer, "Forbidden - The user logged in is not a participant of the chat", http.StatusForbidden)
 		return
 	}
@@ -50,25 +50,16 @@ func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, para
 	// a recuperare le informazioni dell'altro utente partecipante alla chat
 	if !chat.IsGroup {
 
-		otherUsrId := chat.Participants[0]
-		if otherUsrId == token {
-			otherUsrId = chat.Participants[1]
+		participants := chat.Participants
+
+		if participants[0].UsrId == usrId {
+			chat.ChatName = participants[1].UserName
+			chat.ChatPhoto = participants[1].UserPhoto
+		} else {
+			chat.ChatName = participants[0].UserName
+			chat.ChatPhoto = participants[0].UserPhoto
 		}
 
-		user, err := rt.db.GetUserInfo(otherUsrId)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				context.Logger.WithError(err).Warn("The other participant of the chat doesn't exist, in the db")
-				http.Error(writer, "Not found - other participant not exist", http.StatusNotFound)
-				return
-			}
-			context.Logger.WithError(err).Warn("Error getting other participant info")
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		chat.ChatName = user.UserName
-		chat.ChatPhoto = user.UserPhoto
 	}
 
 	// Preparo la risposta
