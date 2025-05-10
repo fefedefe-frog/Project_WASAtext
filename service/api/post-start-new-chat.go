@@ -3,17 +3,19 @@ package api
 import (
 	"Project_WASAtext/service/api/reqcontext"
 	"Project_WASAtext/service/database"
+	"Project_WASAtext/service/utilitytool"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Limito la memoria per il parsing del form
 	err := request.ParseMultipartForm(32 << 20)
@@ -23,103 +25,114 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
+	var chat database.Chat
+	chat.ChatId = -1
 	// Recupero le info della chat dai dati del form
-	rawChatInfo := request.FormValue("chatInfo")
-	var chatInfo struct {
-		ChatName     string   `json:"chatName"`
-		ChatPhoto    string   `json:"chatPhoto"`
-		IsGroup      bool     `json:"isGroup"`
-		Participants []string `json:"participants"`
-	}
-	if err := json.Unmarshal([]byte(rawChatInfo), &chatInfo); err != nil {
-		context.Logger.WithError(err).Error("Error unmarshalling chatInfo")
-		http.Error(writer, "errore recuper informazioni dal form", http.StatusBadRequest)
+	chat.ChatName = request.FormValue("chatName")
+	chat.IsGroup, err = strconv.ParseBool(request.FormValue("isGroup"))
+	if err != nil {
+		context.Logger.WithError(err).Error("Error parsing isGroup")
+		http.Error(writer, "Bad request - The is group parameter is not valid", http.StatusBadRequest)
 		return
+	}
+	participants := strings.Split(request.FormValue("participants"), ",")
+	participants = append(participants, usrId)
+
+	// Carico l'immagine contenuta nella richiesta http
+	photoFile, _, err := request.FormFile("chatPhoto")
+	if err != nil {
+		context.Logger.WithError(err).Error("Error getting file content")
+		http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		err := photoFile.Close()
+		if err != nil {
+			context.Logger.WithError(err).Error("Error closing file")
+		}
+	}()
+
+	chat.ChatPhoto, err = io.ReadAll(photoFile)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error reading file")
+		http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
+		return
+	}
+
+	if chat.IsGroup {
+		if len(chat.ChatPhoto) == 0 {
+			chat.ChatPhoto = utilitytool.DefGroupPropicBytes
+		}
+		if chat.ChatName == "" {
+			chat.ChatName = "Gruppo"
+		}
+	} else {
+		chat.ChatPhoto = []byte{}
+		chat.ChatName = ""
 	}
 
 	// Recupero i dati del messaggio da inviare per iniziare la chat
-	contentType := request.FormValue("contentType")
-	var messageContent []byte
-	if contentType == "photo" {
-		// Carico l'immagine contenuta nella richiesta http
-		file, _, err := request.FormFile("content")
-		if err != nil {
-			context.Logger.WithError(err).Error("Error getting file content")
-			http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
-			return
-		}
-		defer func() {
-			err := file.Close()
-			if err != nil {
-				context.Logger.WithError(err).Error("Error closing file")
-			}
-		}()
+	textContent := request.FormValue("textContent")
 
-		// Leggo il contenuto dell'immagine
-		messageContent, err = io.ReadAll(file)
-		if err != nil {
-			context.Logger.WithError(err).Error("Error reading file")
-			http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
-			return
-		}
-
-	} else {
-		messageContent = []byte(request.FormValue("content"))
-	}
-
-	// Preparo i dati della chat
-	if chatInfo.IsGroup {
-		if chatInfo.ChatPhoto == "" {
-			chatInfo.ChatPhoto = database.DefaultGroupPhotoBase64
-		}
-		if chatInfo.ChatName == "" {
-			chatInfo.ChatName = "Gruppo"
-		}
-	} else {
-		chatInfo.ChatPhoto = ""
-		chatInfo.ChatName = ""
-	}
-
-	// Decodifica la stringa Base64 in byte
-	var groupPhotoData []byte
-	groupPhotoData, err = base64.StdEncoding.DecodeString(chatInfo.ChatPhoto)
+	var photoContent []byte
+	// Carico l'immagine contenuta nella richiesta http
+	photoContentFile, _, err := request.FormFile("content")
 	if err != nil {
-		http.Error(writer, "Internal Server Error - Unable to decode the photo", http.StatusInternalServerError)
-		context.Logger.WithError(err).Error("Unable to decode the base64 string of the photo")
+		context.Logger.WithError(err).Error("Error getting file content")
+		http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		err := photoContentFile.Close()
+		if err != nil {
+			context.Logger.WithError(err).Error("Error closing file")
+		}
+	}()
+
+	// Leggo il contenuto dell'immagine
+	photoContent, err = io.ReadAll(photoContentFile)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error reading file")
+		http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
 		return
 	}
 
-	var newChatId int
-	chatInfo.Participants = append(chatInfo.Participants, token)
-	newChatId, err = rt.db.InsertNewChat(token, chatInfo.ChatName, groupPhotoData, chatInfo.Participants, chatInfo.IsGroup, contentType, messageContent)
+	if textContent == "" && len(photoContent) == 0 {
+		context.Logger.Warn("No text or photo content found in the request for starting a new chat")
+		textContent = "first message of the chat - autogenerated"
+	}
+
+	// Controllo se l'utente stia cercando di fare una chat diretta con un altro utente di cui ha già la conversazione
+	foundId := -1
+	foundId, err = rt.db.FindChatFromParticipants(append(participants, usrId), chat.IsGroup)
+	if err != nil {
+		context.Logger.WithError(err).WithField("participants", append(participants, usrId)).Error("Error checking if there is already a direct chat for this 2 users")
+		http.Error(writer, "Internal server error - unable to complete some check for the request", http.StatusInternalServerError)
+		return
+	}
+
+	// Se la chat è già esistente,restituisco erroer forbidden
+	if foundId != -1 {
+		context.Logger.WithField("chatId", foundId).Warn("Tried to start a new direct chat when there was already existing one")
+		http.Error(writer, "Forbidden - you can't start a new one2one chat whit this user, you already have one", http.StatusInternalServerError)
+		return
+	}
+
+	chat.ChatId, err = rt.db.InsertNewChat(append(participants, usrId), chat, textContent, photoContent)
 	if err != nil {
 		context.Logger.WithError(err).Error("unable to insert a new chat in the db")
 		http.Error(writer, "Internal server error - unable to create the chat", http.StatusInternalServerError)
 		return
 	}
 
-	context.Logger.WithField("chatId", newChatId).Info("chat created successfully")
-
-	var chat database.Chat
-	chat, err = rt.db.GetChatInfo(newChatId)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).Warn("The chat doesn't exist, in the db")
-			http.Error(writer, "Not found - chat not exist", http.StatusNotFound)
-			return
-		}
-		context.Logger.WithError(err).Error("Error getting chat info")
-		http.Error(writer, "Internal server error - Error while recovering the info of the chat just created", http.StatusInternalServerError)
-		return
-	}
+	context.Logger.WithField("chatId", chat.ChatId).Debug("chat created successfully")
 
 	// Controllo se la chat è un gruppo o meno, se non è un gruppo procedo
 	// a recuperare le informazioni dell'altro utente partecipante alla chat
 	if !chat.IsGroup {
-
-		otherUsrId := chat.Participants[0]
-		if otherUsrId == token {
-			otherUsrId = chat.Participants[1]
+		otherUsrId := participants[0]
+		if otherUsrId == usrId {
+			otherUsrId = participants[1]
 		}
 
 		user, err := rt.db.GetUserInfo(otherUsrId)
@@ -136,6 +149,13 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 
 		chat.ChatName = user.UserName
 		chat.ChatPhoto = user.UserPhoto
+		chat.Participants = []database.User{}
+	} else {
+		chat.Participants, err = rt.db.GetChatParticipantsInfo(chat.ChatId)
+		if err != nil {
+			context.Logger.WithError(err).Warn("Error getting participant info")
+			chat.Participants = []database.User{}
+		}
 	}
 
 	// preparo la risposta, contenente le info della chat
