@@ -3,7 +3,11 @@ export default {
   data: function () {
     return {
       token: '',
-      usrId: '',
+      loggedUser: {
+        usrId: "",
+        userName: "",
+        userPhoto: "",
+      },
       searchQuery: '',
       errormsg: null,
       loading: false,
@@ -48,6 +52,13 @@ export default {
     this.token= sessionStorage.getItem('authToken');
     this.usrId= sessionStorage.getItem('usrId');
 
+    // Recupero le info dell'utente
+    let storedUser= sessionStorage.getItem('loggedUser');
+    if (storedUser){
+      this.loggedUser= JSON.parse(storedUser);
+    }
+    sessionStorage.removeItem('loggedUser');
+
     this.getUsers();
     this.getUserChats();
     this.setIntervalId= setInterval(async () => {
@@ -88,10 +99,9 @@ export default {
 
       try {
         let response= await this.$axios.get(`/chats`, {headers: {Authorization: this.token}});
-        this.userChats= [];
-
         if (response.data) {
           if (response.data['chats']){
+            this.userChats= [];
             response.data['chats'].forEach(chat => {
               this.userChats.push(chat);
             });
@@ -126,7 +136,7 @@ export default {
         }
       }
     },
-    prepSendMessage(rawInput){
+    prepSendMessage(rawInput){  // TODO adattarla alla creazione dei gruppi
       let userToSend= rawInput['sendTo'];
       let messageData= rawInput['messageData']
 
@@ -144,31 +154,27 @@ export default {
 
       // Preparo il formData per la richiesta
       const requestFormData= new FormData();
+
+      // Assegno le informazioni sul messaggio
+      requestFormData.append('textContent', messageData['textContent']);
+      requestFormData.append('photoContent', messageData['photoContent']);
+      requestFormData.append('respondTo', -1);
+
       if (chatToSend === -1){ // Non esiste una chat diretta con l'utente
 
         // Assegno le informazioni sulla chat
-        requestFormData.append('chatInfo', JSON.stringify({
-          chatName: "",
-          chatPhoto: "",
-          isGroup: false,
-          participants: [userToSend]
-        }));
+        requestFormData.append('chatName', "");
 
-        // Assegno le informazioni sul messaggio
-        requestFormData.append('contentType', messageData['contentType']);
-        requestFormData.append('content', messageData['content']);
+        let emptyPhoto= new Blob([], {type: 'image/png'});
+        requestFormData.append('chatPhoto', emptyPhoto);
+        requestFormData.append('isGroup', false);
+        requestFormData.append('participants', [userToSend]);
+
 
         this.startNewChat(requestFormData);
-      }else { // La chat esiste già e quindi procedo a preparare il form per l'invio del messaggio
-        // Assegno le informazioni sul messaggio
-        requestFormData.append('contentType', messageData['contentType']);
-        requestFormData.append('content', messageData['content']);
-        requestFormData.append('respondTo', -1);
-
+      }else { // La chat esiste già e quindi la richiesta http sarà all'endpoint per inviare un messaggio
         this.sendMessage(chatToSend, requestFormData);
       }
-
-
     },
     async startNewChat(formData){
       this.errormsg= null;
@@ -183,6 +189,14 @@ export default {
         if(response.data){
           console.log("risposta")
           console.log(response.data);
+          let newChat= {
+            chatId: response.data['chatId'],
+            isGroup: response.data['isGroup'],
+            chatName: response.data['chatName'],
+            chatPhoto: response.data['chatPhoto'],
+            participants: response.data['participants']
+          }
+          this.userChats.push(newChat)
         }
       }catch (e){
         console.log(e)
@@ -222,6 +236,12 @@ export default {
     loadUserInfo(bannerData){
       this.showUserInfo= false;
       this.loadedUserInfo= bannerData;
+
+      this.showUserInfo= true;
+    },
+    loadMyInfo(){
+      this.showUserInfo= false;
+      this.loadedUserInfo= this.loggedUser;
 
       this.showUserInfo= true;
     },
@@ -270,7 +290,7 @@ export default {
       <div class="list-footer">
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-primary shadow-none" @click="console.log('TODO: PROFILO')">
+            <button type="button" class="btn btn-sm btn-primary shadow-none" @click="loadUserInfo(this.loggedUser)">
               Profilo
             </button>
             <button type="button" class="btn btn-sm btn-danger shadow-none" @click="doLogout">
