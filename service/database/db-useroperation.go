@@ -1,7 +1,7 @@
 package database
 
 import (
-	"encoding/base64"
+	"Project_WASAtext/service/utilitytool"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -26,14 +26,8 @@ func (db *appdbimpl) InsertNewUser(userName string) (User, error) {
 	// Converto l'array di rune di nuovo in una stringa, rimuovo eventuali spazi, aggiungo due numeri randomici e unisco le stringhe
 	user.UsrId = fmt.Sprintf("%s%d%d", strings.ReplaceAll(string(runes), " ", ""), r.Intn(100), r.Intn(10))
 
-	// Decodifica la stringa Base64 in byte
-	defaultPropicBytes, errProp := base64.StdEncoding.DecodeString(defaultPropicBase64)
-	if errProp != nil {
-		return user, errProp
-	}
-
 	// Eseguo l'inserimento nel database
-	_, err := db.c.Exec(`INSERT INTO users_table (usrId, userName, userPhoto) VALUES (?, ?, ?);`, user.UsrId, user.UserName, defaultPropicBytes)
+	_, err := db.c.Exec(`INSERT INTO users_table (usrId, userName, userPhoto) VALUES (?, ?, ?);`, user.UsrId, user.UserName, utilitytool.DefUserPropicBytes)
 	return user, err
 }
 
@@ -70,45 +64,24 @@ func (db *appdbimpl) SetUserName(usrId string, newName string) error {
 	return err
 }
 
-func (db *appdbimpl) SetUserPhoto(usrId string, newPhotoData []byte) error {
+func (db *appdbimpl) SetUserPhoto(usrId string, newPhoto []byte) error {
 
-	stmt, err := db.c.Prepare(`UPDATE users_table SET userPhoto = ? WHERE usrId=?;`)
+	_, err := db.c.Exec(`UPDATE users_table SET userPhoto = ? WHERE usrId=?;`, newPhoto, usrId)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if closeErr := stmt.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			} else {
-				logrus.WithError(closeErr).Errorf("stmt.Close() error: %v", closeErr)
-			}
-		}
-	}()
 
-	_, err = stmt.Exec(newPhotoData, usrId)
-	if err != nil {
-		return err
-	}
-	return err
+	return nil
 }
 
 func (db *appdbimpl) GetUserInfo(usrId string) (User, error) {
 	var user User
-	var propicByte []byte
 
-	err := db.c.QueryRow(`SELECT userName, userPhoto FROM users_table WHERE usrId=?;`, usrId).Scan(&user.UserName, &propicByte)
+	err := db.c.QueryRow(`SELECT userName, userPhoto FROM users_table WHERE usrId=?;`, usrId).Scan(&user.UserName, &user.UserPhoto)
 	if err != nil {
 		return user, err
 	}
 	user.UsrId = usrId
-
-	// Controllo se sia presente la foto nel database
-	if len(propicByte) > 0 {
-		user.UserPhoto = base64.StdEncoding.EncodeToString(propicByte)
-	} else {
-		user.UserPhoto = "" // se non è presente assegno la stringa vuota
-	}
 
 	return user, err
 }
@@ -145,11 +118,9 @@ func (db *appdbimpl) GetUsers(usrIdToIgnore string) ([]User, error) {
 	for rows.Next() {
 		var user User
 
-		var propicBytes []byte
-		if err := rows.Scan(&user.UsrId, &user.UserName, &propicBytes); err != nil {
+		if err := rows.Scan(&user.UsrId, &user.UserName, &user.UserPhoto); err != nil {
 			return nil, err
 		}
-		user.UserPhoto = base64.StdEncoding.EncodeToString(propicBytes)
 
 		// Aggiungo l'utente all'array
 		users = append(users, user)
@@ -169,7 +140,7 @@ func (db *appdbimpl) UsrIdExist(usrId string) (bool, error) {
 	if err != nil {
 		// Non c'è bisogno di gestire `sql.ErrNoRows` esplicitamente,
 		// in quanto QueryRow restituisce `false` per la variabile esistenza
-		return false, fmt.Errorf("error checking user existence: %w", err)
+		return false, err
 	}
 	return exist == 1, nil
 }
