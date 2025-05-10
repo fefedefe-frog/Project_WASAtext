@@ -10,7 +10,7 @@ export default {
   data: function () {
     return {
       errormsg: null,
-
+      usrId: "",
       user: {
         usrId: "",
         userName: "",
@@ -27,6 +27,8 @@ export default {
     this.user['usrId']= this.userData['usrId'];
     this.user['userName']= this.userData['userName'];
     this.user['userPhoto']= this.userData['userPhoto'];
+
+    this.usrId= sessionStorage.getItem('usrId')
   }
 }
 </script>
@@ -48,7 +50,7 @@ export default {
         <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
       </div>
 
-      <div class="send-message">
+      <div v-if="usrId === user['usrId']" class="send-message">
         <span>Invia un messaggio</span>
         <div class="message-form">
           <messageForm @prepMessage="sendMessage"/>
