@@ -14,6 +14,7 @@ export default {
       errormsg: null,
       token: "",
       chatId: -1,
+      participantNames: {},
       messages: [],
 
       lastMessage: {
@@ -34,6 +35,10 @@ export default {
     this.chatId= this.chatData['chatId'];
     this.token= sessionStorage.getItem('authToken');
 
+    this.chatData['participants'].forEach(participant => {
+      this.participantNames[participant['usrId']]= participant['userName'];
+    });
+
     this.getChatMessages();
     this.setIntervalId= setInterval(async () => {
       await this.getChatMessages();
@@ -48,12 +53,13 @@ export default {
   computed: {
     messagePreview() {
       let message= this.lastMessage
-      let messagePreview= message['senderId']+ ":"
-      if (message['contentType'] === 'text'){
-        if (message['content'].length > 10){
-          messagePreview= `${messagePreview} ${message['content'].substring(0, 10)}...`;
+
+      let messagePreview= `${this.participantNames[message['senderId']]}:"`;
+      if (message['textContent'] !== ""){
+        if (message['textContent'].length > 10){
+          messagePreview= `${messagePreview} ${message['textContent'].substring(0, 10)}...`;
         }
-        messagePreview= `${messagePreview} ${message['content']}`;
+        messagePreview= `${messagePreview} ${message['textContent']}`;
       }
       return messagePreview
     }
@@ -65,7 +71,8 @@ export default {
 
       try {
         let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
-          msgId: this.lastMsgId
+          //msgId: this.lastMsgId
+          msgId: -1
         }, {
           headers: {Authorization: this.token},
         });
@@ -76,7 +83,7 @@ export default {
               this.messages.push(message);
             })
             this.lastMessage= this.messages[this.messages.length-1];
-            this.lastMsgId= this.lastMessage['msgId'];
+            //this.lastMsgId= this.lastMessage['msgId'];
           }
         }
       }catch(e) {
@@ -100,7 +107,7 @@ export default {
     <!-- Nome della chat e ultimo messaggio -->
     <div class="chat-text-container">
       <span class="chat-name"> {{ chatData['chatName'] }} </span>
-      <span class="last-message-text">{{this.messagePreview}}</span><svg v-if="lastMessage['contentType'] === 'photo' " class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+      <span class="last-message-text">{{this.messagePreview}}</span><svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
     </div>
   </div>
 </template>
