@@ -2,7 +2,7 @@
 export default {
   data: function() {
     return {
-      messageContent: "",
+      textContent: "",
       image: null,
       imagePreview: null,
       submit: false,
@@ -12,10 +12,11 @@ export default {
   emits: ['prepMessage'],
   methods: {
     prepMessage() {
-      if (this.messageContent.trim() || this.image){
+      let emptyPhoto= new Blob([], {type: 'image/png'});
+      if (this.textContent.trim() || this.image){
         let rawMessageData= {
-          contentType: this.image ? "photo" : "text",
-          content: this.image ? this.image : this.messageContent
+          textContent: this.textContent.trim() ? this.textContent : "",
+          photoContent: this.image ? this.image : emptyPhoto
         };
         this.$emit('prepMessage', rawMessageData);
       }
@@ -51,7 +52,7 @@ export default {
     <div v-if="imagePreview" class="image-preview">
       <img :src="imagePreview" alt="Anteprima immagine" />
     </div>
-    <textarea v-if="!imagePreview" class="textarea-content" v-model="messageContent" ref="textareaMessage" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength" @input="autoResize" ></textarea>
+    <textarea v-if="!imagePreview" class="textarea-content" v-model="textContent" ref="textareaMessage" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength" @input="autoResize" ></textarea>
 
     <div class="buttom-column">
       <button v-if="imagePreview" class="form-buttons delete-button" type="button" @click="imagePreview=null; image= null;">
