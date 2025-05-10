@@ -30,19 +30,19 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 		}
 
 		// Estraggo il toked dall header(rimuovo "Bearer " dall'header)
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if err := utilitytool.UsrIdIsValid(token); err != nil {
-			context.Logger.WithError(err).Warnf("Invalid token: <%s>", token)
+		usrId := strings.TrimPrefix(authHeader, "Bearer ")
+		if err := utilitytool.UsrIdIsValid(usrId); err != nil {
+			context.Logger.WithError(err).WithField("token", authHeader).Warn("Invalid token")
 			http.Error(writer, "Unauthorized - invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		// Verifico se il token corrisponde ad un usrId di un utente già registrato
-		exist, err := rt.db.UsrIdExist(token)
+		// Verifico se l'usrId corrisponde ad un usrId di un utente già registrato
+		exist, err := rt.db.UsrIdExist(usrId)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				context.Logger.WithError(err).Warnf("Token: <%s> does not exist", token)
-				http.Error(writer, "Unauthorized - token not valid or deprecated", http.StatusInternalServerError)
+				context.Logger.WithError(err).WithField("usrId", usrId).Warn("Token: the usrId does not exist")
+				http.Error(writer, "Unauthorized - token not valid or deprecated", http.StatusUnauthorized)
 				return
 			}
 			context.Logger.WithError(err).Warn("Error checking token existence")
@@ -52,12 +52,12 @@ func (rt *_router) BearerAuth(fn httpRouterHandlerAuthenticated) httpRouterHandl
 
 		if !exist {
 			// Se l'usrId non esiste e quindi l'utente non esiste e il token presente nel header non è valido restituisco una richiesta Unauthorized
-			context.Logger.WithField("token", token).Warn("User id token not present in the db")
+			context.Logger.WithField("token", usrId).Warn("token not present in the db")
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		// If the token is valid call the next handler in chain (usually, the handler function for the path)
-		fn(writer, request, parameters, context, token)
+		fn(writer, request, parameters, context, usrId)
 	}
 }

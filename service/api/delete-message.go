@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero l'id della chat e del messaggio dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -42,8 +42,8 @@ func (rt *_router) deleteMessage(writer http.ResponseWriter, _ *http.Request, pa
 		return
 	}
 
-	if senderId != token {
-		context.Logger.WithField("user", token).Warnf("User tryied to delete a message of which he isn't the author")
+	if senderId != usrId {
+		context.Logger.WithField("user", usrId).Warnf("User tryied to delete a message of which he isn't the author")
 		http.Error(writer, "Forbidden - You can't delete the message of another user", http.StatusForbidden)
 		return
 	}

@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero l'id della chat e del commento dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -27,7 +27,7 @@ func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request,
 	}
 
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error while checking the user participant status")
 		http.Error(writer, "Internal Server Error - Unable to check the user participant status", http.StatusInternalServerError)
@@ -41,7 +41,7 @@ func (rt *_router) uncommentMessage(writer http.ResponseWriter, _ *http.Request,
 
 	// Controllo che l'utente che vuole rimuovere il commento sia colui che l'ha commentato in precedenza
 	var isCommenter bool
-	isCommenter, err = rt.db.CheckCommentAuthor(chatId, token)
+	isCommenter, err = rt.db.CheckCommentAuthor(chatId, usrId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error while checking the comment author")
 		http.Error(writer, "Internal Server Error - Unable to check the comment author", http.StatusInternalServerError)
