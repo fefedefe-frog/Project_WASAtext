@@ -23,14 +23,14 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	}()
 
 	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
-	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM chat_messages_table WHERE chatId= ? AND msgId > ? AND status != 'received') AND receiverId= ?`, chatId, msgId, usrId)
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM messages_table WHERE chatId= ? AND msgId > ? AND status != 'received') AND receiverId= ?`, chatId, msgId, usrId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	var rows *sql.Rows
-	rows, err = tx.Query(`SELECT msgId, senderId, respondTo, contentType, content, deliveryStatus, timestamp FROM chat_messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
+	rows, err = tx.Query(`SELECT msgId, senderId, respondTo, textContent, photoContent, deliveryStatus, timestamp FROM messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +48,8 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	for rows.Next() {
 		var message Message
 
-		var contentRaw []byte
 		var respondTo sql.NullInt64
-		err := rows.Scan(&message.MsgId, &message.SenderId, &respondTo, &message.ContentType, &contentRaw, &message.DeliveryStatus, &message.Timestamp)
+		err := rows.Scan(&message.MsgId, &message.SenderId, &respondTo, &message.TextContent, &message.PhotoContent, &message.DeliveryStatus, &message.Timestamp)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +59,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 		} else {
 			message.RespondTo = -1
 		}
-		// Aggiungo l'utente all'array
+		// Aggiungo il messaggio all'array
 		messages = append(messages, message)
 	}
 	if err := rows.Err(); err != nil {
@@ -94,11 +93,16 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 		isForwarded = 1
 	}
 
-	// Inserisco il messaggio nella tabella dei messaggi
-	message.DeliveryStatus = TypePhoto
-	query := `INSERT INTO chat_messages_table (senderId, respondTo, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	var result sql.Result
-	result, err = tx.Exec(query, message.SenderId, message.RespondTo, chatId, message.ContentType, message.Content, message.DeliveryStatus, isForwarded)
+	if message.RespondTo != -1 {
+		query := `INSERT INTO messages_table (senderId, respondTo, chatId, textContent, photoContent, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING msgId;`
+		result, err = tx.Exec(query, message.SenderId, message.RespondTo, chatId, message.TextContent, message.PhotoContent, message.DeliveryStatus, isForwarded)
+
+	} else {
+		query := `INSERT INTO messages_table (senderId, chatId, textContent, photoContent, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+		result, err = tx.Exec(query, message.SenderId, chatId, message.TextContent, message.PhotoContent, message.DeliveryStatus, isForwarded)
+
+	}
 	if err != nil {
 		return -1, err
 	}
@@ -108,7 +112,7 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 	msgId, err = result.LastInsertId()
 
 	// Inserisco l'associazione tra messaggio e partecipante della chat dandogli il valoredi "not_received" e "read" per l'utente che ha inviato il messaggio
-	query = `INSERT INTO message_status_table (msgId, receiverId, status)
+	query := `INSERT INTO message_status_table (msgId, receiverId, status)
 			SELECT ?, usrId, 'not_received'
 			FROM chat_participants_table
 			WHERE chatId=? AND usrId != ?;`
@@ -125,13 +129,13 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
 
-	_, err := db.c.Exec(`DELETE FROM chat_messages_table WHERE msgId= ? AND chatId= ?;`, msgId, chatId)
+	_, err := db.c.Exec(`DELETE FROM messages_table WHERE msgId= ? AND chatId= ?;`, msgId, chatId)
 	if err != nil {
 		return err
 	}
 
 	// Controllo se la chat ha altri messaggi sennò la elimino
-	_, err = db.c.Exec(`DELETE FROM chats_table WHERE chatId= ? AND (SELECT COUNT(*) FROM chat_messages_table WHERE chatId= ?) = 0;`, chatId, chatId)
+	_, err = db.c.Exec(`DELETE FROM chats_table WHERE chatId= ? AND (SELECT COUNT(*) FROM messages_table WHERE chatId= ?) = 0;`, chatId, chatId)
 	if err != nil {
 		return err
 	}
@@ -142,14 +146,14 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 
 	// Recupero il messaggio da inoltrare
 	var message Message
-	var contentBytes []byte
-	err := db.c.QueryRow(`SELECT contentType, content FROM chat_messages_table WHERE msgId=?;`, msgId).Scan(&message.ContentType, contentBytes)
+	err := db.c.QueryRow(`SELECT textContent, photoContent FROM messages_table WHERE msgId=?;`, msgId).Scan(&message.TextContent, &message.PhotoContent)
 	if err != nil {
 		return err
 	}
 
 	// Imposto il nuovo senderId del messaggio, e aggiorno il valore di isForwarded a true
 	message.SenderId = forwarderId
+	message.RespondTo = -1
 	message.IsForwarded = true
 
 	if _, err := db.InsertMessage(message, chatIdToForwatd); err != nil {
@@ -186,13 +190,13 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 							WHERE msgId IN (
 								SELECT ms.msgId
 								FROM message_status_table ms
-									JOIN chat_messages_table cm ON ms.msgId = cm.msgId
+									JOIN messages_table cm ON ms.msgId = cm.msgId
 								WHERE ms.receiverId = ?
 								  AND cm.chatId = ?
 								  AND cm.timestamp < (
 									SELECT MIN(cm2.timestamp)
 									FROM message_status_table ms2
-											 JOIN chat_messages_table cm2 ON ms2.msgId = cm2.msgId
+											 JOIN messages_table cm2 ON ms2.msgId = cm2.msgId
 									WHERE ms2.receiverId = ?
 									  AND cm2.chatId = ?
 									  AND ms2.status = 'read'
@@ -211,11 +215,12 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 }
 
 func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
+
 	var message Message
-	var rawContent []byte
 	var isForwarded int
-	query := `SELECT senderId, respondTo,contentType, content, deliveryStatus, timestamp, isForwarded FROM chat_messages_table WHERE msgId= ?;`
-	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.RespondTo, &message.ContentType, &rawContent, &message.DeliveryStatus, &message.Timestamp, &message.Comments, &isForwarded)
+
+	query := `SELECT senderId, respondTo, textContent, photoContent, deliveryStatus, timestamp, isForwarded FROM messages_table WHERE msgId = ?`
+	err := db.c.QueryRow(query, msgId).Scan(&message.SenderId, &message.RespondTo, &message.TextContent, &message.PhotoContent, &message.DeliveryStatus, &message.Timestamp, &isForwarded)
 	if err != nil {
 		return message, err
 	}
@@ -228,7 +233,7 @@ func (db *appdbimpl) GetMessageById(msgId int) (Message, error) {
 func (db *appdbimpl) GetSenderIdByMsgId(msgId int) (string, error) {
 
 	var senderId string
-	err := db.c.QueryRow(`SELECT senderId FROM chat_messages_table WHERE msgId= ?;`, msgId).Scan(&senderId)
+	err := db.c.QueryRow(`SELECT senderId FROM messages_table WHERE msgId= ?;`, msgId).Scan(&senderId)
 	if err != nil {
 		return "", err
 	}
