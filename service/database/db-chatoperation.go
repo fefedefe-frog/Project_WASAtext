@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -14,15 +13,22 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 	/*
 		In questa query eseguo il primo join per ottenere tutte le info delle chat di cui fa parte l'utente
 		tramite il join nella tabella chats_table e quella dei partecipanti, associando il chatId
-		successivamente faccio un join della tabella dei partecipanti su se stessa per trovare gli id dei
-		partecipanti di una chat, che poi aggiungerò all'output finale tramite la funzione GROUP_CONCAT
-		che restituisce una colonna di id concatenate dal carattere speciale ␟.
+		successivamente faccio un join della tabella dei partecipanti su se stessa per trovare tutti i
+		partecipanti di una chat, di cui recupero tutte le informazioni
 	*/
 	query := `
-			SELECT C.chatId, C.chatName, C.chatPhoto, C.isGroup, GROUP_CONCAT(P2.usrId, '␟') AS participantsString
+			SELECT 
+			    C.chatId,
+			    C.chatName,
+			    C.chatPhoto,
+			    C.isGroup,
+			    U.usrId,
+			    U.userName,
+			    U.userPhoto	
 			FROM chat_participants_table AS P
 			JOIN chats_table C ON P.chatId = C.chatId
 			JOIN chat_participants_table P2 ON C.chatId = P2.chatId
+			JOIN users_table U ON P2.userId = U.userId
 			WHERE P.usrId = ?
 			GROUP BY C.chatId`
 
@@ -40,50 +46,40 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 		}
 	}()
 
-	// Inserisco i vari id trovati nell'array di output
-	var userChats []Chat
+	// Inserisco le informazioni ricavate dalla lettura delle varie righe in una mappa
+	chatMap := make(map[int]*Chat)
 	for rows.Next() {
-		var chat Chat
-		var chatPropicBytes []byte
-		var participantsString string
+		var participant User
+		var chatId int
+		var chatName string
+		var chatPhoto []byte
+		var isGroupInt int
 
-		err = rows.Scan(&chat.ChatId, &chat.ChatName, &chatPropicBytes, &chat.IsGroup, &participantsString)
+		err = rows.Scan(&chatId, &chatName, &chatPhoto, &isGroupInt, &participant.UsrId, &participant.UserName, &participant.UserPhoto)
 		if err != nil {
 			return nil, err
 		}
 
-		// Splitto la stringa contenente i partecipanti
-		chat.Participants = strings.Split(participantsString, "␟")
-
-		/*
-			Controllo se la chat è un gruppo o meno, se la chat è un gruppo
-			salvo i valori di chatName e chatPhoto nella struct chat,
-			sennò recupero le informazioni dei singoli utenti
-		*/
-		if chat.IsGroup {
-			chat.ChatPhoto = base64.StdEncoding.EncodeToString(chatPropicBytes)
-		} else {
-			if len(chat.Participants) == 2 { // Ho una chat diretta tra due persone
-				var otherParticipantId string
-				for _, participant := range chat.Participants {
-					if participant != usrId {
-						otherParticipantId = participant
-					}
-				}
-
-				user, err := db.GetUserInfo(otherParticipantId)
-				if err != nil {
-					return nil, err
-				}
-				chat.ChatName = user.UserName
-				chat.ChatPhoto = user.UserPhoto
-			} else { // C'è stato qualche problema, non possono esistere chat, che non sono gruppi con meno di 2 utenti
-				return nil, fmt.Errorf("invalid participant number")
+		// Controllo se ho già recuperato le informazioni della chat da altre righe,
+		// se non è così allora aggiungo la chat alla mappa passandogli tutte le informazioni
+		if _, exists := chatMap[chatId]; !exists {
+			chatMap[chatId] = &Chat{
+				ChatId:       chatId,
+				ChatName:     chatName,
+				ChatPhoto:    chatPhoto,
+				IsGroup:      isGroupInt != 0,
+				Participants: []User{},
 			}
 		}
 
-		// Aggiungo la chat allo slice di chats
-		userChats = append(userChats, chat)
+		// Aggiungo le informazioni del partecipante alla chat
+		chatMap[chatId].Participants = append(chatMap[chatId].Participants, participant)
+	}
+
+	// Converto la mappa in array di Chat
+	var userChats []Chat
+	for _, chat := range chatMap {
+		userChats = append(userChats, *chat)
 	}
 
 	// Controllo se ci sono stati errori sulle righe
@@ -94,7 +90,7 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 	return userChats, nil
 }
 
-func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPhotoData []byte, participants []string, isGroup bool, contentType string, messageContent []byte) (int, error) {
+func (db *appdbimpl) InsertNewChat(participants []string, chat Chat, messageTextContent string, messagePhotoContent []byte) (int, error) {
 
 	tx, err := db.c.Begin()
 	if err != nil {
@@ -111,13 +107,13 @@ func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPho
 
 	// Converto il valore bool in int
 	isGroupVal := 0
-	if isGroup {
+	if chat.IsGroup {
 		isGroupVal = 1
 	}
 
 	// Eseguo l'inserimento nel database
 	var result sql.Result
-	result, err = tx.Exec(`INSERT INTO chats_table (chatName, isGroup, chatPhoto) VALUES (?, ?, ?);`, chatName, isGroupVal, chatPhotoData)
+	result, err = tx.Exec(`INSERT INTO chats_table (chatName, isGroup, chatPhoto) VALUES (?, ?, ?);`, chat.ChatName, isGroupVal, chat.ChatPhoto)
 	if err != nil {
 		return -1, err
 	}
@@ -129,8 +125,7 @@ func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPho
 	}
 
 	// Inserisco gli usrId nella lista da passare alla funzione Exec
-	usrIds := make([]interface{}, len(participants)+1)
-	usrIds[0] = creatorUsrId
+	usrIds := make([]interface{}, len(participants))
 	for i, participant := range participants {
 		usrIds[i] = participant
 	}
@@ -141,8 +136,8 @@ func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPho
 		return -1, err
 	}
 
-	queryMessage := `INSERT INTO chat_messages_table (senderId, chatId, contentType, content, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
-	result, err = tx.Exec(queryMessage, creatorUsrId, int(newChatId64), contentType, messageContent, "sent", 0)
+	queryMessage := `INSERT INTO chat_messages_table (senderId, chatId, textContent, photoContent, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+	result, err = tx.Exec(queryMessage, participants[len(participants)-1], int(newChatId64), messageTextContent, messagePhotoContent, "sent", 0)
 	if err != nil {
 		return -1, err
 	}
@@ -156,7 +151,7 @@ func (db *appdbimpl) InsertNewChat(creatorUsrId string, chatName string, chatPho
 			SELECT ?, usrId, 'not_received'
 			FROM chat_participants_table
 			WHERE chatId=? AND usrId != ?;`
-	_, err = tx.Exec(query, msgId, int(newChatId64), creatorUsrId)
+	_, err = tx.Exec(query, msgId, int(newChatId64), participants[len(participants)-1])
 	if err != nil {
 		return -1, err
 	}
@@ -195,30 +190,56 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 }
 
 func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
-	var chat Chat
-	var groupPropicByte []byte
 
-	err := db.c.QueryRow(`SELECT isGroup, chatName, chatPhoto FROM chats_table WHERE chatId=?;`, chatId).Scan(&chat.IsGroup, &chat.ChatName, &groupPropicByte)
+	query := `
+			SELECT 
+			    C.chatName,
+			    C.chatPhoto,
+			    C.isGroup,
+			    U.usrId,
+			    U.userName,
+			    U.userPhoto	
+			FROM chats_table AS C
+			JOIN chat_participants_table P ON C.chatId = P.chatId
+			JOIN users_table U ON P.userId = U.userId
+			WHERE C.chatId = ?`
+
+	// Eseguo la query descritta primia
+	rows, err := db.c.Query(query, chatId)
 	if err != nil {
-		return chat, err
+		return Chat{}, err
 	}
-	chat.ChatId = chatId
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("rows.Close()")
+			if err == nil {
+				err = closeErr
+			}
+		}
+	}()
 
-	// Controllo se sia presente la foto nel database
-	if len(groupPropicByte) > 0 {
-		chat.ChatPhoto = base64.StdEncoding.EncodeToString(groupPropicByte)
-	} else {
-		chat.ChatPhoto = "" // se non è presente assegno la stringa vuota
+	// Inserisco le informazioni ricavate dalla lettura delle varie righe in una mappa
+	var chat Chat
+	for rows.Next() {
+		var participant User
+		var isGroupInt int
+
+		err = rows.Scan(&chat.ChatName, &chat.ChatPhoto, &isGroupInt, &participant.UsrId, &participant.UserName, &participant.UserPhoto)
+		if err != nil {
+			return Chat{}, err
+		}
+
+		chat.ChatId = chatId
+		chat.IsGroup = isGroupInt != 0
+
+		// Aggiungo le informazioni del partecipante alla chat
+		chat.Participants = append(chat.Participants, participant)
+	}
+	if err := rows.Err(); err != nil {
+		return Chat{}, err
 	}
 
-	// Ottengo gli id dei partecipanti della chat
-	participants, participantsErr := db.GetChatPartecipants(chat.ChatId)
-	if participantsErr != nil {
-		return chat, participantsErr
-	}
-	chat.Participants = participants
-
-	return chat, err
+	return chat, nil
 }
 
 func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
@@ -407,4 +428,40 @@ func (db *appdbimpl) IsAGroup(chatId int) (bool, error) {
 		return false, err
 	}
 	return isGroup == 1, nil
+}
+
+func (db *appdbimpl) FindChatFromParticipants(participants []string, isGroup bool) (int, error) {
+
+	isGroupInt := 0
+	if isGroup {
+		isGroupInt = 1
+	}
+	participantNum := len(participants)
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", participantNum), ",")
+
+	// Preparo gli args variabili contententi solo usrId dei partecipanti
+	args := make([]interface{}, 0, participantNum+3)
+	args = append(args, isGroupInt, participantNum)
+	for i, participant := range participants {
+		args[i] = participant
+	}
+	args = append(args, participantNum)
+
+	query := fmt.Sprintf(`
+		SELECT PD.chatId
+		FROM chat_participants_table AS PD
+		JOIN chat_table C ON PD.chatId = C.chatId WHERE C.isGroup = ?
+		GROUP BY PD.chatId
+		HAVING COUNT(DISTINCT usrId) = ?
+			AND SUM(CASE WHEN usrId IN (%s) THEN 1 ELSE 0 END) = ?`, placeholders)
+
+	var chatId int
+	err := db.c.QueryRow(query, args...).Scan(&chatId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, nil
+		}
+		return -1, err
+	}
+	return chatId, nil
 }
