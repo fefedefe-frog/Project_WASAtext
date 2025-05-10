@@ -25,11 +25,11 @@ export default {
         isGroup: false,
         participants: []
       },
-      participantsNames: {},
+      participantNames: {},
 
       lastMsgId: -1,
       messages: [],
-      textContent: '',
+      respondTo: -1,
 
       getChatInfoIntervalId: null,
       getMessagesIntervalId: null,
@@ -44,12 +44,12 @@ export default {
     this.chat['isGroup']= this.chatData['isGroup'];
     this.chat['participants']= this.chatData['participants'];
 
-    this.lastMsgId= this.initialMessages[this.initialMessages.length - 1]['msgId'];
+    //this.lastMsgId= this.initialMessages[this.initialMessages.length - 1]['msgId'];
     this.messages= this.initialMessages;
 
-    this.getChatInfo();
-    this.getParticipants();
-    this.getMessages();
+    this.chat['participants'].forEach(participant => {
+      this.participantNames[participant['usrId']]= participant['userName'];
+    });
 
     this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
@@ -139,25 +139,34 @@ export default {
       this.getMessagesIsRunning= false;
 
     },
-    async getParticipants() {
-      this.errormsg = null
+    async sendMessage(rawInput){
+      // TODO controlla se funge
+      console.log(rawInput);
 
-      try {
-        let response= await this.$axios.get(`/chats/${this.chat['chatId']}/users`, {
-          headers: {Authorization: this.token}
+      this.errormsg= null;
+
+      formData= new FormData();
+      formData.append('textContent', rawInput['textContent']);
+      formData.append('photoContent', rawInput['photoContent']);
+      formData.append('respondTo', this.respondTo);
+
+      try{
+        let response= await this.$axios.post(`/chats/${chatId}/messages`, formData, {
+          headers: {
+            Authorization: this.token,
+          }
         });
 
-        if (response.data) {
-          response.data['participants'].forEach(participant => {
-            this.participantsNames[participant['usrId']]= participant['userName'];
-          });
+        if(response.data){
+          console.log(response.data);
+          if (response.data['message']){
+            this.messages.push(response.data['message']);
+          }
         }
-      }catch(e) {
-        this.errormsg = e.toString();
+      }catch (e){
+        this.errormsg= e;
       }
-    },
-    async sendMessage(){
-      // TODO
+
     },
     closeChat(leaveChat){
       this.$emit('closeChat', leaveChat);
@@ -176,7 +185,7 @@ export default {
       <div class="chat-image-container">
         <img :src="'data:image/png;base64,'+ chatData['chatPhoto']" alt="Chat Image">
       </div>
-      <div class="text-container">
+      <div class="chat-info-text-container">
         <div class="chat-name">
           <h3>{{ chatData['chatName'] }}</h3>
         </div>
@@ -201,14 +210,7 @@ export default {
     </div>
 
     <div class="message-sender">
-      <form class="sendMessage-form" @submit.prevent="sendMessage">
-        <label for="text">
-          <input id="textContent" v-model="textContent" type="text" placeholder="Scrivi un messaggio" required>
-        </label>
-        <button type="submit" :disabled="!textContent" :class="{ disabled: !textContent}">
-          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigator" /></svg>
-        </button>
-      </form>
+      <messageForm @prepMessage="sendMessage"></messageForm>
     </div>
 
     <div class="messages-main">
@@ -236,7 +238,7 @@ export default {
   object-fit: cover;
 }
 
-.text-container {
+.chat-info-text-container {
   flex: 1;
   padding: 10px;
   display: flex;
