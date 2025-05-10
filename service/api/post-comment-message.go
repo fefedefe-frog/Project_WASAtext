@@ -9,7 +9,7 @@ import (
 )
 
 // TODO controllo del contenuto che si vuole inserire come commento, sono accettate solo emoji
-func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero l'id della chat del messaggio dai paramentri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -28,7 +28,7 @@ func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Requ
 
 	// Controllo che l'utente che vuole commentare il messaggio faccia parte della chat di quel messaggio
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error while checking the user participant status")
 		http.Error(writer, "Internal Server Error - Unable to check the user participant status", http.StatusInternalServerError)
@@ -50,7 +50,7 @@ func (rt *_router) commentMessage(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	if err := rt.db.CommentMessage(msgId, token, requestJson.Content); err != nil {
+	if err := rt.db.CommentMessage(msgId, usrId, requestJson.Content); err != nil {
 		context.Logger.WithError(err).Error("Error while commenting message to chat")
 		http.Error(writer, "Internal Server Error - Unable to comment message to chat", http.StatusInternalServerError)
 		return

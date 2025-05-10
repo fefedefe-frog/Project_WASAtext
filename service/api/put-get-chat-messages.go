@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	var requestJson = struct {
 		MsgId int `json:"msgId"`
@@ -26,14 +26,14 @@ func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Req
 
 	// Controllo se l'utente che ha effettuato l'accesso faccia parte della chat di cui vuole ricavare i messaggi
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error checking if user is participant")
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipant {
-		context.Logger.WithField("usrId", token).Warn("User is not a participant")
+		context.Logger.WithField("usrId", usrId).Warn("User is not a participant")
 		http.Error(writer, "Forbidden - The user is not a participant of the chat", http.StatusForbidden)
 		return
 	}
@@ -48,7 +48,7 @@ func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Req
 
 	// Recupero i messaggi della chat dal database
 	var chatMessages []database.Message
-	chatMessages, err = rt.db.GetChatMessages(chatId, token, requestJson.MsgId)
+	chatMessages, err = rt.db.GetChatMessages(chatId, usrId, requestJson.MsgId)
 	if err != nil {
 		if errors.Is(err, database.ErrUpdateMessageStatus) {
 

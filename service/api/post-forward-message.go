@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
 	if err != nil {
@@ -41,31 +41,31 @@ func (rt *_router) forwardMessage(writer http.ResponseWriter, request *http.Requ
 	// Controllo se l'utente che vuole inoltrare il messaggio fa parte della chat
 	// del messaggio da inoltrare, e della chat dove verrà inoltrato il messaggio
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
-		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipant {
-		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried to forward a message of a chat which he isn't a member of")
+		context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Warn("user tried to forward a message of a chat which he isn't a member of")
 		http.Error(writer, "Forbidden - can't forward a message of a chat where you aren't part off", http.StatusForbidden)
 		return
 	}
 	var isParticipatForward bool
-	isParticipatForward, err = rt.db.CheckIfUserIsParticipant(requestJson.ChatToForward, token)
+	isParticipatForward, err = rt.db.CheckIfUserIsParticipant(requestJson.ChatToForward, usrId)
 	if err != nil {
-		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": requestJson.ChatToForward}).Errorf("Error while checking if the user is member of the group")
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": usrId, "groupId": requestJson.ChatToForward}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipatForward {
-		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": requestJson.ChatToForward}).Warn("user tried to forward a message to a chat which he isn't a member of")
+		context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": requestJson.ChatToForward}).Warn("user tried to forward a message to a chat which he isn't a member of")
 		http.Error(writer, "Forbidden - can't forward a message to a chat where you aren't part off", http.StatusForbidden)
 		return
 	}
 
-	if err := rt.db.ForwardMessage(token, msgId, requestJson.ChatToForward); err != nil {
+	if err := rt.db.ForwardMessage(usrId, msgId, requestJson.ChatToForward); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			context.Logger.WithError(err).Warn("Message not found in the database")
 			http.Error(writer, "Not Found - Message not found", http.StatusNotFound)

@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) getUserInfo(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, _ string) {
+func (rt *_router) getUserInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, _ string) {
 
 	// Recupero l'user id dell'user interessato
 	usrId := params.ByName("usr_id")

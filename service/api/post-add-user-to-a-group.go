@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	var requestJson = struct {
 		UsrIdToAdd string `json:"usrId"`
@@ -27,14 +27,14 @@ func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request,
 	}
 
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
-		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipant {
-		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried add a particpiant to a group which he isn't a member of")
+		context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Warn("user tried add a particpiant to a group which he isn't a member of")
 		http.Error(writer, "Forbidden - can't add users to a group where you aren't part off", http.StatusForbidden)
 		return
 	}
@@ -46,7 +46,7 @@ func (rt *_router) addToGroup(writer http.ResponseWriter, request *http.Request,
 		return
 	}
 
-	context.Logger.WithField("usrId", token).Info("user request to add user/s to the group")
+	context.Logger.WithField("usrId", usrId).Info("user request to add user/s to the group")
 
 	// Controllo che l'utente da aggiungere non faccia già parte del gruppo
 	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, requestJson.UsrIdToAdd)

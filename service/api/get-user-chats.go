@@ -9,16 +9,16 @@ import (
 	"net/http"
 )
 
-func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Tento di recuperare le chat di quell'user
-	chats, err := rt.db.GetChatsOfUser(token)
+	chats, err := rt.db.GetChatsOfUser(usrId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithField("usrId", token).Debug("User doesn't have chat")
+			context.Logger.WithField("usrId", usrId).Debug("User doesn't have chat")
 			chats = nil
 		} else {
-			context.Logger.WithError(err).WithField("usrId", token).Error("Error getting user chats")
+			context.Logger.WithError(err).WithField("usrId", usrId).Error("Error getting user chats")
 			http.Error(writer, "Internal server error - Unable to retrive info", http.StatusInternalServerError)
 			return
 		}

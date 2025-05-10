@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request, _ httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	var requestJson = struct {
 		NewUserName string `json:"newUserName"`
@@ -25,7 +25,7 @@ func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	context.Logger.WithFields(logrus.Fields{"usrId": token, "username": requestJson.NewUserName}).Info("Richiesta di cambio nome da parte dell'utente")
+	context.Logger.WithFields(logrus.Fields{"usrId": usrId, "username": requestJson.NewUserName}).Info("Richiesta di cambio nome da parte dell'utente")
 
 	// Controllo se il nome è valido secondo i requisiti richiesti
 	if err := utilitytool.NameIsValid(requestJson.NewUserName); err != nil {
@@ -70,9 +70,9 @@ func (rt *_router) setUserName(writer http.ResponseWriter, request *http.Request
 	}
 
 	// Aggiorno l'username nel database
-	if err := rt.db.SetUserName(token, requestJson.NewUserName); err != nil {
+	if err := rt.db.SetUserName(usrId, requestJson.NewUserName); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			context.Logger.WithError(err).WithField("usrId", token).Errorf("User not found in database")
+			context.Logger.WithError(err).WithField("usrId", usrId).Errorf("User not found in database")
 			http.Error(writer, "Not found - User not found", http.StatusNotFound)
 			return
 		}
