@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, token string) {
+func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
 
 	// Recupero il chat id dai parametri dell'endpoint
 	chatId, err := strconv.Atoi(params.ByName("chat_id"))
@@ -22,14 +22,14 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 
 	// Controllo che l'utente faccia effettivamente parte del gruppo
 	var isParticipant bool
-	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, token)
+	isParticipant, err = rt.db.CheckIfUserIsParticipant(chatId, usrId)
 	if err != nil {
-		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": token, "chatId": chatId}).Errorf("Error while checking if the user is member of the group")
+		context.Logger.WithError(err).WithFields(logrus.Fields{"usrId": usrId, "chatId": chatId}).Errorf("Error while checking if the user is member of the group")
 		http.Error(writer, "Internal Server Error - can't check user paricipation of the group", http.StatusInternalServerError)
 		return
 	}
 	if !isParticipant {
-		context.Logger.WithFields(logrus.Fields{"usrId": token, "groupId": chatId}).Warn("user tried send a message in a chat of which he isn't a member of")
+		context.Logger.WithFields(logrus.Fields{"usrId": usrId, "groupId": chatId}).Warn("user tried send a message in a chat of which he isn't a member of")
 		http.Error(writer, "Forbidden - can't send a message in a chat where you aren't member off", http.StatusForbidden)
 		return
 	}
@@ -42,34 +42,35 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	// Recupero i dati del messaggio da inviare per iniziare la chat
-	contentType := request.FormValue("contentType")
-	var messageContent []byte
-	if contentType == "photo" {
-		// Carico l'immagine contenuta nella richiesta http
-		file, _, err := request.FormFile("content")
-		if err != nil {
-			context.Logger.WithError(err).Error("Error getting file content")
-			http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
-			return
-		}
-		defer func() {
-			err := file.Close()
-			if err != nil {
-				context.Logger.WithError(err).Error("Error closing file")
-			}
-		}()
+	textContent := request.FormValue("textContent")
 
-		// Leggo il contenuto dell'immagine
-		messageContent, err = io.ReadAll(file)
+	var photoContent []byte
+	// Carico l'immagine contenuta nella richiesta http
+	photoContentFile, _, err := request.FormFile("content")
+	if err != nil {
+		context.Logger.WithError(err).Error("Error getting file content")
+		http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		err := photoContentFile.Close()
 		if err != nil {
-			context.Logger.WithError(err).Error("Error reading file")
-			http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
-			return
+			context.Logger.WithError(err).Error("Error closing file")
 		}
+	}()
 
-	} else {
-		messageContent = []byte(request.FormValue("content"))
+	// Leggo il contenuto dell'immagine
+	photoContent, err = io.ReadAll(photoContentFile)
+	if err != nil {
+		context.Logger.WithError(err).Error("Error reading file")
+		http.Error(writer, "Internal server error - Error reading file", http.StatusInternalServerError)
+		return
+	}
+
+	if textContent == "" && len(photoContent) == 0 {
+		context.Logger.Warn("No text or photo content found in the request for starting a new chat")
+		http.Error(writer, "Bad request - The message need to have at least one type of content between text or an image", http.StatusBadRequest)
+		return
 	}
 
 	// Recupero e converto in intero l'id del messaggio a cui sto rispondendo
@@ -81,16 +82,18 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	context.Logger.WithFields(logrus.Fields{"usrId": token, "chatId": chatId}).Info("user want to send a message in the chat")
+	context.Logger.WithFields(logrus.Fields{"usrId": usrId, "chatId": chatId}).Info("user want to send a message in the chat")
 
 	// Aggiungo il messaggio al db
-	var newMessage database.Message
-	newMessage.SenderId = token
-	newMessage.RespondTo = respondTo
-	newMessage.ContentType = contentType
-	newMessage.Content = messageContent
-	newMessage.DeliveryStatus = "sent"
-	newMessage.IsForwarded = false
+	newMessage := database.Message{
+		MsgId:          -1,
+		SenderId:       usrId,
+		RespondTo:      respondTo,
+		TextContent:    textContent,
+		PhotoContent:   photoContent,
+		DeliveryStatus: "sent",
+		IsForwarded:    false,
+	}
 
 	newMessage.MsgId, err = rt.db.InsertMessage(newMessage, chatId)
 	if err != nil {
