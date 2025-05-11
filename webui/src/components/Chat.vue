@@ -5,10 +5,6 @@ export default {
       type: Object,
       required: true
     },
-    initialMessages: {
-      type: Array,
-      required: true
-    },
   },
   emits: [
       'closeChat'
@@ -28,6 +24,7 @@ export default {
       participantNames: {},
 
       lastMsgId: -1,
+      prevLastMsgId: -1,
       messages: [],
       respondTo: -1,
 
@@ -36,24 +33,24 @@ export default {
       getMessagesIsRunning: false,
     }
   },
-  mounted() {
+  created(){
     this.token= sessionStorage.getItem('authToken');
-    this.chat['chatId']= this.chatData['chatId'];
-    this.chat['chatName']= this.chatData['chatName'];
-    this.chat['chatPhoto']= this.chatData['chatPhoto'];
-    this.chat['isGroup']= this.chatData['isGroup'];
-    this.chat['participants']= this.chatData['participants'];
 
-    //this.lastMsgId= this.initialMessages[this.initialMessages.length - 1]['msgId'];
-    this.messages= this.initialMessages;
+    this.chat['chatId']= this.chatData['chatInfo']['chatId'];
+    this.chat['chatName']= this.chatData['chatInfo']['chatName'];
+    this.chat['chatPhoto']= this.chatData['chatInfo']['chatPhoto'];
+    this.chat['isGroup']= this.chatData['chatInfo']['isGroup'];
+    this.chat['participants']= this.chatData['chatInfo']['participants'];
 
-    this.chat['participants'].forEach(participant => {
-      this.participantNames[participant['usrId']]= participant['userName'];
-    });
+    this.participantNames= this.chatData['participantNames'];
+    this.messages= this.chatData['messages'];
+    this.messages.reverse();
 
+    this.lastMsgId= this.messages[0]['msgId'];
+  },
+  mounted() {
     this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
-      await this.getParticipants();
     }, 30000);
 
     this.getMessagesIntervalId= setInterval( async () => {
@@ -94,7 +91,6 @@ export default {
       // Evito la sovrapposizione della funzione quando chiamata dagli intervalli
       if (this.getMessagesIsRunning) return;
       this.getMessagesIsRunning= true;
-
       this.errormsg = null;
 
       try {
@@ -114,8 +110,8 @@ export default {
               this.messages.push(message);
             });
 
-            //this.lastMsgId= this.messages[this.messages.length-1]['msgId'];
-            this.lastMsgId= -1;
+            this.messages.reverse();
+            this.lastMsgId= this.messages[this.messages.length-1]['msgId'];
           }
         }
       }catch(e) {
@@ -124,8 +120,12 @@ export default {
       this.getMessagesIsRunning= false;
     },
     async updateReadStatus() {
+      //if (this.prevLastMsgId === this.lastMsgId) return;
+
       this.errormsg = null;
 
+      this.lastMsgId= this.messages[0]['msgId'];
+      console.log('aggiornamento messaggi: '+ this.lastMsgId);
       try {
         let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages/${this.lastMsgId}`, {}, {
           headers: {Authorization: this.token}
@@ -136,37 +136,45 @@ export default {
       }catch(e) {
         this.errormsg = e;
       }
-      this.getMessagesIsRunning= false;
 
+      this.prevLastMsgId= this.lastMsgId;
     },
     async sendMessage(rawInput){
       // TODO controlla se funge
-      console.log(rawInput);
-
       this.errormsg= null;
 
-      formData= new FormData();
-      formData.append('textContent', rawInput['textContent']);
-      formData.append('photoContent', rawInput['photoContent']);
-      formData.append('respondTo', this.respondTo);
+      const requestFormData= new FormData();
+      requestFormData.append('textContent', rawInput['textContent']);
+      requestFormData.append('photoContent', rawInput['photoContent']);
+      requestFormData.append('respondTo', this.respondTo);
 
       try{
-        let response= await this.$axios.post(`/chats/${chatId}/messages`, formData, {
+        let response= await this.$axios.post(`/chats/${this.chat['chatId']}/messages`, requestFormData, {
           headers: {
             Authorization: this.token,
           }
         });
 
         if(response.data){
-          console.log(response.data);
           if (response.data['message']){
+            this.messages.reverse();
             this.messages.push(response.data['message']);
+            this.messages.reverse();
+            this.lastMsgId= response.data['message']['msgId'];
           }
         }
       }catch (e){
         this.errormsg= e;
+      }finally {
+        this.respondTo= -1;
       }
 
+    },
+    updateParticipantNamesDict(){
+      this.participantNames= {};
+      this.chat['participants'].forEach(participant => {
+        this.participantNames[participant['usrId']]= participant['userName'];
+      });
     },
     closeChat(leaveChat){
       this.$emit('closeChat', leaveChat);
@@ -179,17 +187,17 @@ export default {
 </script>
 
 <template>
-  <div class="w-100 h-100 p-2">
+  <div class="chat-container">
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div class="chat-info-container">
       <div class="chat-image-container">
-        <img :src="'data:image/png;base64,'+ chatData['chatPhoto']" alt="Chat Image">
+        <img :src="'data:image/png;base64,'+ chat['chatPhoto']" alt="Chat Image">
       </div>
       <div class="chat-info-text-container">
         <div class="chat-name">
-          <h3>{{ chatData['chatName'] }}</h3>
+          <h3>{{ chat['chatName'] }}</h3>
         </div>
-        <div class="participants">{{ chatData['isGroup'] ? Object.values(participantsNames).join(", ") : "..." }}</div>
+        <div class="participants">{{ chat['isGroup'] ? Object.values(participantNames).join(", ") : "..." }}</div>
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
@@ -215,13 +223,35 @@ export default {
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" :sender-name="participantsNames[message['senderId']]" />
+        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" :sender-name="participantNames[message['senderId']]" />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.chat-container {
+  width: 100%;
+  height: 100%;
+
+  margin: 0 2px 0 2px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-info-container {
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 1rem 0 0.5rem 0.2rem;
+
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
 
 /* Barra superiore */
 .chat-image-container {
@@ -262,40 +292,30 @@ export default {
 
 /* invio messaggio */
 .message-sender{
-  position: sticky;
-  z-index: 1001;
-  background: rgba(0, 0, 0, 0.5);
-  height: 50px;
-  width: 100%;
-}
+  height: 60px;
+  width: 50%;
 
-.message-sender svg{
-  background-color: white;
-  border: 1px black solid;
-  border-radius: 50%;
-  fill: currentColor;
-
-  user-select: none;
+  margin: 0 5px 0 auto;
 }
 /* fine invio messaggio */
 
 /* gestione dei messaggi */
 .messages-main {
-  position: relative;
   width: 100%;
-  height: 70vh;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  height: 100%;
+
+  overflow: hidden;
+  overflow-y: auto;
 }
 
 .messages-container {
-  position: relative;
+  height: fit-content;
+  width: 100%;
+
   display: flex;
   flex-direction: column;
-  width: auto;
-  min-height: 100%;
-  margin-left: 2px;
-  margin-right: 2px;
+
+  margin: 0 2px 0 2px;
 }
 /* fine gestione messaggi */
 </style>
