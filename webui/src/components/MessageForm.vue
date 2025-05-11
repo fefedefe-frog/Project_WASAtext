@@ -18,6 +18,10 @@ export default {
           textContent: this.textContent.trim() ? this.textContent : "",
           photoContent: this.image ? this.image : emptyPhoto
         };
+        this.textContent= "";
+        this.image= null;
+        this.imagePreview= null;
+        this.autoResize();
         this.$emit('prepMessage', rawMessageData);
       }
     },
@@ -93,7 +97,9 @@ export default {
 
   resize: none;
   overflow-x: hidden;
-
+  font-size: 2.5vh;
+  line-height: 3vh;
+  box-sizing: border-box;
   border: 1px solid white;
   font-size: 2.5vh;
   line-height: 3vh;
