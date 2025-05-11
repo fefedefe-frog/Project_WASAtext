@@ -23,7 +23,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	}()
 
 	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
-	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM messages_table WHERE chatId= ? AND msgId > ? AND status != 'received') AND receiverId= ?`, chatId, msgId, usrId)
+	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM messages_table WHERE chatId= ? AND msgId > ? AND status == 'sent') AND receiverId= ?`, chatId, msgId, usrId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
@@ -73,11 +73,11 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	return messages, err
 }
 
-func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
+func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, string, error) {
 
 	tx, err := db.c.Begin()
 	if err != nil {
-		return -1, err
+		return -1, "", err
 	}
 	defer func() {
 		if err != nil {
@@ -104,12 +104,18 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 
 	}
 	if err != nil {
-		return -1, err
+		return -1, "", err
 	}
 
 	// Recuper l'id del messaggio appena inserito
 	var msgId int64
 	msgId, err = result.LastInsertId()
+
+	var timestamp string
+	err = tx.QueryRow(`SELECT timestamp FROM messages_table WHERE msgId=?`, int(msgId)).Scan(&timestamp)
+	if err != nil {
+		return -1, "", err
+	}
 
 	// Inserisco l'associazione tra messaggio e partecipante della chat dandogli il valoredi "not_received" e "read" per l'utente che ha inviato il messaggio
 	query := `INSERT INTO message_status_table (msgId, receiverId, status)
@@ -118,13 +124,13 @@ func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, error) {
 			WHERE chatId=? AND usrId != ?;`
 	_, err = tx.Exec(query, msgId, chatId, message.SenderId)
 	if err != nil {
-		return -1, err
+		return -1, "", err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return -1, err
+		return -1, "", err
 	}
-	return int(msgId), nil
+	return int(msgId), timestamp, nil
 }
 
 func (db *appdbimpl) RemoveMessage(msgId int, chatId int) error {
@@ -156,7 +162,7 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 	message.RespondTo = -1
 	message.IsForwarded = true
 
-	if _, err := db.InsertMessage(message, chatIdToForwatd); err != nil {
+	if _, _, err := db.InsertMessage(message, chatIdToForwatd); err != nil {
 		return err
 	}
 	return nil
@@ -185,25 +191,27 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 
 	// Aggiorno tutti i messaggi precedenti legati alla chat di quel messaggio
 	// in una subquery recupero tutti i msgId legati alla chat passata come chatId,
-	_, err = tx.Exec(`UPDATE message_status_table
-							SET status = 'read'
-							WHERE msgId IN (
-								SELECT ms.msgId
-								FROM message_status_table ms
-									JOIN messages_table cm ON ms.msgId = cm.msgId
-								WHERE ms.receiverId = ?
-								  AND cm.chatId = ?
-								  AND cm.timestamp < (
-									SELECT MIN(cm2.timestamp)
-									FROM message_status_table ms2
-											 JOIN messages_table cm2 ON ms2.msgId = cm2.msgId
-									WHERE ms2.receiverId = ?
-									  AND cm2.chatId = ?
-									  AND ms2.status = 'read'
-								)
-								  AND ms.status != 'read'
-							)
-							  AND receiverId = ?;`, usrId, chatId, usrId, chatId, usrId)
+	query :=
+		`	UPDATE message_status_table
+			SET status = 'read'
+			WHERE receiverId = ?
+			  AND msgId IN (
+				SELECT ms.msgId
+				FROM message_status_table ms
+						 JOIN messages_table m ON ms.msgId = m.msgId
+				WHERE ms.receiverId = ?
+				  AND m.chatId = ?
+				  AND m.timestamp > COALESCE((
+					SELECT MIN(m2.timestamp)
+					FROM message_status_table ms2
+							 JOIN messages_table m2 ON ms2.msgId = m2.msgId
+					WHERE ms2.receiverId = ?
+					  AND m2.chatId = ?
+					  AND ms2.status = 'read'
+				), '0001-01-01T23:59:59')
+				  AND ms.status != 'read'
+			);`
+	_, err = tx.Exec(query, usrId, chatId, usrId, chatId, usrId)
 	if err != nil {
 		return err
 	}
@@ -211,6 +219,7 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 	if err := tx.Commit(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
