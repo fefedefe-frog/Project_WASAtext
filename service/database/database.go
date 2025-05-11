@@ -29,8 +29,8 @@ type Message struct {
 	MsgId          int                    `json:"msgId"`          // Unique message id
 	SenderId       string                 `json:"senderId"`       // User id of the user that send the message
 	RespondTo      int                    `json:"respondTo"`      // Msg Id of the message at which is responding
-	TextContent    string                 `json:"contentType"`    // Define the type of the content if text OR photo
-	PhotoContent   utilitytool.BytesPhoto `json:"content"`        // Content of the message which can be text or a photo as a string in base64
+	TextContent    string                 `json:"textContent"`    // Define the type of the content if text OR photo
+	PhotoContent   utilitytool.BytesPhoto `json:"photoContent"`   // Content of the message which can be text or a photo as a string in base64
 	DeliveryStatus string                 `json:"deliveryStatus"` // Indicate the status of the message
 	Timestamp      string                 `json:"timestamp"`      // Date when the message is sent
 	Comments       []Comment              `json:"comments"`       // Array of Comment that store the reaction of other users
@@ -97,8 +97,8 @@ type AppDatabase interface {
 
 	// GetChatMessages Message, retrive the messages starting from a specified msgId of a chat
 	GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error)
-	// InsertMessage error, insert a message in the database
-	InsertMessage(message Message, chatId int) (int, error)
+	// InsertMessage error, insert a message in the database, return it's msgId and the timestamp
+	InsertMessage(message Message, chatId int) (int, string, error)
 	// RemoveMessage error, remove a message from the database
 	RemoveMessage(msgId int, chatId int) error
 	// ForwardMessage error, forward an existing message with the msgId gived in input to another chat
@@ -193,7 +193,7 @@ func New(db *sql.DB) (AppDatabase, error) {
     			respondTo INTEGER DEFAULT NULL, 
     			chatId INTEGER NOT NULL, 
     			textContent TEXT NOT NULL DEFAULT '', 
-    			photoContent BLOB NOT NULL,
+    			photoContent BLOB DEFAULT NULL,
 				deliveryStatus TEXT NOT NULL CHECK (deliveryStatus IN ('sent', 'received', 'read')),
     			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     			isForwarded INTEGER NOT NULL CHECK (isForwarded IN (0, 1)),
@@ -289,9 +289,9 @@ func New(db *sql.DB) (AppDatabase, error) {
        						CREATE INDEX IF NOT EXISTS idx_chat_chatId ON chats_table(chatId);
        						CREATE INDEX IF NOT EXISTS idx_message_msgId ON messages_table(msgId);
        						-- Indici per le interazioni della participants_table
-       						CREATE INDEX idx_participants_usrId ON chat_participants_table(usrId);
-							CREATE INDEX idx_participants_chatId ON chat_participants_table(chatId);
-							CREATE INDEX idx_participants_chatANDusr ON chat_participants_table(chatId, usrId);
+       						CREATE INDEX IF NOT EXISTS idx_participants_usrId ON chat_participants_table(usrId);
+							CREATE INDEX IF NOT EXISTS idx_participants_chatId ON chat_participants_table(chatId);
+							CREATE INDEX IF NOT EXISTS idx_participants_chatANDusr ON chat_participants_table(chatId, usrId);
 							-- Indici per le interazioni della messages_table
 							CREATE INDEX IF NOT EXISTS idx_chat_messages_chatId_timestamp ON messages_table(chatId, timestamp);
 							-- Indici per le interazioni della status_table
