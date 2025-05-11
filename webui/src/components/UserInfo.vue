@@ -28,7 +28,7 @@ export default {
     this.user['userName']= this.userData['userName'];
     this.user['userPhoto']= this.userData['userPhoto'];
 
-    this.usrId= sessionStorage.getItem('usrId')
+    this.usrId= sessionStorage.getItem('usrId');
   }
 }
 </script>
@@ -50,7 +50,7 @@ export default {
         <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
       </div>
 
-      <div v-if="usrId === user['usrId']" class="send-message">
+      <div v-if="usrId !== user['usrId']" class="send-message">
         <span>Invia un messaggio</span>
         <div class="message-form">
           <messageForm @prepMessage="sendMessage"/>
@@ -67,12 +67,13 @@ export default {
 
   display: flex;
   justify-content: center;
-  border: 1px solid purple;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .info-container {
-  height: 70vh;
-  width: 80vh;
+  height: 70%;
+  width: 40%;
 
   display: flex;
   flex-direction: column;
