@@ -15,8 +15,11 @@ export default {
       users: [],
 
       showChat: false,
-      loadedChatInfo: {},
-      loadedChatMessages: [],
+      loadedChatInfo: {
+        chatInfo: {},
+        participantNames: {},
+        messages: [],
+      },
 
       showUserInfo: false,
       loadedUserInfo: {},
@@ -119,22 +122,26 @@ export default {
         this.loading = false
       }
     },
-    async closeChat(leave){
+    async leaveChat(chatId){
+      this.errormsg = null
+
+      try {
+        let response= await this.$axios.delete(`/chats/${chatId}/users`, {
+          headers: {Authorization: this.token}
+        });
+        if (response.status < 400){
+          await this.getUserChats();
+        }
+      }catch(e) {
+        this.errormsg = e;
+      }
+    },
+    closeChat(leave){
       this.showChat= false
       if (leave){
-        this.errormsg = null
-
-        try {
-          let response= await this.$axios.delete(`/chats/${this.chatId}/users`, {
-            headers: {Authorization: this.token}
-          });
-          if (response.status < 400){
-            await this.getUserChats();
-          }
-        }catch(e) {
-          this.errormsg = e;
-        }
+        this.leaveChat(this.loadedChatInfo['chatInfo']['chatId']);
       }
+      this.loadedChatInfo= {}
     },
     prepSendMessage(rawInput){  // TODO adattarla alla creazione dei gruppi
       let userToSend= rawInput['sendTo'];
@@ -145,7 +152,7 @@ export default {
       if (this.userChats.length > 0){
         let filteredChat= this.userChats.filter(chat => chat['isGroup'] === false);
         filteredChat.forEach(chat => {
-          if(chat['participants'].includes(userToSend)){
+          if(chat['participants'].some(p => p['usrId'] === userToSend)){
             console.log("la chat esiste già: "+ chat['chatId']);
             chatToSend= chat['chatId'];
           }
@@ -172,14 +179,17 @@ export default {
 
 
         this.startNewChat(requestFormData);
+        this.showUserInfo= false;
       }else { // La chat esiste già e quindi la richiesta http sarà all'endpoint per inviare un messaggio
         this.sendMessage(chatToSend, requestFormData);
+        this.showUserInfo= false;
+
       }
     },
     async startNewChat(formData){
       this.errormsg= null;
+
       try{
-        console.log("invio dati")
         let response= await this.$axios.post(`/chats`, formData, {
           headers: {
             Authorization: this.token,
@@ -187,8 +197,6 @@ export default {
         });
 
         if(response.data){
-          console.log("risposta")
-          console.log(response.data);
           let newChat= {
             chatId: response.data['chatId'],
             isGroup: response.data['isGroup'],
@@ -199,12 +207,10 @@ export default {
           this.userChats.push(newChat)
         }
       }catch (e){
-        console.log(e)
         this.errormsg= e;
       }
     },
     async sendMessage(chatId, formData){
-      console.log("invio messaggio")
       this.errormsg= null;
 
       try{
@@ -213,19 +219,13 @@ export default {
            Authorization: this.token,
           }
         });
-
-        if(response.data){
-          console.log(response.data);
-        }
       }catch (e){
         this.errormsg= e;
       }
     },
-    loadChat(bannerData){
+    loadChat(chatBannerData){
       this.showChat= false
-      this.loadedChatInfo= bannerData['chatData'];
-      this.loadedChatMessages= bannerData['messages'];
-
+      this.loadedChatInfo= chatBannerData;
       this.showChat= true;
     },
     doLogout(){
@@ -233,9 +233,9 @@ export default {
       sessionStorage.removeItem("usrId");
       this.$router.push('/login');
     },
-    loadUserInfo(bannerData){
+    loadUserInfo(userBannerData){
       this.showUserInfo= false;
-      this.loadedUserInfo= bannerData;
+      this.loadedUserInfo= userBannerData;
 
       this.showUserInfo= true;
     },
@@ -276,12 +276,13 @@ export default {
 
       <div id="tabContent" class="tab-content">
         <div id="chats" class="tab-pane fade show active" role="tabpanel">
-          <div class="chats-list">
+          <div class="banner-lists">
             <chatBanner v-for="chat in chatFilteredResult" :key="chat.chatId" :chat-data="chat" @error="componentsErrorHandler" @chat-banner-data="loadChat" />
+
           </div>
         </div>
         <div id="users" class="tab-pane fade" role="tabpanel">
-          <div class="users-list">
+          <div class="banner-lists">
             <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="loadUserInfo"/>
           </div>
         </div>
@@ -302,7 +303,7 @@ export default {
     </div>
     <div class="chat-container bobby">
       <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="closeUserInfo" @reqNewChat="prepSendMessage"/>
-      <Chat v-if="showChat" :key="loadedChatInfo['chatId']" :initial-messages="loadedChatMessages" :chat-data="loadedChatInfo" @close-chat="closeChat" />
+      <Chat v-if="showChat" :key="loadedChatInfo['chatInfo']['chatId']" :chat-data="loadedChatInfo" @close-chat="closeChat" />
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
@@ -311,9 +312,10 @@ export default {
 
 <style scoped>
 .main-container {
-  padding: 0.7rem;
   height: 100%;
   width: 100%;
+
+  padding: 0.7rem;
   display: flex;
   flex-direction: row;
 
@@ -323,6 +325,7 @@ export default {
 @media (min-width: 2000px) {
   .main-container {
     max-width: 1400px;
+    max-height: calc(1400px * 9 / 16);
   }
 }
 
@@ -368,28 +371,13 @@ export default {
   align-items: center;
 
   padding-top: 5px;
-
-  overflow-y: auto;
-
-}
-
-.chats-list{
-  height: 100%;
-  width: 100%;
-  padding: 5px;
-
-  overflow: hidden;
   overflow-y: auto;
 }
 
-
-.users-list {
-  height: 100%;
+.banner-lists{
+  height: fit-content;
   width: 100%;
   padding: 5px;
-
-  overflow: hidden;
-  overflow-y: auto;
 }
 
 .list-footer{
@@ -409,5 +397,4 @@ export default {
   align-items: center;
   overflow: hidden;
 }
-
 </style>
