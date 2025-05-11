@@ -11,10 +11,11 @@ export default {
   },
   data: function () {
     return{
-      status: 'minus',
-      date: '',
-      contentType: '',
-      usrId: '',
+      status: "minus",
+      date: "",
+      textContent: "",
+      photoContent: {},
+      usrId: "",
     }
   },
   computed: {
@@ -26,8 +27,7 @@ export default {
   },
   mounted () {
     this.usrId= sessionStorage.getItem('usrId');
-
-    this.prepMessage()
+    this.prepMessage();
   },
   methods: {
     prepMessage() {
@@ -44,22 +44,22 @@ export default {
         default:
           this.status = 'minus';
       }
-      const dateObject= new Date(this.message['timestamp']);
 
-      // Formatto giorno mese anno dal timestamp
-      let dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'short' });
-      let formattedDate = dateFormatter.format(dateObject);
+      if (this.message['timestamp']){
+        const dateObject= new Date(this.message['timestamp']);
 
-      // Formatto ore e minuti
-      let timeFormatter = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' });
-      let formattedTime = timeFormatter.format(dateObject);
+        // Formatto giorno mese anno dal timestamp
+        let dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'short' });
+        let formattedDate = dateFormatter.format(dateObject);
 
-      // Unisco nel formato che mi interessa
-      this.date= formattedDate +" "+ formattedTime;
+        // Formatto ore e minuti
+        let timeFormatter = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' });
+        let formattedTime = timeFormatter.format(dateObject);
 
-      this.contentType = this.message['contentType'];
-
-    }
+        // Unisco nel formato che mi interessa
+        this.date= formattedDate +" "+ formattedTime;
+      }
+    },
   }
 };
 </script>
@@ -68,18 +68,18 @@ export default {
   <div class="message-div">
     <div class="message-container" :style="dynamicMarginSide">
       <div class="message-info">
-        <div class="sender-id">{{ senderName === usrId ? "tu" : senderName }}</div>
+        <div class="sender-id">{{ message['senderId'] === usrId ? "tu" : senderName }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
-          <svg class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
+          <svg v-if="message['senderId'] === usrId" class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
         </div>
       </div>
       <div class="message-content">
-        <div v-if="contentType === 'text' " class="message-content-text-container">
-          <p>{{ message["content"] }}</p>
+        <div v-if="message['photoContent'].length === 0" class="message-content-text-container">
+          <p>{{ message["textContent"] }}</p>
         </div>
-        <div v-if="contentType === 'photo'" class="message-content-image-container">
-          <img :src="'data:image/png;base64,'+message['content']" alt="Image">
+        <div v-if="message['photoContent'].length > 0" class="message-content-image-container">
+          <img :src="'data:image/png;base64,'+message['photoContent']" alt="Image">
         </div>
       </div>
     </div>
@@ -92,23 +92,30 @@ export default {
   display: flex;
   flex-direction: row;
   width: 100%;
+
   box-sizing: border-box;
+  padding: 0 2px 0 2px;
 }
 
 .message-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  padding: 2px;
-  margin: 5px;
-  background-color: lightskyblue;
-  border-radius: 8px;
-  border: 1px deepskyblue solid;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   height: fit-content;
   width: fit-content;
-  max-width: 500px;
+  max-width: 50%;
+
+  border-radius: 8px;
+  border: 1px deepskyblue solid;
+
+  padding: 2px;
+  margin: 5px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: flex-start;
+  align-items: flex-start;
+
+  background-color: lightskyblue;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 
@@ -119,13 +126,15 @@ export default {
   align-items: center;
   width: 100%;
   border-bottom: 1px black solid;
+  user-select: none;
 }
 
 .sender-id {
+  margin-left: 2px;
   margin-right: 10px;
   font-size: 1.1em;
   font-style: italic;
-  font-weight: 550;
+  font-weight: bold;
   align-self: flex-end;
   color: #333;
 }
@@ -162,10 +171,8 @@ export default {
 
 /* contenuto del messaggio */
 .message-content {
-  display: block;
-  align-items: center;
   width: 100%;
-  margin: 2px;
+  margin-top: 2px;
 }
 
 /* Stile in caso di testo */
@@ -175,17 +182,21 @@ export default {
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
   padding: 2px;
+
 }
 
 .message-content-text-container p {
-  padding-left: 2px;
-  padding-right: 2px;
+  padding: 0 2px 0 3px;
+
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Stile in caso di immagine */
 .message-content-image-container {
   width: 200px;
-  height: 200px;
+  height: fit-content;
   object-fit: cover;
   user-select: none;
 }
