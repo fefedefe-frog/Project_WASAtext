@@ -144,3 +144,9 @@ Content-Type: application/json
 }
 
 > {% client.global.set("fede_chatId", response.body["chatId"]); console.log("Nuova chat info:\n\tchat id: "+ response.body["chatId"] +"\n\tnome chat: "+ response.body["chatName"] +"\n\tchat photo: "+ (response.body["chatPhoto"]).substring(0,10) +"...\n\tpartecipanti: "+ response.body["participants"]) %}
+
+
+### POST request for sending a message
+PUT localhost:3000/chats/15/messages/29
+Authorization: Bearer dfee262
+Content-Type: application/json
