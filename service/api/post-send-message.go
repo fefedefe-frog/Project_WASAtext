@@ -46,7 +46,7 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 
 	var photoContent []byte
 	// Carico l'immagine contenuta nella richiesta http
-	photoContentFile, _, err := request.FormFile("content")
+	photoContentFile, _, err := request.FormFile("photoContent")
 	if err != nil {
 		context.Logger.WithError(err).Error("Error getting file content")
 		http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func (rt *_router) sendMessage(writer http.ResponseWriter, request *http.Request
 		IsForwarded:    false,
 	}
 
-	newMessage.MsgId, err = rt.db.InsertMessage(newMessage, chatId)
+	newMessage.MsgId, newMessage.Timestamp, err = rt.db.InsertMessage(newMessage, chatId)
 	if err != nil {
 		context.Logger.WithError(err).Error("Error while inserting new message in the db")
 		http.Error(writer, "Internal Server Error - Unable to send the message", http.StatusInternalServerError)
