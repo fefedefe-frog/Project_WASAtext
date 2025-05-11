@@ -18,31 +18,35 @@ export default {
       messages: [],
 
       lastMessage: {
-        msgId: 3,
+        msgId: -1,
         senderId: "",
-        contentType: "",
-        content: "",
-        deliveryStatus: "",
+        respondTo: -1,
+        textContent: "",
+        photoContent: [],
         timestamp: "",
         comments: [],
       },
+      lastMessPreview: "",
       lastMsgId: -1,
 
       setIntervalId: null
     }
   },
-  mounted() {
+  async created() {
     this.chatId= this.chatData['chatId'];
     this.token= sessionStorage.getItem('authToken');
 
     this.chatData['participants'].forEach(participant => {
       this.participantNames[participant['usrId']]= participant['userName'];
     });
-
-    this.getChatMessages();
+    await this.getChatMessages();
+    await this.makeMessPreview();
+  },
+  mounted(){
     this.setIntervalId= setInterval(async () => {
       await this.getChatMessages();
-    }, 7000)
+      await this.makeMessPreview();
+    }, 7000);
   },
   beforeUnmount() {
     clearInterval(this.setIntervalId);
@@ -50,23 +54,8 @@ export default {
   deactivated() {
     clearInterval(this.setIntervalId);
   },
-  computed: {
-    messagePreview() {
-      let message= this.lastMessage
-
-      let messagePreview= `${this.participantNames[message['senderId']]}:"`;
-      if (message['textContent'] !== ""){
-        if (message['textContent'].length > 10){
-          messagePreview= `${messagePreview} ${message['textContent'].substring(0, 10)}...`;
-        }
-        messagePreview= `${messagePreview} ${message['textContent']}`;
-      }
-      return messagePreview
-    }
-  },
   methods: {
     async getChatMessages(){
-      console.log(this.chatData)
       this.errormsg= null;
 
       try {
@@ -79,6 +68,7 @@ export default {
 
         if (response.data) {
           if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
+            this.messages= [];
             response.data['messages'].forEach(message => {
               this.messages.push(message);
             })
@@ -87,11 +77,27 @@ export default {
           }
         }
       }catch(e) {
-        this.$emit('error', e)
+        this.$emit('error', e);
       }
     },
     bannerClicked(){
-      this.$emit('chatBannerData', {chatData: this.chatData, messages: this.messages})
+      this.$emit('chatBannerData', {chatInfo: this.chatData, participantNames: this.participantNames, messages: this.messages})
+    },
+    makeMessPreview() {
+      let preview= "";
+      try{
+        preview= `${this.participantNames[this.lastMessage['senderId']]}:`;
+        if (this.lastMessage['textContent'] !== ""){
+          if (this.lastMessage['textContent'].length > 10){
+            preview= `${preview} ${this.lastMessage['textContent'].substring(0, 10)}...`;
+          }else{
+            preview= `${preview} ${this.lastMessage['textContent']}`;
+          }
+        }
+      }catch (e){
+        console.log(e)
+      }
+      this.lastMessPreview= preview;
     }
   },
 };
@@ -107,7 +113,7 @@ export default {
     <!-- Nome della chat e ultimo messaggio -->
     <div class="chat-text-container">
       <span class="chat-name"> {{ chatData['chatName'] }} </span>
-      <span class="last-message-text">{{this.messagePreview}}</span><svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+      <span class="last-message-text">{{ lastMessPreview }}</span><svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
     </div>
   </div>
 </template>
