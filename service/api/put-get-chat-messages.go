@@ -51,7 +51,6 @@ func (rt *_router) getConversation(writer http.ResponseWriter, request *http.Req
 	chatMessages, err = rt.db.GetChatMessages(chatId, usrId, requestJson.MsgId)
 	if err != nil {
 		if errors.Is(err, database.ErrUpdateMessageStatus) {
-
 			context.Logger.WithError(err).Warn("Error updating the message status of the messages retrived")
 		} else {
 			context.Logger.WithError(err).Error("Error getting chat messages")
