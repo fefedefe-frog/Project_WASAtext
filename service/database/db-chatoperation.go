@@ -28,9 +28,8 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 			FROM chat_participants_table AS P
 			JOIN chats_table C ON P.chatId = C.chatId
 			JOIN chat_participants_table P2 ON C.chatId = P2.chatId
-			JOIN users_table U ON P2.userId = U.userId
-			WHERE P.usrId = ?
-			GROUP BY C.chatId`
+			JOIN users_table U ON P2.usrId = U.usrId
+			WHERE P.usrId = ?`
 
 	// Eseguo la query descritta primia
 	rows, err := db.c.Query(query, usrId)
@@ -72,8 +71,17 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 			}
 		}
 
-		// Aggiungo le informazioni del partecipante alla chat
 		chatMap[chatId].Participants = append(chatMap[chatId].Participants, participant)
+
+		// Se la chat non è un gruppo devo assegnare i valori di immagini e foto, prendendoli dal secondo utente partecipante
+		if !chatMap[chatId].IsGroup && len(chatMap[chatId].Participants) > 1 {
+			selectUserInfo := 0
+			if chatMap[chatId].Participants[selectUserInfo].UsrId == usrId {
+				selectUserInfo = 1
+			}
+			chatMap[chatId].ChatName = chatMap[chatId].Participants[selectUserInfo].UserName
+			chatMap[chatId].ChatPhoto = chatMap[chatId].Participants[selectUserInfo].UserPhoto
+		}
 	}
 
 	// Converto la mappa in array di Chat
@@ -136,7 +144,7 @@ func (db *appdbimpl) InsertNewChat(participants []string, chat Chat, messageText
 		return -1, err
 	}
 
-	queryMessage := `INSERT INTO chat_messages_table (senderId, chatId, textContent, photoContent, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
+	queryMessage := `INSERT INTO messages_table (senderId, chatId, textContent, photoContent, deliveryStatus, isForwarded) VALUES (?, ?, ?, ?, ?, ?) RETURNING msgId;`
 	result, err = tx.Exec(queryMessage, participants[len(participants)-1], int(newChatId64), messageTextContent, messagePhotoContent, "sent", 0)
 	if err != nil {
 		return -1, err
@@ -201,8 +209,7 @@ func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 			    U.userPhoto	
 			FROM chats_table AS C
 			JOIN chat_participants_table P ON C.chatId = P.chatId
-			JOIN users_table U ON P.userId = U.userId
-			WHERE C.chatId = ?`
+			JOIN users_table U ON P.usrId = U.usrId`
 
 	// Eseguo la query descritta primia
 	rows, err := db.c.Query(query, chatId)
@@ -264,7 +271,7 @@ func (db *appdbimpl) RemoveUserFromChat(usrId string, chatId int) error {
 	}
 
 	// Rimuovo tutti i messaggi mandati dall'utente in quella chat se la chat non è già stata eliminata
-	_, err = tx.Exec(`DELETE FROM chat_messages_table WHERE senderId= ? AND chatId= ? AND EXISTS (SELECT 1 FROM chats_table WHERE chatId= ?);`, usrId, chatId, chatId)
+	_, err = tx.Exec(`DELETE FROM messages_table WHERE senderId= ? AND chatId= ? AND EXISTS (SELECT 1 FROM chats_table WHERE chatId= ?);`, usrId, chatId, chatId)
 	if err != nil {
 		return err
 	}
@@ -431,7 +438,6 @@ func (db *appdbimpl) IsAGroup(chatId int) (bool, error) {
 }
 
 func (db *appdbimpl) FindChatFromParticipants(participants []string, isGroup bool) (int, error) {
-
 	isGroupInt := 0
 	if isGroup {
 		isGroupInt = 1
@@ -442,16 +448,16 @@ func (db *appdbimpl) FindChatFromParticipants(participants []string, isGroup boo
 	// Preparo gli args variabili contententi solo usrId dei partecipanti
 	args := make([]interface{}, 0, participantNum+3)
 	args = append(args, isGroupInt, participantNum)
-	for i, participant := range participants {
-		args[i] = participant
+	for _, participant := range participants {
+		args = append(args, participant)
 	}
 	args = append(args, participantNum)
 
 	query := fmt.Sprintf(`
-		SELECT PD.chatId
+		SELECT C.chatId
 		FROM chat_participants_table AS PD
-		JOIN chat_table C ON PD.chatId = C.chatId WHERE C.isGroup = ?
-		GROUP BY PD.chatId
+		JOIN chats_table C ON PD.chatId = C.chatId WHERE C.isGroup = ?
+		GROUP BY C.chatId
 		HAVING COUNT(DISTINCT usrId) = ?
 			AND SUM(CASE WHEN usrId IN (%s) THEN 1 ELSE 0 END) = ?`, placeholders)
 
