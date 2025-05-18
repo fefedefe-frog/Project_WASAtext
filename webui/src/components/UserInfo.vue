@@ -39,7 +39,10 @@ export default {
       <div class="btn-toolbar mb-2 mb-md-0 w-100">
         <div class="btn-group me-2">
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$emit('closeUserInfo')">
-            Chiudi
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="this.$emit('closeUserInfo')">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica info
           </button>
         </div>
       </div>
@@ -52,7 +55,7 @@ export default {
 
       <div v-if="usrId !== user['usrId']" class="send-message">
         <span>Invia un messaggio</span>
-        <div class="message-form">
+        <div class="message-fomr-container">
           <messageForm @prepMessage="sendMessage"/>
         </div>
       </div>
@@ -89,6 +92,10 @@ export default {
 }
 
 .user-info {
+  width: 80%;
+  height: fit-content;
+
+  margin-top: 5px;
   border-bottom: 1px grey solid;
 
   display: flex;
@@ -96,8 +103,6 @@ export default {
   align-items: center;
 
 
-  width: 80%;
-  height: fit-content;
 }
 
 .user-image-container {
@@ -129,16 +134,17 @@ export default {
   align-items: center;
 
   width: 80%;
-  height: auto;
+  height: fit-content;
 }
 
 .send-message span {
-  font-size: 3.5vh;
+  font-size: 1rem;
   text-align: center;
-  margin-bottom: 1vh;
+  margin-bottom: 5px;
+
 }
 
-.message-form {
-  width: 70%;
+.message-fomr-container {
+  height: 100%;
 }
 </style>

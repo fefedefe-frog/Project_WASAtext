@@ -23,14 +23,32 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	}()
 
 	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
-	_, err = tx.Exec(`UPDATE message_status_table SET status= 'received' WHERE msgId IN (SELECT msgId FROM messages_table WHERE chatId= ? AND msgId > ? AND status == 'sent') AND receiverId= ?`, chatId, msgId, usrId)
+	query :=
+		`	UPDATE message_status_table
+			SET status = 'received'
+			WHERE msgId IN (
+				SELECT ms.msgId
+				FROM message_status_table ms
+						 JOIN messages_table m ON ms.msgId = m.msgId
+				WHERE ms.receiverId = ?
+				  AND ms.status = 'not_received'
+				  AND m.timestamp > COALESCE((
+					SELECT MIN(m2.timestamp)
+					FROM message_status_table ms2
+							 JOIN messages_table m2 ON ms2.msgId = m2.msgId
+					WHERE ms2.receiverId = ?
+					  AND m2.chatId = ?
+					  AND ms2.status = 'read'
+				), '0001-01-01T23:59:59'));`
+
+	_, err = tx.Exec(query, usrId, usrId, chatId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
 
 	// Cerco tutte le righe che contengono il chatId corrispondente a quello interessato
 	var rows *sql.Rows
-	rows, err = tx.Query(`SELECT msgId, senderId, respondTo, textContent, photoContent, deliveryStatus, timestamp FROM messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
+	rows, err = tx.Query(`SELECT msgId, senderId, respondTo, textContent, photoContent, deliveryStatus, timestamp, isForwarded FROM messages_table WHERE chatId = ? AND msgId > ? ORDER BY timestamp, msgId;`, chatId, msgId)
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +65,9 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	// Itero su tutte le righe ottenute precedentemente
 	for rows.Next() {
 		var message Message
-
+		var isForwardedInt int
 		var respondTo sql.NullInt64
-		err := rows.Scan(&message.MsgId, &message.SenderId, &respondTo, &message.TextContent, &message.PhotoContent, &message.DeliveryStatus, &message.Timestamp)
+		err := rows.Scan(&message.MsgId, &message.SenderId, &respondTo, &message.TextContent, &message.PhotoContent, &message.DeliveryStatus, &message.Timestamp, &isForwardedInt)
 		if err != nil {
 			return nil, err
 		}
@@ -59,6 +77,9 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 		} else {
 			message.RespondTo = -1
 		}
+
+		message.IsForwarded = isForwardedInt != 0
+
 		// Aggiungo il messaggio all'array
 		messages = append(messages, message)
 	}
@@ -194,13 +215,12 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 	query :=
 		`	UPDATE message_status_table
 			SET status = 'read'
-			WHERE receiverId = ?
-			  AND msgId IN (
+			WHERE msgId IN (
 				SELECT ms.msgId
 				FROM message_status_table ms
 						 JOIN messages_table m ON ms.msgId = m.msgId
 				WHERE ms.receiverId = ?
-				  AND m.chatId = ?
+				  AND ms.status != 'read'
 				  AND m.timestamp > COALESCE((
 					SELECT MIN(m2.timestamp)
 					FROM message_status_table ms2
@@ -211,7 +231,7 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 				), '0001-01-01T23:59:59')
 				  AND ms.status != 'read'
 			);`
-	_, err = tx.Exec(query, usrId, chatId, usrId, chatId, usrId)
+	_, err = tx.Exec(query, usrId, usrId, chatId)
 	if err != nil {
 		return err
 	}

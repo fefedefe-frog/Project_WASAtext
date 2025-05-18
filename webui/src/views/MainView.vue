@@ -1,5 +1,8 @@
 <script>
+import CreateGroup from "../components/CreateGroup.vue";
+
 export default {
+  components: {CreateGroup},
   data: function () {
     return {
       token: '',
@@ -14,6 +17,7 @@ export default {
       userChats: [],
       users: [],
 
+      showCreateGroup: false,
       showChat: false,
       loadedChatInfo: {
         chatInfo: {},
@@ -63,10 +67,10 @@ export default {
     sessionStorage.removeItem('loggedUser');
 
     this.getUsers();
-    this.getUserChats();
+    this.getChats();
     this.setIntervalId= setInterval(async () => {
       await this.getUsers();
-      await this.getUserChats();
+      await this.getChats();
     }, 20000);
   },
   beforeUnmount() {
@@ -97,7 +101,7 @@ export default {
         this.loading = false
       }
     },
-    async getUserChats() {
+    async getChats() {
       this.errormsg= null
 
       try {
@@ -122,28 +126,44 @@ export default {
         this.loading = false
       }
     },
-    async leaveChat(chatId){
-      this.errormsg = null
+    async startNewChat(formData){
+      this.errormsg= null;
 
-      try {
-        let response= await this.$axios.delete(`/chats/${chatId}/users`, {
-          headers: {Authorization: this.token}
+      try{
+        let response= await this.$axios.post(`/chats`, formData, {
+          headers: {
+            Authorization: this.token,
+          }
         });
-        if (response.status < 400){
-          await this.getUserChats();
+
+        if(response.data){
+          let newChat= {
+            chatId: response.data['chatId'],
+            isGroup: response.data['isGroup'],
+            chatName: response.data['chatName'],
+            chatPhoto: response.data['chatPhoto'],
+            participants: response.data['participants']
+          }
+          this.userChats.push(newChat)
         }
-      }catch(e) {
-        this.errormsg = e;
+      }catch (e){
+        this.errormsg= e;
       }
     },
-    closeChat(leave){
-      this.showChat= false
-      if (leave){
-        this.leaveChat(this.loadedChatInfo['chatInfo']['chatId']);
+    async sendMessage(chatId, formData){
+      this.errormsg= null;
+
+      try{
+        let response= await this.$axios.post(`/chats/${chatId}/messages`, formData, {
+          headers: {
+           Authorization: this.token,
+          }
+        });
+      }catch (e){
+        this.errormsg= e;
       }
-      this.loadedChatInfo= {}
     },
-    prepSendMessage(rawInput){  // TODO adattarla alla creazione dei gruppi
+    prepSendMessage(rawInput){
       let userToSend= rawInput['sendTo'];
       let messageData= rawInput['messageData']
 
@@ -186,55 +206,28 @@ export default {
 
       }
     },
-    async startNewChat(formData){
-      this.errormsg= null;
-
-      try{
-        let response= await this.$axios.post(`/chats`, formData, {
-          headers: {
-            Authorization: this.token,
-          }
-        });
-
-        if(response.data){
-          let newChat= {
-            chatId: response.data['chatId'],
-            isGroup: response.data['isGroup'],
-            chatName: response.data['chatName'],
-            chatPhoto: response.data['chatPhoto'],
-            participants: response.data['participants']
-          }
-          this.userChats.push(newChat)
-        }
-      }catch (e){
-        this.errormsg= e;
-      }
-    },
-    async sendMessage(chatId, formData){
-      this.errormsg= null;
-
-      try{
-        let response= await this.$axios.post(`/chats/${chatId}/messages`, formData, {
-          headers: {
-           Authorization: this.token,
-          }
-        });
-      }catch (e){
-        this.errormsg= e;
-      }
-    },
     loadChat(chatBannerData){
-      this.showChat= false
+      this.showUserInfo= false;
+      this.showChat= false;
       this.loadedChatInfo= chatBannerData;
       this.showChat= true;
+    },
+    closeChat(deletedId){
+      this.showChat= false;
+      this.userChats= this.userChats.filter(chat => chat['chatId'] !== deletedId);
     },
     doLogout(){
       sessionStorage.removeItem("authToken");
       sessionStorage.removeItem("usrId");
       this.$router.push('/login');
     },
-    loadUserInfo(userBannerData){
+    userBannerClicked(userBannerData){
+      if (this.showCreateGroup){
+
+      }
       this.showUserInfo= false;
+      this.showChat= false;
+
       this.loadedUserInfo= userBannerData;
 
       this.showUserInfo= true;
@@ -245,13 +238,12 @@ export default {
 
       this.showUserInfo= true;
     },
-    closeUserInfo(){
-      this.showUserInfo= false;
-      this.loadedUserInfo= null;
-    },
-
     componentsErrorHandler(error){
-      this.errormsg= error.toString;
+      this.errormsg= error;
+    },
+    newGroup(groupData){
+      this.userChats.push(groupData);
+      this.showCreateGroup= false;
     }
   }
 }
@@ -278,12 +270,21 @@ export default {
         <div id="chats" class="tab-pane fade show active" role="tabpanel">
           <div class="banner-lists">
             <chatBanner v-for="chat in chatFilteredResult" :key="chat.chatId" :chat-data="chat" @error="componentsErrorHandler" @chat-banner-data="loadChat" />
-
           </div>
         </div>
         <div id="users" class="tab-pane fade" role="tabpanel">
+          <div class="create-group">
+            <button @click="showCreateGroup= true; showUserInfo= false; showChat= false"> crea gruppo gay</button>
+          </div>
           <div class="banner-lists">
-            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="loadUserInfo"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
+            <userBanner v-for="user in userFilteredResult" :key="user.usrId" :user-data="user" @userClicked="userBannerClicked"/>
           </div>
         </div>
       </div>
@@ -291,19 +292,20 @@ export default {
       <div class="list-footer">
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-primary shadow-none" @click="loadUserInfo(this.loggedUser)">
-              Profilo
+            <button type="button" class="btn btn-sm btn-primary shadow-none" @click="userBannerClicked(this.loggedUser)">
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info" /></svg> Profilo
             </button>
             <button type="button" class="btn btn-sm btn-danger shadow-none" @click="doLogout">
-              Logout
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out" /></svg> Logout
             </button>
           </div>
         </div>
       </div>
     </div>
     <div class="chat-container bobby">
-      <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="closeUserInfo" @reqNewChat="prepSendMessage"/>
-      <Chat v-if="showChat" :key="loadedChatInfo['chatInfo']['chatId']" :chat-data="loadedChatInfo" @close-chat="closeChat" />
+      <CreateGroup v-if="showCreateGroup" :key="[]" :participantIds="[]" @closeCreateGroup="showCreateGroup= false" @newGroupData="newGroup" @error="componentsErrorHandler"/>
+      <UserInfo v-if="showUserInfo" :key="loadedUserInfo['usrId']" :user-data="loadedUserInfo" @close-user-info="showUserInfo= false; loadedUserInfo= null;" @reqNewChat="prepSendMessage"/>
+      <Chat v-if="showChat" :key="loadedChatInfo['chatInfo']['chatId']" :chat-data="loadedChatInfo" @close-chat="closeChat" @error="componentsErrorHandler"/>
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
@@ -378,6 +380,16 @@ export default {
   height: fit-content;
   width: 100%;
   padding: 5px;
+}
+
+.create-group {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+  width: 100%;
+  height: 50px;
+  border: 1px solid red;
 }
 
 .list-footer{

@@ -6,9 +6,7 @@ export default {
       required: true
     },
   },
-  emits: [
-      'closeChat'
-  ],
+  emits: ['closeChat', 'error'],
   data: function () {
     return {
       token: '',
@@ -70,8 +68,6 @@ export default {
   },
   methods: {
     async getChatInfo() {
-      this.errormsg= null;
-
       try {
         let response = await this.$axios.get(`/chats/${this.chat['chatId']}`, {
           headers: {Authorization: `${this.token}`}
@@ -82,16 +78,17 @@ export default {
           this.chat['chatPhoto']= response.data['chatPhoto'];
           this.chat['isGroup']= response.data['isGroup'];
           this.chat['participants']= response.data['participants'];
+
+          this.updateParticipantNamesDict();
         }
       } catch (e) {
-        this.errormsg = e;
+        this.$emit('error', e);
       }
     },
     async getMessages() {
       // Evito la sovrapposizione della funzione quando chiamata dagli intervalli
       if (this.getMessagesIsRunning) return;
       this.getMessagesIsRunning= true;
-      this.errormsg = null;
 
       try {
         let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages`, {
@@ -111,21 +108,18 @@ export default {
             });
 
             this.messages.reverse();
-            this.lastMsgId= this.messages[this.messages.length-1]['msgId'];
+            this.lastMsgId= this.messages[0]['msgId'];
           }
         }
       }catch(e) {
-        this.errormsg = e;
+        this.$emit('error', e);
       }
       this.getMessagesIsRunning= false;
     },
     async updateReadStatus() {
-      //if (this.prevLastMsgId === this.lastMsgId) return;
-
-      this.errormsg = null;
+      if (this.prevLastMsgId === this.lastMsgId) return;
 
       this.lastMsgId= this.messages[0]['msgId'];
-      console.log('aggiornamento messaggi: '+ this.lastMsgId);
       try {
         let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages/${this.lastMsgId}`, {}, {
           headers: {Authorization: this.token}
@@ -134,15 +128,12 @@ export default {
           throw new Error("unable to update the messages status");
         }
       }catch(e) {
-        this.errormsg = e;
+        this.$emit('error', e);
       }
 
       this.prevLastMsgId= this.lastMsgId;
     },
     async sendMessage(rawInput){
-      // TODO controlla se funge
-      this.errormsg= null;
-
       const requestFormData= new FormData();
       requestFormData.append('textContent', rawInput['textContent']);
       requestFormData.append('photoContent', rawInput['photoContent']);
@@ -164,20 +155,30 @@ export default {
           }
         }
       }catch (e){
-        this.errormsg= e;
+        this.$emit('error', e);
       }finally {
         this.respondTo= -1;
       }
 
     },
+    async leaveChat() {
+      try {
+        let response= await this.$axios.delete(`/chats/${this.chat['chatId']}/users`, {
+          headers: {Authorization: this.token}
+        });
+        if (response.status < 400){
+          this.$emit('closeChat', this.chat['chatId']);
+        }
+      }catch(e) {
+        this.$emit('error', e);
+      }
+    },
     updateParticipantNamesDict(){
+      console.log('called participants')
       this.participantNames= {};
       this.chat['participants'].forEach(participant => {
         this.participantNames[participant['usrId']]= participant['userName'];
       });
-    },
-    closeChat(leaveChat){
-      this.$emit('closeChat', leaveChat);
     },
     errorHandler(e){
       this.errormsg = e;
@@ -201,17 +202,17 @@ export default {
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessages(-1)">
-            Ricarica Messaggi
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessages">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
-          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="getMessages">
-            Info
+          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info" /></svg> Info
           </button>
-          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="closeChat(false)">
-            Chiudi
+          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$emit('closeChat')">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
           </button>
-          <button type="button" class="btn btn-sm btn-danger shadow-none" @click="closeChat(true)">
-            Abbandona
+          <button type="button" class="btn btn-sm btn-danger shadow-none" @click="leaveChat">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out" /></svg> Abbandona
           </button>
         </div>
       </div>
@@ -223,7 +224,7 @@ export default {
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="message.msgId" :message="message" :sender-name="participantNames[message['senderId']]" />
+        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chatIsGroup="chat['isGroup']" />
       </div>
     </div>
   </div>
@@ -293,6 +294,7 @@ export default {
 /* invio messaggio */
 .message-sender{
   height: 60px;
+  max-height: 100px;
   width: 50%;
 
   margin: 0 5px 0 auto;

@@ -4,7 +4,7 @@ export default {
     return {
       textContent: "",
       image: null,
-      imagePreview: null,
+      imageName: "",
       submit: false,
       maxLength: 1024
     }
@@ -20,15 +20,9 @@ export default {
         };
         this.textContent= "";
         this.image= null;
-        this.imagePreview= null;
-        this.autoResize();
+        this.imageName= "";
         this.$emit('prepMessage', rawMessageData);
       }
-    },
-    autoResize() {
-      const el = this.$refs.textareaMessage;
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
     },
     imageUpload() {
       const input= document.createElement('input');
@@ -41,10 +35,10 @@ export default {
       const file= event.target.files[0];
       if(file && file.type.startsWith("image/")) {
         this.image= file;
-        this.imagePreview= URL.createObjectURL(file);
+        this.imageName= file.name;
       }else {
         this.image= null;
-        this.imagePreview= null;
+        this.imageName= "";
       }
     }
   }
@@ -53,16 +47,15 @@ export default {
 
 <template>
   <form class="send-message-form" @submit.prevent="prepMessage">
-    <div v-if="imagePreview" class="image-preview">
-      <img :src="imagePreview" alt="Anteprima immagine" />
+    <textarea v-if="!image" class="textarea-content" v-model="textContent" ref="textareaMessage" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength"></textarea>
+    <div v-if="image" class="image-name">
+      <button class="form-buttons delete-button" type="button" @click="image=null; imageName= '';">
+        <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
+      </button>
+      <span>{{ imageName }}</span>
     </div>
-    <textarea v-if="!imagePreview" class="textarea-content" v-model="textContent" ref="textareaMessage" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength" @input="autoResize" ></textarea>
 
     <div class="buttom-column">
-      <button v-if="imagePreview" class="form-buttons delete-button" type="button" @click="imagePreview=null; image= null;">
-        <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#file-minus" /></svg>
-      </button>
-
       <button class="form-buttons" type="button" @click="imageUpload">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
       </button>
@@ -70,9 +63,7 @@ export default {
       <button class="form-buttons" type="submit">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
       </button>
-
     </div>
-
   </form>
 </template>
 
@@ -84,26 +75,23 @@ export default {
   display: flex;
   flex-direction: row;
   justify-content: right;
-  border: 1px solid black;
+
 }
 
 .textarea-content {
   width: 100%;
-  max-height: 20vh;
-  margin: 0.2vh;
+  max-height: 100px;
+  margin: 2px;
 
-  border-radius: 2vh;
-  padding: 1vh 1.5vh 0 1.5vh;
+  border-radius: 10px;
+  padding: 2px 4px 0 4px;
 
   resize: none;
   overflow-x: hidden;
-  font-size: 2.5vh;
-  line-height: 3vh;
+  font-size: 0.8rem;
+  line-height: 1rem;
   box-sizing: border-box;
   border: 1px solid white;
-  font-size: 2.5vh;
-  line-height: 3vh;
-  box-sizing: border-box;
 }
 
 .buttom-column {
@@ -116,10 +104,10 @@ export default {
 }
 
 .form-buttons {
-  width: 4.5vh;
-  height: 4.5vh;
+  width: 25px;
+  height: 25px;
 
-  margin-bottom: 0.4vh;
+  margin: 1px 5px 2px 0;
 
   border-radius: 1.8vh;
   border: 0.4vh dashed lightseagreen;
@@ -148,11 +136,11 @@ export default {
 }
 
 .delete-button {
-  border: 0.4vh dashed red;
+  border: 2px dashed red;
   background: red;
 }
 .delete-button:hover {
-  border: 0.4vh dashed darkred;
+  border: 2px dashed darkred;
   background-color: white;
   color: red;
 }
@@ -160,17 +148,17 @@ export default {
   border: 0.4vh dashed darkred;
 }
 
-.image-preview {
-  border: 1px solid red;
-  max-width: 100%;
-  max-height: 100%;
+.image-name {
+  height: fit-content;
   object-fit: contain;
-}
 
-.image-preview img {
-  max-height: 20vh;
-  object-fit: cover;
-  object-fit: cover;
-  user-select: none;
+  margin-right: 2px;
+
+  display: flex;
+  flex-direction: row;
+
+  align-items: center;
+  justify-content: center;
+
 }
 </style>

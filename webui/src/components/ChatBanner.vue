@@ -13,6 +13,7 @@ export default {
     return {
       errormsg: null,
       token: "",
+      usrId: "",
       chatId: -1,
       participantNames: {},
       messages: [],
@@ -35,18 +36,14 @@ export default {
   async created() {
     this.chatId= this.chatData['chatId'];
     this.token= sessionStorage.getItem('authToken');
+    this.usrId= sessionStorage.getItem('usrId')
 
     this.chatData['participants'].forEach(participant => {
       this.participantNames[participant['usrId']]= participant['userName'];
     });
+
     await this.getChatMessages();
-    await this.makeMessPreview();
-  },
-  mounted(){
-    this.setIntervalId= setInterval(async () => {
-      await this.getChatMessages();
-      await this.makeMessPreview();
-    }, 7000);
+    this.makeMessPreview();
   },
   beforeUnmount() {
     clearInterval(this.setIntervalId);
@@ -85,17 +82,17 @@ export default {
     },
     makeMessPreview() {
       let preview= "";
-      try{
+      if(this.lastMessage['senderId'] === this.usrId){
+        preview= `tu:`;
+      }else if (this.chatData['isGroup']){
         preview= `${this.participantNames[this.lastMessage['senderId']]}:`;
-        if (this.lastMessage['textContent'] !== ""){
-          if (this.lastMessage['textContent'].length > 10){
-            preview= `${preview} ${this.lastMessage['textContent'].substring(0, 10)}...`;
-          }else{
-            preview= `${preview} ${this.lastMessage['textContent']}`;
-          }
+      }
+      if (this.lastMessage['textContent'] !== ""){
+        if (this.lastMessage['textContent'].length > 10){
+          preview= `${preview} ${this.lastMessage['textContent'].substring(0, 10)}...`;
+        }else{
+          preview= `${preview} ${this.lastMessage['textContent']}`;
         }
-      }catch (e){
-        console.log(e)
       }
       this.lastMessPreview= preview;
     }
@@ -113,7 +110,10 @@ export default {
     <!-- Nome della chat e ultimo messaggio -->
     <div class="chat-text-container">
       <span class="chat-name"> {{ chatData['chatName'] }} </span>
-      <span class="last-message-text">{{ lastMessPreview }}</span><svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+      <div class="message-preview">
+        <span class="last-message-text">{{ lastMessPreview }}</span>
+        <svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+      </div>
     </div>
   </div>
 </template>
@@ -175,13 +175,22 @@ export default {
   font-size: 1rem;
 }
 
+.message-preview {
+  display: flex;
+  flex-direction: row;
+
+  align-items: center;
+}
+
 .last-message-text {
   user-select: none;
   height: fit-content;
+  width: fit-content;
 
-  margin-left: 10px;
+  margin: 0 2px 0 10px;
   color: dimgray;
   font-size: 0.9em;
   font-weight: normal;
 }
+
 </style>

@@ -4,9 +4,7 @@ import (
 	"Project_WASAtext/service/api/reqcontext"
 	"Project_WASAtext/service/database"
 	"Project_WASAtext/service/utilitytool"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -130,35 +128,23 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 
 	context.Logger.WithField("chatId", chat.ChatId).Debug("chat created successfully")
 
+	chat.Participants, err = rt.db.GetChatParticipantsInfo(chat.ChatId)
+	if err != nil {
+		context.Logger.WithError(err).Warn("Error getting participant info")
+		http.Error(writer, "Internal server error - unable to retrive all the chat info", http.StatusInternalServerError)
+		return
+	}
+
 	// Controllo se la chat è un gruppo o meno, se non è un gruppo procedo
 	// a recuperare le informazioni dell'altro utente partecipante alla chat
 	if !chat.IsGroup {
-		otherUsrId := participants[0]
-		if otherUsrId == usrId {
-			otherUsrId = participants[1]
+		selectUserInfo := 0
+		if chat.Participants[selectUserInfo].UsrId == usrId {
+			selectUserInfo = 1
 		}
 
-		user, err := rt.db.GetUserInfo(otherUsrId)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				context.Logger.WithError(err).Warn("The other participant of the chat doesn't exist, in the db")
-				http.Error(writer, "Not found - other participant not exist", http.StatusNotFound)
-				return
-			}
-			context.Logger.WithError(err).Warn("Error getting other participant info")
-			http.Error(writer, "Internal server error - Error while recovering the info of the chat just created", http.StatusInternalServerError)
-			return
-		}
-
-		chat.ChatName = user.UserName
-		chat.ChatPhoto = user.UserPhoto
-		chat.Participants = []database.User{}
-	} else {
-		chat.Participants, err = rt.db.GetChatParticipantsInfo(chat.ChatId)
-		if err != nil {
-			context.Logger.WithError(err).Warn("Error getting participant info")
-			chat.Participants = []database.User{}
-		}
+		chat.ChatName = chat.Participants[selectUserInfo].UserName
+		chat.ChatPhoto = chat.Participants[selectUserInfo].UserPhoto
 	}
 
 	// preparo la risposta, contenente le info della chat

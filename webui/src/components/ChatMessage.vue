@@ -1,12 +1,17 @@
 <script>
 export default {
   props: {
-    message: {
+    messageData: {
       type: Object,
       required: true
     },
     senderName: {
-      type: String
+      type: String,
+      required: true
+    },
+    chatIsGroup: {
+      type: Boolean,
+      required: true
     }
   },
   data: function () {
@@ -16,6 +21,17 @@ export default {
       textContent: "",
       photoContent: {},
       usrId: "",
+
+      message: {
+        msgId: -1,
+        senderId: "",
+        respondTo: -1,
+        textContent: "",
+        photoContent: [],
+        timestamp: "",
+        comments: [],
+      }
+
     }
   },
   computed: {
@@ -27,7 +43,12 @@ export default {
   },
   mounted () {
     this.usrId= sessionStorage.getItem('usrId');
+    this.message= this.messageData;
+
     this.prepMessage();
+  },
+  beforeUnmount() {
+    this.message= {};
   },
   methods: {
     prepMessage() {
@@ -44,6 +65,7 @@ export default {
         default:
           this.status = 'minus';
       }
+
 
       if (this.message['timestamp']){
         const dateObject= new Date(this.message['timestamp']);
@@ -68,7 +90,7 @@ export default {
   <div class="message-div">
     <div class="message-container" :style="dynamicMarginSide">
       <div class="message-info">
-        <div class="sender-id">{{ message['senderId'] === usrId ? "tu" : senderName }}</div>
+        <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-id">{{ senderName }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
           <svg v-if="message['senderId'] === usrId" class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
