@@ -5,12 +5,12 @@ import axios from './services/axios.js';
 
 import ErrorMsg from './components/ErrorMsg.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
+
+import SidebarList from "./components/SidebarList.vue";
 import ChatBanner from './components/ChatBanner.vue'
 import UserBanner from './components/UserBanner.vue'
+
 import ChatMessage from './components/ChatMessage.vue'
-import Chat from './components/Chat.vue'
-import UserInfo from './components/UserInfo.vue'
-import CreateGroup from './components/CreateGroup.vue'
 import MessageForm from "./components/MessageForm.vue";
 
 import './assets/dashboard.css'
@@ -21,12 +21,12 @@ app.config.globalProperties.$axios = axios;
 
 app.component("ErrorMsg", ErrorMsg);
 app.component("LoadingSpinner", LoadingSpinner);
+
+app.component("SidebarList", SidebarList);
 app.component("ChatBanner", ChatBanner);
 app.component("UserBanner", UserBanner);
+
 app.component("ChatMessage", ChatMessage);
-app.component("Chat", Chat);
-app.component("UserInfo", UserInfo);
-app.component("CreateGroup", CreateGroup);
 app.component("MessageForm", MessageForm);
 
 app.use(router)
