@@ -1,12 +1,12 @@
 <script>
 export default {
   props: {
-    userData: {
+    inputData: {
       type: Object,
       required: true,
     }
   },
-  emits: ['userClicked'],
+  emits: ['bannerClicked'],
   data() {
     return {
       user: {
@@ -17,13 +17,13 @@ export default {
     }
   },
   mounted() {
-    this.user['usrId']= this.userData['usrId'];
-    this.user['userName']= this.userData['userName'];
-    this.user['userPhoto']= this.userData['userPhoto'];
+    this.user['usrId']= this.inputData['usrId'];
+    this.user['userName']= this.inputData['userName'];
+    this.user['userPhoto']= this.inputData['userPhoto'];
   },
   methods: {
     loadUser(){
-      this.$emit("userClicked", this.user);
+      this.$emit("bannerClicked", {usrId: this.user['usrId']});
     }
   }
 };
