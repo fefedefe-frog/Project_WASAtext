@@ -1,22 +1,29 @@
 <script>
 export default {
   props: {
-    chatData: {
+    inputData: {
       type: Object,
       required: true
     },
   },
   emits: [
-    'error', 'chatBannerData'
+    'error', 'bannerClicked'
   ],
   data() {
     return {
       errormsg: null,
       token: "",
       usrId: "",
-      chatId: -1,
-      participantNames: {},
-      messages: [],
+
+
+
+      chat: {
+        chatId: -1,
+        chatName: "",
+        chatPhoto: "",
+        isGroup: false,
+        participants: []
+      },
 
       lastMessage: {
         msgId: -1,
@@ -33,16 +40,15 @@ export default {
       setIntervalId: null
     }
   },
-  async created() {
-    this.chatId= this.chatData['chatId'];
+  created() {
+    this.chat= this.inputData;
     this.token= sessionStorage.getItem('authToken');
     this.usrId= sessionStorage.getItem('usrId')
 
-    this.chatData['participants'].forEach(participant => {
-      this.participantNames[participant['usrId']]= participant['userName'];
-    });
 
-    await this.getChatMessages();
+    this.getChatMessages();
+  },
+  mouted(){
     this.makeMessPreview();
   },
   beforeUnmount() {
@@ -57,8 +63,7 @@ export default {
 
       try {
         let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
-          //msgId: this.lastMsgId
-          msgId: -1
+          msgId: this.lastMsgId
         }, {
           headers: {Authorization: this.token},
         });
@@ -70,7 +75,7 @@ export default {
               this.messages.push(message);
             })
             this.lastMessage= this.messages[this.messages.length-1];
-            //this.lastMsgId= this.lastMessage['msgId'];
+            this.lastMsgId= this.lastMessage['msgId'];
           }
         }
       }catch(e) {
@@ -78,13 +83,13 @@ export default {
       }
     },
     bannerClicked(){
-      this.$emit('chatBannerData', {chatInfo: this.chatData, participantNames: this.participantNames, messages: this.messages})
+      this.$emit('bannerClicked', {chatId: this.chat['chatId']})
     },
     makeMessPreview() {
       let preview= "";
       if(this.lastMessage['senderId'] === this.usrId){
         preview= `tu:`;
-      }else if (this.chatData['isGroup']){
+      }else if (this.data['isGroup']){
         preview= `${this.participantNames[this.lastMessage['senderId']]}:`;
       }
       if (this.lastMessage['textContent'] !== ""){
@@ -104,12 +109,12 @@ export default {
   <div class="chat-banner" @click="bannerClicked">
     <!-- Immagine chat a destra -->
     <div class="chat-image-container">
-      <img :src="'data:image/png;base64,'+chatData['chatPhoto']" alt="Chat Image">
+      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image">
     </div>
 
     <!-- Nome della chat e ultimo messaggio -->
     <div class="chat-text-container">
-      <span class="chat-name"> {{ chatData['chatName'] }} </span>
+      <span class="chat-name"> {{ chat['chatName'] }} </span>
       <div class="message-preview">
         <span class="last-message-text">{{ lastMessPreview }}</span>
         <svg v-if="lastMessage['photoContent'].length > 0" class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
