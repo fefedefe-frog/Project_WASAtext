@@ -10,7 +10,7 @@ export default {
       required: true
     }
   },
-  emits: ['error'],
+  emits: ['error', 'bannerData'],
   data: function () {
     return {
       token: '',
@@ -63,7 +63,7 @@ export default {
   },
   methods: {
     async getUsers() {
-      this.errormsg= null
+      this.errormsg= null;
 
       try {
         let response= await this.$axios.get(`/users`, {headers: {Authorization: this.token}});
@@ -83,11 +83,11 @@ export default {
           this.errormsg = e;
         }
       }finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     async getChats() {
-      this.errormsg= null
+      this.errormsg= null;
 
       try {
         let response= await this.$axios.get(`/chats`, {headers: {Authorization: this.token}});
@@ -108,15 +108,11 @@ export default {
           this.errormsg = e;
         }
       }finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     bannerClicked(bannerData){
-      if (this.items === 'users'){
-        this.$router.push(`/users/${bannerData['usrId']}`)
-      }else {
-        this.$router.push(`/chats/${bannerData['chatId']}`)
-      }
+      this.$emit('bannerData', bannerData);
     },
   }
 }
