@@ -15,6 +15,9 @@ export default {
     this.usrId= sessionStorage.getItem('usrId');
   },
   methods: {
+    showUserInfo(bannerData){
+      this.$router.replace(`/users/${bannerData['usrId']}`);
+    },
     componentsErrorHandler(error){
       this.errormsg= error;
     },
@@ -25,10 +28,10 @@ export default {
 <template>
   <div class="main-container">
     <div class="lists bobby">
-      <SidebarList items="users" :bannerComponent="'UserBanner'" @error="componentsErrorHandler"/>
+      <SidebarList items="users" :bannerComponent="'UserBanner'" @error="componentsErrorHandler" @bannerData="showUserInfo"/>
     </div>
     <div class="user-info-container bobby">
-      <RouterView />
+      <RouterView :key="$route.fullPath"/>
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />

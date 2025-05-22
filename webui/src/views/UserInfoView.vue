@@ -1,5 +1,6 @@
 <script>
 export default {
+  props: ['usr_id'],
   data: function () {
     return {
       errormsg: null,
@@ -55,7 +56,7 @@ export default {
   <div v-if="!loading" class="info-container">
     <div class="btn-toolbar mb-2 mb-md-0 w-100">
       <div class="btn-group me-2">
-        <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$router.back()">
+        <button type="button" class="btn btn-sm btn-outline-danger" @click="this.$router.replace('/users')">
           <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
         </button>
         <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getUserInfo">
@@ -74,9 +75,9 @@ export default {
     <div class="send-message">
       <messageForm @prepMessage="sendMessage"/>
     </div>
+    <LoadingSpinner :loading="loading" loadingText="Caricando le info dell'utente..." />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
-  <LoadingSpinner :loading="loading" loadingText="Caricando le info dell'utente..." />
-  <ErrorMsg v-if="errormsg" :msg="errormsg" />
 </template>
 
 <style scoped>
