@@ -752,7 +752,7 @@ paths:
                 messageTextContent:
                   $ref: "#/components/schemas/Message/properties/textContent"
                 
-                messagephotoContent:
+                messagePhotoContent:
                   $ref: "#/components/schemas/Message/properties/photoContent"
 
       responses:
