@@ -48,7 +48,7 @@ export default {
 
     this.getChatMessages();
   },
-  mouted(){
+  mounted(){
     this.makeMessPreview();
   },
   beforeUnmount() {
@@ -83,7 +83,7 @@ export default {
       }
     },
     bannerClicked(){
-      this.$emit('bannerClicked', {chatId: this.chat['chatId']})
+      this.$emit('bannerClicked', this.chat['chatId'])
     },
     makeMessPreview() {
       let preview= "";
@@ -94,7 +94,7 @@ export default {
       }
       if (this.lastMessage['textContent'] !== ""){
         if (this.lastMessage['textContent'].length > 10){
-          preview= `${preview} ${this.lastMessage['textContent'].substring(0, 10)}...`;
+          preview= `${preview} ${this.lastMessage['textContent']}`;
         }else{
           preview= `${preview} ${this.lastMessage['textContent']}`;
         }
@@ -109,7 +109,7 @@ export default {
   <div class="chat-banner" @click="bannerClicked">
     <!-- Immagine chat a destra -->
     <div class="chat-image-container">
-      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image">
+      <img :src="'data:image/png;base64,'+chat['chatPhoto']" alt="Chat Image" draggable="false">
     </div>
 
     <!-- Nome della chat e ultimo messaggio -->
@@ -178,6 +178,10 @@ export default {
   color: black;
   font-weight: bold;
   font-size: 1rem;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .message-preview {
@@ -191,11 +195,18 @@ export default {
   user-select: none;
   height: fit-content;
   width: fit-content;
+  max-width: 70%;
+
 
   margin: 0 2px 0 10px;
+
   color: dimgray;
   font-size: 0.9em;
   font-weight: normal;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 </style>

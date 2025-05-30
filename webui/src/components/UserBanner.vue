@@ -23,7 +23,7 @@ export default {
   },
   methods: {
     loadUser(){
-      this.$emit("bannerClicked", {usrId: this.user['usrId']});
+      this.$emit("bannerClicked", this.user);
     }
   }
 };
@@ -33,7 +33,7 @@ export default {
   <div class="user-banner" @click="loadUser">
     <!-- Foto Profilo a destra -->
     <div v-if="user['userPhoto']" class="user-image-container">
-      <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
+      <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image" draggable="false">
     </div>
 
     <!-- Contenuto del banner -->
@@ -92,5 +92,9 @@ export default {
   font-size: 1.1em;
   font-weight: bold;
   color: #333;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
