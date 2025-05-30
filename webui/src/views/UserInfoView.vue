@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     sendMessage(rawMessage){
-      this.$emit('reqNewChat', {sendTo: this.user['usrId'], messageData: rawMessage});
+      console.log(rawMessage)
     },
     async getUserInfo(){
       this.errormsg= null;
@@ -69,11 +69,6 @@ export default {
         <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
       </div>
       <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
-    </div>
-
-    <span>Invia un messaggio</span>
-    <div class="send-message">
-      <messageForm @prepMessage="sendMessage"/>
     </div>
     <LoadingSpinner :loading="loading" loadingText="Caricando le info dell'utente..." />
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
