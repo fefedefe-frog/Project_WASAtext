@@ -187,7 +187,7 @@ export default {
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
     <div class="chat-info-container">
       <div class="chat-image-container">
-        <img :src="'data:image/png;base64,'+ chat['chatPhoto']" alt="Chat Image">
+        <img :src="'data:image/png;base64,'+ chat['chatPhoto']" alt="Chat Image" draggable="false">
       </div>
       <div class="chat-info-text-container">
         <div class="chat-name">
@@ -275,14 +275,27 @@ export default {
 }
 
 .chat-name {
+  width: fit-content;
+  max-width: 200px;
+
   font-size: 1.1em;
   font-weight: bold;
   color: #333;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .participants {
+  max-width: 180px;
+
   font-size: 0.9em;
   color: lightgrey;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* fine barra superiore */
 
