@@ -89,11 +89,11 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 	}
 
 	// Recupero i dati del messaggio da inviare per iniziare la chat
-	textContent := request.FormValue("textContent")
+	textContent := request.FormValue("messageTextContent")
 
 	var photoContent []byte
 	// Carico l'immagine contenuta nella richiesta http
-	photoContentFile, _, err := request.FormFile("photoContent")
+	photoContentFile, _, err := request.FormFile("messagePhotoContent")
 	if err != nil {
 		context.Logger.WithError(err).Error("Error getting file content")
 		http.Error(writer, "Internal server error - Error getting file content", http.StatusInternalServerError)
