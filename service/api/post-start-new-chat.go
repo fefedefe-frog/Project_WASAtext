@@ -25,6 +25,7 @@ func (rt *_router) startNewChat(writer http.ResponseWriter, request *http.Reques
 
 	var chat database.Chat
 	chat.ChatId = -1
+
 	// Recupero le info della chat dai dati del form
 	chat.ChatName = request.FormValue("chatName")
 	chat.IsGroup, err = strconv.ParseBool(request.FormValue("isGroup"))
