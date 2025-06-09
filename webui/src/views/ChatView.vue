@@ -24,42 +24,40 @@ export default {
       getMessagesIsRunning: false,
     }
   },
-  created(){
+  async created(){
     this.token= sessionStorage.getItem('authToken');
+    this.chat['chatId']= this.$route.params.chat_id;
 
-    this.chat['chatId']= this.chatData['chatInfo']['chatId'];
-    this.chat['chatName']= this.chatData['chatInfo']['chatName'];
-    this.chat['chatPhoto']= this.chatData['chatInfo']['chatPhoto'];
-    this.chat['isGroup']= this.chatData['chatInfo']['isGroup'];
-    this.chat['participants']= this.chatData['chatInfo']['participants'];
+    await this.getChatInfo();
+    this.updateParticipantNamesDict();
 
-    this.participantNames= this.chatData['participantNames'];
-    this.messages= this.chatData['messages'];
-    this.messages.reverse();
-
-    this.lastMsgId= this.messages[0]['msgId'];
-  },
-  mounted() {
     this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
+      this.updateParticipantNamesDict();
     }, 30000);
 
-    this.getMessagesIntervalId= setInterval( async () => {
-      this.lastMsgId= -1; //Per ora recupero tutti i messagi della chat in ogni caso
-      await this.getMessages();
-      await this.updateReadStatus();
-    }, 5000);
-
+  },
+  async mounted() {
+    await this.getMessagesSetInterval();
   },
   beforeUnmount() {
     clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
   },
-  deactivated() {
-    clearInterval(this.getChatInfoIntervalId);
-    clearInterval(this.getMessagesIntervalId);
-  },
   methods: {
+    async getMessagesSetInterval(){
+      if (this.getMessagesIntervalId){
+        clearInterval(this.getMessagesIntervalId);
+      }
+
+      await this.getMessages();
+      await this.updateReadStatus();
+      this.getMessagesIntervalId= setInterval( async () => {
+        this.lastMsgId= -1; //Per ora recupero tutti i messagi della chat in ogni caso
+        await this.getMessages();
+        await this.updateReadStatus();
+      }, 5000);
+    },
     async getChatInfo() {
       try {
         let response = await this.$axios.get(`/chats/${this.chat['chatId']}`, {
@@ -169,7 +167,6 @@ export default {
       }
     },
     updateParticipantNamesDict(){
-      console.log('called participants')
       this.participantNames= {};
       this.chat['participants'].forEach(participant => {
         this.participantNames[participant['usrId']]= participant['userName'];
@@ -197,10 +194,10 @@ export default {
       </div>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessages">
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessagesSetInterval">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
-          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="">
+          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="console.log('TODO\tshow chat info')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info" /></svg> Info
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$router.back()">
