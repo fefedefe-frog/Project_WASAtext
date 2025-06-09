@@ -64,6 +64,7 @@ func (rt *_router) doLogin(writer http.ResponseWriter, request *http.Request, _ 
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 				return
 			}
+			usrId = user.UsrId
 		} else {
 			context.Logger.WithError(err).Error("Errore durante il recupero dei dati")
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
