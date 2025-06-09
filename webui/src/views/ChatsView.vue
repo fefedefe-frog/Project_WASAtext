@@ -15,6 +15,9 @@ export default {
     this.usrId= sessionStorage.getItem('usrId');
   },
   methods: {
+    loadChat(chatId){
+      this.$router.push(`/chats/${chatId}`)
+    },
     componentsErrorHandler(error){
       this.errormsg= error;
     },
@@ -25,7 +28,7 @@ export default {
 <template>
   <div class="main-container">
     <div class="lists bobby">
-      <SidebarList items="chats" :bannerComponent="'ChatBanner'" @error="componentsErrorHandler"/>
+      <SidebarList items="chats" :bannerComponent="'ChatBanner'" @bannerData="loadChat" @error="componentsErrorHandler"/>
     </div>
     <div class="chat-container bobby">
       <RouterView />
