@@ -2,7 +2,7 @@
 export default {
 	props: {
     msg: {
-      type: Error,
+      type: String,
       required: true
     }
   }
