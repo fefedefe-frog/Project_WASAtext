@@ -126,11 +126,11 @@ export default {
 
   <div class="banner-lists">
     <component
-        v-for="item in filteredResult"
-        :key="item[this.items === 'users' ? 'usrId' : 'chatId']"
-        :is="bannerComponent"
-        :inputData="item"
-        @bannerClicked="bannerClicked"
+      :is="bannerComponent"
+      v-for="item in filteredResult"
+      :key="item[items === 'users' ? 'usrId' : 'chatId']"
+      :input-data="item"
+      @banner-clicked="bannerClicked"
     />
   </div>
 </template>
