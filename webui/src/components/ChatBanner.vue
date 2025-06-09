@@ -16,7 +16,6 @@ export default {
       usrId: "",
 
 
-
       chat: {
         chatId: -1,
         chatName: "",
@@ -24,20 +23,19 @@ export default {
         isGroup: false,
         participants: []
       },
+      participantNames: {},
 
       lastMessage: {
         msgId: -1,
         senderId: "",
         respondTo: -1,
         textContent: "",
-        photoContent: [],
+        photoContent: "",
         timestamp: "",
         comments: [],
       },
       lastMessPreview: "",
-      lastMsgId: -1,
-
-      setIntervalId: null
+      lastMsgId: -1
     }
   },
   created() {
@@ -45,24 +43,21 @@ export default {
     this.token= sessionStorage.getItem('authToken');
     this.usrId= sessionStorage.getItem('usrId')
 
+    this.chat['participants'].forEach(p =>{
+      this.participantNames[p['usrId']]= p['userName'];
+    });
 
-    this.getChatMessages();
   },
-  mounted(){
+  async mounted(){
+    await this.getChatMessages();
     this.makeMessPreview();
-  },
-  beforeUnmount() {
-    clearInterval(this.setIntervalId);
-  },
-  deactivated() {
-    clearInterval(this.setIntervalId);
   },
   methods: {
     async getChatMessages(){
       this.errormsg= null;
 
       try {
-        let response= await this.$axios.put(`/chats/${this.chatId}/messages`, {
+        let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages`, {
           msgId: this.lastMsgId
         }, {
           headers: {Authorization: this.token},
@@ -87,9 +82,10 @@ export default {
     },
     makeMessPreview() {
       let preview= "";
+
       if(this.lastMessage['senderId'] === this.usrId){
         preview= `tu:`;
-      }else if (this.data['isGroup']){
+      }else if (this.chat['isGroup']){
         preview= `${this.participantNames[this.lastMessage['senderId']]}:`;
       }
       if (this.lastMessage['textContent'] !== ""){
