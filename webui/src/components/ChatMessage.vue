@@ -101,7 +101,7 @@ export default {
           <p>{{ message["textContent"] }}</p>
         </div>
         <div v-if="message['photoContent'].length > 0" class="message-content-image-container">
-          <img :src="'data:image/png;base64,'+message['photoContent']" alt="Image"  draggable="false">
+          <img :src="'data:image/png;base64,'+message['photoContent']" alt="Image" draggable="false">
         </div>
       </div>
     </div>
