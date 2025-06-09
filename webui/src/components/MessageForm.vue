@@ -1,5 +1,6 @@
 <script>
 export default {
+  emits: ['prepMessage'],
   data: function() {
     return {
       textContent: "",
@@ -9,7 +10,11 @@ export default {
       maxLength: 1024
     }
   },
-  emits: ['prepMessage'],
+  computed: {
+    isMessageValid() {
+      return this.textContent.trim() || this.image ? false : true;
+    }
+  },
   methods: {
     prepMessage() {
       let emptyPhoto= new Blob([], {type: 'image/png'});
@@ -18,10 +23,10 @@ export default {
           textContent: this.textContent.trim() ? this.textContent : "",
           photoContent: this.image ? this.image : emptyPhoto
         };
+        this.$emit('prepMessage', rawMessageData);
         this.textContent= "";
         this.image= null;
         this.imageName= "";
-        this.$emit('prepMessage', rawMessageData);
       }
     },
     imageUpload() {
@@ -47,7 +52,7 @@ export default {
 
 <template>
   <form class="send-message-form" @submit.prevent="prepMessage">
-    <textarea v-if="!image" class="textarea-content" v-model="textContent" ref="textareaMessage" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength"></textarea>
+    <textarea v-if="!image" ref="textareaMessage" v-model="textContent" class="textarea-content" placeholder="Scrivi un messaggio..." rows="2" :maxlength="maxLength" />
     <div v-if="image" class="image-name">
       <button class="form-buttons delete-button" type="button" @click="image=null; imageName= '';">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
@@ -60,7 +65,7 @@ export default {
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
       </button>
 
-      <button class="form-buttons" type="submit">
+      <button class="form-buttons" type="submit" :disabled="isMessageValid">
         <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
       </button>
     </div>
@@ -109,13 +114,14 @@ export default {
 
   margin: 1px 5px 2px 0;
 
-  border-radius: 1.8vh;
-  border: 0.4vh dashed lightseagreen;
+  border-radius: 25%;
+  border: 2px dashed lightseagreen;
 
 
   color: white;
   background-color: lightseagreen;
   cursor: pointer;
+
   box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
   transition: .4s;
 
@@ -124,15 +130,21 @@ export default {
   align-items: center;
 }
 
-.form-buttons:hover {
+.form-buttons:not(:disabled):hover {
   transition: .4s;
-  border: 0.4vh dashed lightseagreen;
+  border: 2px dashed lightseagreen;
   background-color: white;
   color: lightseagreen;
 }
 
 .form-buttons:active {
   background-color: lightseagreen;
+}
+
+.form-buttons:disabled{
+  background-color: gray;
+  border: 2px solid gray;
+  cursor: default;
 }
 
 .delete-button {
@@ -145,7 +157,7 @@ export default {
   color: red;
 }
 .delete-button:active {
-  border: 0.4vh dashed darkred;
+  border: 2px dashed darkred;
 }
 
 .image-name {
