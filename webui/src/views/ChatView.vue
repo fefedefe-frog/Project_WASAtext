@@ -4,6 +4,7 @@ export default {
     return {
       token: '',
       errormsg: null,
+      loading: false,
 
       chat: {
         chatId: -1,
@@ -24,25 +25,42 @@ export default {
       getMessagesIsRunning: false,
     }
   },
-  async created(){
-    this.token= sessionStorage.getItem('authToken');
+  async mounted(){
     this.chat['chatId']= this.$route.params.chat_id;
+    this.token= sessionStorage.getItem('authToken');
 
+    this.loading= true;
     await this.getChatInfo();
     this.updateParticipantNamesDict();
+    
 
     this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
       this.updateParticipantNamesDict();
     }, 30000);
 
-  },
-  async mounted() {
-    await this.getMessagesSetInterval();
+    // Funzione per avviare un nuovo intervallo di ricezione dei messaggi
+    this.getMessagesSetInterval();
   },
   beforeUnmount() {
     clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
+  },
+  watch: {
+    '$route.params.chat_id': {
+      immediate: true,
+      async handler(newChatId, oldChatId){
+        if (newChatId !== oldChatId){
+          if (this.token === "") this.token= sessionStorage.getItem('authToken');
+
+          this.loading= true;
+          this.chat['chatId']= newChatId;
+
+          await this.getChatInfo();
+          this.updateParticipantNamesDict();
+        }
+      }
+    }
   },
   methods: {
     async getMessagesSetInterval(){
@@ -69,11 +87,11 @@ export default {
           this.chat['chatPhoto']= response.data['chatPhoto'];
           this.chat['isGroup']= response.data['isGroup'];
           this.chat['participants']= response.data['participants'];
-
-          this.updateParticipantNamesDict();
         }
       } catch (e) {
-        this.$emit('error', e);
+        this.errormsg= e.toString();
+      } finally {
+        this.loading= false;
       }
     },
     async getMessages() {
@@ -89,11 +107,10 @@ export default {
         });
 
         if (response.data) {
-          //if (this.lastMsgId === -1){
-          //  this.messages= [];
-          //}
-          if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
+          if (this.lastMsgId === -1){
             this.messages= [];
+          }
+          if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
             response.data['messages'].forEach(message => {
               this.messages.push(message);
             });
@@ -103,7 +120,7 @@ export default {
           }
         }
       }catch(e) {
-        this.$emit('error', e);
+        this.errormsg= e.toString();
       }
       this.getMessagesIsRunning= false;
     },
@@ -119,7 +136,7 @@ export default {
           throw new Error("unable to update the messages status");
         }
       }catch(e) {
-        this.$emit('error', e);
+        this.errormsg= e.toString();
       }
 
       this.prevLastMsgId= this.lastMsgId;
@@ -146,7 +163,7 @@ export default {
           }
         }
       }catch (e){
-        this.$emit('error', e);
+        this.errormsg= e.toString();
       }finally {
         this.respondTo= -1;
       }
@@ -157,13 +174,10 @@ export default {
         let response= await this.$axios.delete(`/chats/${this.chat['chatId']}/users`, {
           headers: {Authorization: this.token}
         });
-        if (response.status < 400){
-          this.$emit('closeChat', this.chat['chatId']);
-        }
       }catch(e) {
-        this.$emit('error', e);
+        this.errormsg= e.toString();
       }finally {
-        this.$router.back();
+        this.$router.replace('/chats');
       }
     },
     updateParticipantNamesDict(){
@@ -180,7 +194,8 @@ export default {
 </script>
 
 <template>
-  <div class="chat-container">
+  <LoadingSpinner :loading="loading" loading-text="Caricando la chat... " />
+  <div v-if="!loading" class="chat-container">
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
     <div class="chat-info-container">
       <div class="chat-image-container">
@@ -200,7 +215,7 @@ export default {
           <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="console.log('TODO\tshow chat info')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info" /></svg> Info
           </button>
-          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="this.$router.back()">
+          <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="$router.replace('/chats')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
           </button>
           <button type="button" class="btn btn-sm btn-danger shadow-none" @click="leaveChat">
@@ -211,12 +226,12 @@ export default {
     </div>
 
     <div class="message-sender">
-      <messageForm @prepMessage="sendMessage"></messageForm>
+      <messageForm @prep-message="sendMessage" />
     </div>
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chatIsGroup="chat['isGroup']" />
+        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" />
       </div>
     </div>
   </div>
