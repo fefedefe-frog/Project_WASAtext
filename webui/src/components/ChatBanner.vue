@@ -89,11 +89,7 @@ export default {
         preview= `${this.participantNames[this.lastMessage['senderId']]}:`;
       }
       if (this.lastMessage['textContent'] !== ""){
-        if (this.lastMessage['textContent'].length > 10){
-          preview= `${preview} ${this.lastMessage['textContent']}`;
-        }else{
-          preview= `${preview} ${this.lastMessage['textContent']}`;
-        }
+        preview= `${preview} ${this.lastMessage['textContent']}`;
       }
       this.lastMessPreview= preview;
     }
@@ -132,6 +128,8 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   height: 70px;
   width: 100%;
+
+  border: 1px solid black;
 }
 
 .chat-banner:hover {
@@ -155,6 +153,7 @@ export default {
 
 .chat-text-container {
   height: 100%;
+  width: 70%;
 
   flex: 1;
   padding: 0 0 0 5px;
@@ -181,6 +180,7 @@ export default {
 }
 
 .message-preview {
+  width: 100%;
   display: flex;
   flex-direction: row;
 
@@ -191,7 +191,7 @@ export default {
   user-select: none;
   height: fit-content;
   width: fit-content;
-  max-width: 70%;
+  max-width: 90%;
 
 
   margin: 0 2px 0 10px;
