@@ -28,10 +28,10 @@ export default {
 <template>
   <div class="main-container">
     <div class="lists bobby">
-      <SidebarList items="users" :bannerComponent="'UserBanner'" @error="componentsErrorHandler" @bannerData="showUserInfo"/>
+      <SidebarList items="users" :banner-component="'UserBanner'" @error="componentsErrorHandler" @banner-data="showUserInfo" />
     </div>
     <div class="user-info-container bobby">
-      <RouterView :key="$route.fullPath"/>
+      <RouterView :key="$route.fullPath" />
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
