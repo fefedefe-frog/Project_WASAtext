@@ -18,9 +18,9 @@ const router = createRouter({
 		// schermata "principale"
 		{path: '/home', component: MainView, name: "home"},
 		// schermata dove l'utente può vedere tutti gli altri utenti, e selezionandone uno vedere le sue info e mandargli un messaggio
-		{path: '/users', component: UsersView, name: "users", children:[{path: ':usr_id', component: UserInfoView, props: true}]},
+		{path: '/users', component: UsersView, name: "users", children:[{path: ':usr_id', component: UserInfoView}]},
 		// schermata delle chat, con schermata figlia che carica la singloa chat
-		{path: '/chats', component: ChatsView, name: "chat", children:[{path: ':chat_id', component: ChatView, props: true}]},
+		{path: '/chats', component: ChatsView, name: "chat", children:[{path: ':chat_id', component: ChatView}]},
 		// schermata per creare nuove chat
 		{path: '/newChat', component: NewChatView, name: "newChat"},
 		// route per catturare tutti gli url non validi, riporterà alla schermata di login, o alla home se già loggato
