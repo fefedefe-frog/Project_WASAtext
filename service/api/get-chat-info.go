@@ -6,10 +6,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 func (rt *_router) getChatInfo(writer http.ResponseWriter, _ *http.Request, params httprouter.Params, context reqcontext.RequestContext, usrId string) {
