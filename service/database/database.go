@@ -207,25 +207,6 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	// Check for message_comments_table
-	tableName = ""
-	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='message_comments_table';`).Scan(&tableName)
-	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE message_comments_table(
-    			commentId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    			msgId INTEGER, 
-    			commenterId TEXT, 
-    			content TEXT NOT NULL,
-    			FOREIGN KEY (commenterId) REFERENCES users_table(usrId) ON DELETE CASCADE, 
-    			FOREIGN KEY (msgId) REFERENCES messages_table(msgId) ON DELETE CASCADE,
-    			CONSTRAINT unique_comment UNIQUE (msgId, commenterId)
-        );`
-		_, err = db.Exec(sqlStmt)
-		if err != nil {
-			return nil, fmt.Errorf("error creating database structure: %w", err)
-		}
-	}
-
 	// Check for message_status_table
 	tableName = ""
 	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='message_status_table';`).Scan(&tableName)
@@ -238,6 +219,25 @@ func New(db *sql.DB) (AppDatabase, error) {
     			FOREIGN KEY (msgId) REFERENCES messages_table(msgId) ON DELETE CASCADE,
     			FOREIGN KEY (receiverId) REFERENCES users_table(usrId) ON DELETE CASCADE,
     			CONSTRAINT unique_status UNIQUE (msgId, receiverId)
+        );`
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			return nil, fmt.Errorf("error creating database structure: %w", err)
+		}
+	}
+
+	// Check for message_comments_table
+	tableName = ""
+	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='message_comments_table';`).Scan(&tableName)
+	if errors.Is(err, sql.ErrNoRows) {
+		sqlStmt := `CREATE TABLE message_comments_table(
+    			commentId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    			msgId INTEGER, 
+    			commenterId TEXT, 
+    			content TEXT NOT NULL,
+    			FOREIGN KEY (commenterId) REFERENCES users_table(usrId) ON DELETE CASCADE, 
+    			FOREIGN KEY (msgId) REFERENCES messages_table(msgId) ON DELETE CASCADE,
+    			CONSTRAINT unique_comment UNIQUE (msgId, commenterId)
         );`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
@@ -272,7 +272,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 							
 							UPDATE messages_table
 						    SET deliveryStatus = 'received'
-						    WHERE msgId = NEW.msgId
+						    WHERE msgId = NEW.msgId AND deliveryStatus != 'read'
 						    AND (
 						        SELECT COUNT(*)
 						        FROM message_status_table
