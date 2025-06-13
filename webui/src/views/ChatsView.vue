@@ -16,10 +16,10 @@ export default {
   },
   methods: {
     loadChat(chatId){
-      this.$router.push(`/chats/${chatId}`)
+      this.$router.replace(`/chats/${chatId}`)
     },
-    componentsErrorHandler(error){
-      this.errormsg= error;
+    componentsErrorHandler(e){
+      this.errormsg= e.toString();
     },
   }
 }
@@ -28,10 +28,10 @@ export default {
 <template>
   <div class="main-container">
     <div class="lists bobby">
-      <SidebarList items="chats" :bannerComponent="'ChatBanner'" @bannerData="loadChat" @error="componentsErrorHandler"/>
+      <SidebarList items="chats" :banner-component="'ChatBanner'" @banner-data="loadChat" @error="componentsErrorHandler" />
     </div>
     <div class="chat-container bobby">
-      <RouterView />
+      <RouterView :key="$route.fullPath"/>
     </div>
 
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
