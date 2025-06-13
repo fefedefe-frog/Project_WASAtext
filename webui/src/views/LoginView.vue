@@ -46,7 +46,6 @@ export default {
             // Salvo il token e usrId
             sessionStorage.setItem('authToken', token);
             sessionStorage.setItem('usrId', this.user['usrId']);
-            sessionStorage.setItem('loggedUser', JSON.stringify(this.user));
 
             // Ritarda la redirezione per consentire il caricamento
             setTimeout(() => {
