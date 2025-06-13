@@ -200,16 +200,16 @@ func (db *appdbimpl) DeleteChat(chatId int) error {
 func (db *appdbimpl) GetChatInfo(chatId int) (Chat, error) {
 
 	query := `
-			SELECT 
-			    C.chatName,
-			    C.chatPhoto,
-			    C.isGroup,
-			    U.usrId,
-			    U.userName,
-			    U.userPhoto	
-			FROM chats_table AS C
-			JOIN chat_participants_table P ON C.chatId = P.chatId
-			JOIN users_table U ON P.usrId = U.usrId`
+			SELECT
+			C.chatName,
+			C.chatPhoto,
+			C.isGroup,
+			U.usrId,
+			U.userName,
+			U.userPhoto
+		FROM chats_table AS C
+				 JOIN chat_participants_table P ON C.chatId = P.chatId
+				 JOIN users_table U ON P.usrId = U.usrId WHERE C.chatId = ?`
 
 	// Eseguo la query descritta primia
 	rows, err := db.c.Query(query, chatId)
