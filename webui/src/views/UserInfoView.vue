@@ -1,6 +1,5 @@
 <script>
 export default {
-  props: ['usr_id'],
   data: function () {
     return {
       errormsg: null,
@@ -12,15 +11,6 @@ export default {
         userPhoto: "",
       },
     }
-  },
-  created() {
-    this.$watch(
-        () => this.$route.params.usr_id,
-        (newUsrId, oldUsrId) => {
-          this.user['usrId']= newUsrId;
-          this.getUserInfo();
-        }
-    )
   },
   mounted () {
     this.user['usrId']= this.$route.params.usr_id;
@@ -53,10 +43,11 @@ export default {
 </script>
 
 <template>
+  <LoadingSpinner :loading="loading" loading-text="Caricando le info dell'utente..." />
   <div v-if="!loading" class="info-container">
     <div class="btn-toolbar mb-2 mb-md-0 w-100">
       <div class="btn-group me-2">
-        <button type="button" class="btn btn-sm btn-outline-danger" @click="this.$router.replace('/users')">
+        <button type="button" class="btn btn-sm btn-outline-danger" @click="$router.replace('/users')">
           <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
         </button>
         <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getUserInfo">
@@ -70,7 +61,6 @@ export default {
       </div>
       <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
     </div>
-    <LoadingSpinner :loading="loading" loadingText="Caricando le info dell'utente..." />
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>
