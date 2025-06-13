@@ -3,6 +3,7 @@ export default {
   data: function () {
     return {
       token: '',
+      usrId: '',
       errormsg: null,
       users: [],
 
@@ -113,16 +114,20 @@ export default {
       let textContent= this.initialMessage['textContent'];
       let photoContent= new Blob([], {type: 'image/png'});
 
-      if (this.initialMessage['photoContent']){
-        textContent= "";
-        photoContent= this.initialMessage['photoContent'];
-      }
+      // Come dovrei fare secondo la consegna
+      // if (this.initialMessage['photoContent']){
+      //   textContent= "";
+      //   photoContent= this.initialMessage['photoContent'];
+      // }
+      //
+      // requestFormData.append('messageTextContent', textContent);
+      // requestFormData.append('messagePhotoContent', photoContent);
 
+      // Test per vedere se la chat può essere creata senza messaggio....
+      textContent= `Chat creata da ${this.usrId}`
       requestFormData.append('messageTextContent', textContent);
       requestFormData.append('messagePhotoContent', photoContent);
 
-      console.log("form request:");
-      console.log(requestFormData);
       try{
         let response= await this.$axios.post(`/chats`, requestFormData, {
           headers: {
@@ -141,7 +146,7 @@ export default {
           setTimeout(this.$router.push(`/chats/${newChat['chatId']}`), 500);
         }
       }catch (e){
-        this.errormsg= e;
+        this.errormsg= e.toString();
       }
     },
     imageUpload(target) {
@@ -223,19 +228,18 @@ export default {
 <template>
   <div class="main-container bobby">
     <div class="select-participant">
-      <sidebarList :bannerComponent="'userBanner'" items="users" @error="componentsErrorHandler" @bannerData="addParticipant"/>
+      <sidebarList :banner-component="'userBanner'" items="users" @error="componentsErrorHandler" @banner-data="addParticipant" />
     </div>
     <form class="new-chat-form" @submit.prevent="startNewChat">
       <!-- Sezione per le info della chat -->
       <div class="new-chat-info">
         <div class="new-chat-image">
-          <button class="chat-image-button" type="button" @click="imageUpload('chatPhoto')" :disabled="!chatInfo['isGroup']">
+          <button class="chat-image-button" type="button" :disabled="!chatInfo['isGroup']" @click="imageUpload('chatPhoto')">
             <img v-if="chatInfo['chatPhotoPreview'] || chatInfo['isGroup']" :src=" chatInfo['chatPhotoPreview'] || '/images/def_group.png'" alt="Anteprima" draggable="false">
             <span>
               <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
             </span>
           </button>
-          <input type="file" accept="/image/*" @change="" style="display: none">
         </div>
         <div class="new-chat-text">
           <div class="new-chat-name">
@@ -252,33 +256,41 @@ export default {
           <div v-if="chatInfo['isGroup']" class="participants">
             <span v-for="p in selectedParticipantInfo" :key="p['usrId']" class="participant">
               <img :src="'data:image/png;base64,'+ p['userPhoto']" alt="Profile Image" draggable="false">
-              <span>{{p['userName']}}</span>
+              <span>{{ p['userName'] }}</span>
               <button @click="removeParticipant(p['usrId'])">
-                <svg class="feather"> <use href="/feather-sprite-v4.29.0.svg#x"/></svg>
+                <svg class="feather"> <use href="/feather-sprite-v4.29.0.svg#x" /></svg>
               </button>
             </span>
           </div>
         </div>
       </div>
-      <!-- Sezione per il messaggio iniziale -->
+      <!-- Sezione per il messaggio iniziale (COME DOVREBBE ESSERE) -->
+<!--      <div class="initial-message">-->
+<!--        <div class="mess-form">-->
+<!--          <textarea v-if="!initialMessage['photoContent']" v-model="initialMessage['textContent']" class="textarea-content" placeholder="Scrivi un messaggio..." rows="2" :maxlength="1024" />-->
+<!--          <div v-if="initialMessage['photoContent']" class="image-name">-->
+<!--            <button class="form-buttons delete-button" type="button" @click="initialMessage['photoContent']=null; initialMessage['photoName']= ''">-->
+<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>-->
+<!--            </button>-->
+<!--            <span>{{ initialMessage['photoName'] }}</span>-->
+<!--          </div>-->
+<!--          <div class="buttom-column">-->
+<!--            <button class="form-buttons" type="button" @click="imageUpload('messagePhoto')">-->
+<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>-->
+<!--            </button>-->
+
+<!--            <button class="form-buttons" type="submit" :disabled="!isFormSendable">-->
+<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>-->
+<!--            </button>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+      <!-- TEST -->
       <div class="initial-message">
         <div class="mess-form">
-          <textarea v-if="!initialMessage['photoContent']" v-model="initialMessage['textContent']" class="textarea-content" placeholder="Scrivi un messaggio..." rows="2" :maxlength="1024" />
-          <div v-if="initialMessage['photoContent']" class="image-name">
-            <button class="form-buttons delete-button" type="button" @click="initialMessage['photoContent']=null; initialMessage['photoName']= ''">
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
-            </button>
-            <span>{{ initialMessage['photoName'] }}</span>
-          </div>
-          <div class="buttom-column">
-            <button class="form-buttons" type="button" @click="imageUpload('messagePhoto')">
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
-            </button>
-
-            <button class="form-buttons" type="submit" :disabled="!isFormSendable">
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
-            </button>
-          </div>
+          <button class="form-buttons-test" type="submit" :disabled="!chatNameIsValid">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#arrow-up" /></svg>
+          </button>
         </div>
       </div>
     </form>
@@ -518,6 +530,10 @@ export default {
   display: flex;
   flex-direction: row;
   justify-content: right;
+
+  /* TEST */
+  border: 1px solid red;
+  justify-content: center;
 }
 
 .textarea-content {
@@ -545,6 +561,7 @@ export default {
   flex-direction: column;
 }
 
+/* COME DOVREBBE ESSERE
 .form-buttons {
   width: 25px;
   height: 25px;
@@ -579,8 +596,48 @@ export default {
 }
 
 .form-buttons:disabled{
-  background-color: gray;
-  border: 2px solid gray;
+  background-color: lightgray;
+  border: 2px solid lightgray;
+  cursor: default;
+}
+*/
+
+/* TEST */
+.form-buttons-test {
+  width: 30%;
+  aspect-ratio: 1/1;
+
+
+  border-radius: 25%;
+  border: 2px dashed lightseagreen;
+
+
+  color: white;
+  background-color: lightseagreen;
+  cursor: pointer;
+
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+  transition: .4s;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-buttons-test:not(:disabled):hover {
+  transition: .4s;
+  border: 2px dashed lightseagreen;
+  background-color: white;
+  color: lightseagreen;
+}
+
+.form-buttons-test:active {
+  background-color: lightseagreen;
+}
+
+.form-buttons-test:disabled{
+  background-color: lightgray;
+  border: 2px solid lightgray;
   cursor: default;
 }
 
