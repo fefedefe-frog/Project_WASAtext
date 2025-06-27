@@ -50,12 +50,12 @@ export default {
       this.getUsers();
       this.setIntervalId= setInterval(async () => {
         await this.getUsers();
-      }, 15000);
+      }, 10000);
     }else {
       this.getChats();
       this.setIntervalId= setInterval(async () => {
         await this.getChats();
-      }, 15000);
+      }, 10000);
     }
   },
   beforeUnmount() {
@@ -63,8 +63,6 @@ export default {
   },
   methods: {
     async getUsers() {
-      this.errormsg= null;
-
       try {
         let response= await this.$axios.get(`/users`, {headers: {Authorization: this.token}});
 
@@ -80,15 +78,11 @@ export default {
         if (e.status === 404){
           this.users= [];
         }else {
-          this.errormsg = e;
+          this.$emit('error', e);
         }
-      }finally {
-        this.loading = false;
       }
     },
     async getChats() {
-      this.errormsg= null;
-
       try {
         let response= await this.$axios.get(`/chats`, {headers: {Authorization: this.token}});
         if (response.data) {
@@ -103,12 +97,9 @@ export default {
       }catch(e) {
         if (e.status === 404){
           this.chats= [];
-          console.log("user doesn't have any chat");
         }else {
-          this.errormsg = e;
+          this.$emit('error', e);
         }
-      }finally {
-        this.loading = false;
       }
     },
     bannerClicked(bannerData){
@@ -128,7 +119,7 @@ export default {
     <component
       :is="bannerComponent"
       v-for="item in filteredResult"
-      :key="item[items === 'users' ? 'usrId' : 'chatId']"
+      :key="item[items === 'users' ? 'usrId' : 'chatId'] + '-' + Math.floor(Math.random() * 10) "
       :input-data="item"
       @banner-clicked="bannerClicked"
     />
