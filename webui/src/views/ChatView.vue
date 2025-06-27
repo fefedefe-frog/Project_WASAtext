@@ -23,6 +23,8 @@ export default {
       getChatInfoIntervalId: null,
       getMessagesIntervalId: null,
       getMessagesIsRunning: false,
+
+      addParticipantPanel: false,
     }
   },
   async mounted(){
@@ -180,6 +182,30 @@ export default {
         this.$router.replace('/chats');
       }
     },
+    async addParticipant(participant){
+      if (participant['usrId'] in this.participantNames){
+        this.errormsg= new Error("Non puoi aggiungere un utente già partecipante").toString();
+      }else {
+        this.errormsg= null
+
+        try {
+          let response= await this.$axios.post(`chats/${this.chat['chatId']}/users`,
+              {usrId: participant['usrId']},
+              {headers: {Authorization: this.token}}
+          );
+
+          if (response.data) {
+            //Aggiorno la lista di partecipanti
+            this.chat['participants']= response.data['participants']
+            this.updateParticipantNamesDict();
+          }
+        }catch(e) {
+          this.errormsg= e.toString();
+        }
+      }
+
+
+    },
     updateParticipantNamesDict(){
       this.participantNames= {};
       this.chat['participants'].forEach(participant => {
@@ -187,7 +213,7 @@ export default {
       });
     },
     errorHandler(e){
-      this.errormsg = e;
+      this.errormsg = e.toString();
     },
   }
 }
@@ -212,8 +238,8 @@ export default {
           <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessagesSetInterval">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
-          <button type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="console.log('TODO\tshow chat info')">
-            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#info" /></svg> Info
+          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= !addParticipantPanel">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#plus" /></svg> Aggiungi Partecipante
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="$router.replace('/chats')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
@@ -233,6 +259,13 @@ export default {
       <div class="messages-container">
         <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" />
       </div>
+      <transition name="add-participant-panel">
+        <div class="add-participant-panel" v-if="addParticipantPanel">
+          <div class="select-participant">
+            <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
+          </div>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -323,6 +356,7 @@ export default {
 
 /* gestione dei messaggi */
 .messages-main {
+  position: relative;
   width: 100%;
   height: 100%;
 
@@ -340,4 +374,49 @@ export default {
   margin: 0 2px 0 2px;
 }
 /* fine gestione messaggi */
+
+/* aggiungere partecipante */
+.add-participant-panel{
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 50%;
+  background: white;
+  box-shadow: -2px 0 6px rgba(0,0,0,0.2);
+  z-index: 999;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.select-participant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: 100%;
+  padding: 4px;
+
+  overflow: hidden;
+}
+/* fine aggiunta partecipante */
+
+/* Transition per il pannello dei partecipanti */
+.add-participant-panel-enter-from,
+.add-participant-panel-leave-to {
+  transform: translateX(100%); /* fuori dallo schermo a destra */
+}
+
+.add-participant-panel-enter-to,
+.add-participant-panel-leave-from {
+  transform: translateX(0); /* posizione normale, visibile */
+}
+
+.add-participant-panel-enter-active,
+.add-participant-panel-leave-active {
+  transition: transform 0.3s ease;
+}
+/* Fine transition per il pannello dei partecipanti */
 </style>
