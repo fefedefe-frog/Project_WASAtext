@@ -46,7 +46,8 @@ export default {
     isFormSendable() {
       let messageValid= this.initialMessage['textContent'].trim() || this.initialMessage['photoContent'];
       let chatDataValid= this.chatNameIsValid && (this.chatInfo['participantsId'].length >= 1);
-      return messageValid && chatDataValid
+      // return messageValid && chatDataValid
+      return chatDataValid
     }
   },
   mounted() {
@@ -288,7 +289,7 @@ export default {
       <!-- TEST -->
       <div class="initial-message">
         <div class="mess-form">
-          <button class="form-buttons-test" type="submit" :disabled="!chatNameIsValid">
+          <button class="form-buttons-test" type="submit" :disabled="!isFormSendable">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#arrow-up" /></svg>
           </button>
         </div>
@@ -316,7 +317,10 @@ export default {
 }
 
 .select-participant {
-  border: 1px solid orange;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
   width: 25%;
   padding: 4px;
 }
@@ -324,12 +328,9 @@ export default {
 .new-chat-form{
   width: 75%;
   height: 100%;
-  border: 1px solid black;
 }
 
 .new-chat-info {
-  border: 1px solid red;
-
   width: 75%;
   height: 50%;
 
@@ -343,7 +344,6 @@ export default {
 .new-chat-image {
   height: 70%;
   aspect-ratio: 1/1;
-  border: 1px solid blue;
 
   display: flex;
   justify-content: center;
@@ -407,7 +407,6 @@ export default {
 
   margin-left: 5px;
 
-  border: 1px solid violet;
 
   display: flex;
   flex-direction: column;
@@ -417,7 +416,6 @@ export default {
   width: fit-content;
   max-width: 80%;
   height: 60%;
-  border: 1px solid cyan;
 
   display: flex;
   flex-direction: column;
@@ -432,7 +430,6 @@ export default {
 .participants {
   width: 100%;
   height: 40%;
-  border: 1px solid peru;
 
   padding-left: 5px;
   padding-right: 5px;
@@ -516,7 +513,6 @@ export default {
   width: 75%;
   height: 50%;
 
-  border: 1px solid darkgreen;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -532,7 +528,6 @@ export default {
   justify-content: right;
 
   /* TEST */
-  border: 1px solid red;
   justify-content: center;
 }
 
