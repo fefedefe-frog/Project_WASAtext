@@ -35,9 +35,9 @@ export default {
     }
   },
   computed: {
-    dynamicMarginSide(){
+    dynamicMessageSide(){
       return{
-        'margin-left': this.usrId === this.message.senderId ? 'auto' : '0',
+        'justify-content': this.usrId === this.message['senderId'] ? 'flex-end' : 'flex-start',
       }
     }
   },
@@ -87,8 +87,9 @@ export default {
 </script>
 
 <template>
-  <div class="message-div">
-    <div class="message-container" :style="dynamicMarginSide">
+  <div class="message-div" :style="dynamicMessageSide">
+    <MessageDropdownMenu v-if="usrId === message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" />
+    <div class="message-container">
       <div class="message-info">
         <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-id">{{ senderName }}</div>
         <div class="message-status">
@@ -105,14 +106,17 @@ export default {
         </div>
       </div>
     </div>
+    <MessageDropdownMenu v-if="usrId !== message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" />
   </div>
 </template>
 
 <style scoped>
 .message-div {
   position: relative;
+
   display: flex;
   flex-direction: row;
+
   width: 100%;
 
   box-sizing: border-box;
