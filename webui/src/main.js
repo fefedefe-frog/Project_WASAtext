@@ -12,6 +12,7 @@ import UserBanner from './components/UserBanner.vue'
 
 import ChatMessage from './components/ChatMessage.vue'
 import MessageForm from "./components/MessageForm.vue";
+import MessageDropdownMenu from "./components/MessageDropdownMenu.vue";
 
 import './assets/dashboard.css'
 import './assets/main.css'
@@ -28,6 +29,7 @@ app.component("UserBanner", UserBanner);
 
 app.component("ChatMessage", ChatMessage);
 app.component("MessageForm", MessageForm);
+app.component("MessageDropdownMenu", MessageDropdownMenu);
 
 app.use(router)
 app.mount('#app')
