@@ -39,9 +39,10 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 					WHERE ms2.receiverId = ?
 					  AND m2.chatId = ?
 					  AND ms2.status = 'read'
-				), '0001-01-01T23:59:59'));`
+				), '0001-01-01T23:59:59'))
+			AND receiverId= ?;`
 
-	_, err = tx.Exec(query, usrId, usrId, chatId)
+	_, err = tx.Exec(query, usrId, usrId, chatId, usrId)
 	if err != nil {
 		return messages, ErrUpdateMessageStatus
 	}
@@ -230,8 +231,9 @@ func (db *appdbimpl) UpdateMessageDeliveryStatusToRead(msgId int, chatId int, us
 					  AND ms2.status = 'read'
 				), '0001-01-01T23:59:59')
 				  AND ms.status != 'read'
-			);`
-	_, err = tx.Exec(query, usrId, usrId, chatId)
+			)
+			AND receiverId= ?;`
+	_, err = tx.Exec(query, usrId, usrId, chatId, usrId)
 	if err != nil {
 		return err
 	}

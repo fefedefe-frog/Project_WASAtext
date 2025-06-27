@@ -263,7 +263,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 						BEGIN
 							UPDATE messages_table
 						    SET deliveryStatus = 'read'
-						    WHERE msgId = NEW.msgId
+						    WHERE msgId = NEW.msgId AND deliveryStatus != 'read'
 						    AND (
 						        SELECT COUNT(*)
 						        FROM message_status_table
@@ -276,7 +276,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 						    AND (
 						        SELECT COUNT(*)
 						        FROM message_status_table
-						        WHERE msgId = NEW.msgId AND status != 'received'
+						        WHERE msgId = NEW.msgId AND status = 'not_received'
 						    ) = 0;
 						END;`)
 	if err != nil {
