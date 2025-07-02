@@ -7,6 +7,10 @@ export default {
     logout(){
       sessionStorage.removeItem('authToken')
       this.$router.push('/session')
+    },
+    myProfile(){
+      let usrId= sessionStorage.getItem('usrId');
+      this.$router.push(`/users/${usrId}`);
     }
   }
 }
@@ -32,9 +36,9 @@ export default {
         </div>
         <div class="spacer"></div>
         <div class="navmenu-submenu">
-          <RouterLink to="/" class="navmenu-button">
+          <button class="navmenu-button" @click="myProfile">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user" /></svg>
-          </RouterLink>
+          </button>
           <button class="navmenu-button logout-button" @click="logout">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#log-out" /></svg>
           </button>
@@ -104,15 +108,15 @@ export default {
 
 .spacer {
   width: 100%;
-  height: 60%;
+  height: 100%;
 
   border-top: 1px solid dimgray;
   border-bottom: 1px solid dimgray;
 }
 
 .navmenu-button {
-  width: 40px;
-  height: 40px;
+  width: 70%;
+  aspect-ratio: 1/1;
 
   margin: 5px;
 

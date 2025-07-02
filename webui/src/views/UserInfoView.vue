@@ -5,6 +5,7 @@ export default {
       errormsg: null,
       loading: false,
       token: "",
+      myUsrId: "",
       user: {
         usrId: "",
         userName: "",
@@ -12,11 +13,14 @@ export default {
       },
     }
   },
-  mounted () {
+  async mounted () {
     this.user['usrId']= this.$route.params.usr_id;
+
     this.token= sessionStorage.getItem('authToken');
+    this.myUsrId= sessionStorage.getItem('usrId');
+
     this.loading= true;
-    this.getUserInfo();
+    await this.getUserInfo();
   },
   methods: {
     sendMessage(rawMessage){
@@ -31,11 +35,53 @@ export default {
 
         if (response.data) {
           this.user= response.data;
+          this.user['userPhoto']= `data:image/png;base64,${this.user['userPhoto']}`;
         }
       }catch(e) {
-        this.errormsg= e;
+        this.errormsg= e.toString();
       }finally {
         this.loading= false
+      }
+    },
+    imageUpload() {
+      const input= document.createElement('input');
+      input.type= "file";
+      input.accept= "image/*";
+
+      input.addEventListener("change", async (event) => await this.changeUserPhoto(event));
+      input.click();
+    },
+    async changeUserPhoto(event){
+      let newProfileImage= null;
+      let oldProfileImage= this.user['userPhoto'];
+
+      const file= event.target.files[0];
+
+      if (file && file.type.startsWith("image/")) {
+        const reader= new FileReader();
+
+        reader.onload= (e) => {
+          newProfileImage= file;
+          this.user['userPhoto']= e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Faccio la richiesta per modificare l'immagine al backend
+        // Preparo il formData per la richiesta
+        const requestFormData= new FormData();
+        requestFormData.append('newUserPhoto', newProfileImage);
+
+        this.errormsg= null;
+        try{
+          let response= await this.$axios.put('/profile/propic', requestFormData, {
+            headers: {Authorization: this.token},
+          });
+        }catch (e){
+          this.errormsg= e.toString();
+          this.user['userPhoto']= oldProfileImage;
+        }
+      }else {
+        this.user['userPhoto'] = oldProfileImage;
       }
     }
   },
@@ -56,12 +102,20 @@ export default {
       </div>
     </div>
     <div class="user-info">
-      <div v-if="user['userPhoto']" class="user-image-container">
+      <div v-if="user['usrId'] === myUsrId" class="user-image-container">
+        <button class="user-image-button" type="button" @click="imageUpload()">
+          <img v-if="user['userPhoto']" :src="`${user['userPhoto']}` || '/images/def_single.png'" alt="Anteprima" draggable="false">
+          <span>
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+            </span>
+        </button>
+      </div>
+      <div v-else-if="user['userPhoto']" class="user-image-container">
         <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
       </div>
       <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
     </div>
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null" />
   </div>
 </template>
 
@@ -97,8 +151,66 @@ export default {
 .user-image-container {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
+  aspect-ratio: 1/1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+.user-image-button {
+  height: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+
+
+  padding: 0;
+  border: none;
+  background: lightgray;
+
+  position: relative;
+}
+
+.user-image-button img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+.user-image-button:hover {
+  filter: brightness(0.6);
+  transition: filter 0.2s ease-in-out;
+}
+
+.user-image-button span {
+  position: absolute;
+  width: 40%;
+  height: 40%;
+
+  border-radius: 50%;
+  padding: 10px;
+
+  display: flex;
+
+  top: 50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.user-image-button svg {
+  width: 100%;
+  height: 100%;
+  color: white;
+}
+
 
 .user-image-container img {
   width: 20vh;
