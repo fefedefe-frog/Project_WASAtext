@@ -3,11 +3,6 @@ export default {
   data() {
     return {
       username: "",
-      user: {
-        usrId: "",
-        userName: "",
-        userPhoto: ""
-      },
       errormsg: null, // Messaggio di errore
       loading: false, // Stato di caricamento
       welcomeMsg: false,
@@ -38,23 +33,20 @@ export default {
           const token = response.headers['authorization'];
           if (response.data && response.data['user']){
 
-            this.user["usrId"]= response.data['user']['usrId'];
-            this.user["userName"]= response.data['user']['userName'];
-            this.user["userPhoto"]= response.data['user']['userPhoto'];
-
+            this.username= response.data['user']['userName'];
 
             // Salvo il token e usrId
             sessionStorage.setItem('authToken', token);
-            sessionStorage.setItem('usrId', this.user['usrId']);
+            sessionStorage.setItem('usrId', response.data['user']['usrId']);
 
             // Ritarda la redirezione per consentire il caricamento
             setTimeout(() => {
               this.$router.push('/home'); // Redirigi alla schermata principale delle chat
             }, 1000); // Attendi 2 secondi
           }
-        } catch (error) {
+        } catch (e) {
           // Gestisci errori di rete o di altro tipo
-          this.errormsg = error.toString();
+          this.errormsg = e.toString();
         }
       }
     },
@@ -74,7 +66,7 @@ export default {
       </form>
     </div>
     <!-- Mostra messaggi di errore -->
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
 
     <!-- Spinner di caricamento -->
     <LoadingSpinner :loading="loading" :loading-text="'Benvenuto/a '+ username +'! Caricamento in corso'" />

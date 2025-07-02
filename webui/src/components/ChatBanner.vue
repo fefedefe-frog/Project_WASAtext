@@ -54,8 +54,6 @@ export default {
   },
   methods: {
     async getChatMessages(){
-      this.errormsg= null;
-
       try {
         let response= await this.$axios.put(`/chats/${this.chat['chatId']}/messages`, {
           msgId: this.lastMsgId
@@ -128,8 +126,6 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   height: 70px;
   width: 100%;
-
-  border: 1px solid black;
 }
 
 .chat-banner:hover {

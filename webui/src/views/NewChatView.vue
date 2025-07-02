@@ -83,7 +83,7 @@ export default {
         if (e.status === 404){
           this.users= [];
         }else {
-          this.errormsg = e;
+          this.errormsg = e.toString();
         }
       }
     },
@@ -101,9 +101,9 @@ export default {
       let chatName= "";
       let chatPhoto= new Blob([], {type: 'image/png'});
       if (this.chatInfo['isGroup']){
-        chatName= this.chatInfo['chatName']
+        chatName= this.chatInfo['chatName'];
         if (this.chatInfo['chatPhoto']){
-          chatPhoto= this.chatInfo['chatPhoto']
+          chatPhoto= this.chatInfo['chatPhoto'];
         }
       }
       requestFormData.append('chatName', chatName);
@@ -295,7 +295,7 @@ export default {
         </div>
       </div>
     </form>
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
   </div>
 </template>
 

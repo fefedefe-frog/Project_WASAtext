@@ -186,7 +186,7 @@ export default {
       if (participant['usrId'] in this.participantNames){
         this.errormsg= new Error("Non puoi aggiungere un utente già partecipante").toString();
       }else {
-        this.errormsg= null
+        this.errormsg= null;
 
         try {
           let response= await this.$axios.post(`chats/${this.chat['chatId']}/users`,
@@ -222,7 +222,7 @@ export default {
 <template>
   <LoadingSpinner :loading="loading" loading-text="Caricando la chat... " />
   <div v-if="!loading" class="chat-container">
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
     <div class="chat-info-container">
       <div class="chat-image-container">
         <img :src="'data:image/png;base64,'+ chat['chatPhoto']" alt="Chat Image" draggable="false">
