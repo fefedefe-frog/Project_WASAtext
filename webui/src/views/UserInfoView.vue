@@ -5,12 +5,15 @@ export default {
       errormsg: null,
       loading: false,
       token: "",
-      myUsrId: "",
       user: {
         usrId: "",
         userName: "",
         userPhoto: "",
       },
+
+      myUsrId: "",
+      updateUserName: false,
+      newUserName: "",
     }
   },
   async mounted () {
@@ -22,10 +25,12 @@ export default {
     this.loading= true;
     await this.getUserInfo();
   },
+  computed: {
+    newNameIsValid(){
+      return (this.newUserName.length >= 3 && this.newUserName.length <= 16 && ((/^\S.*\S$/).test(this.newUserName)));
+    }
+  },
   methods: {
-    sendMessage(rawMessage){
-      console.log(rawMessage)
-    },
     async getUserInfo(){
       this.errormsg= null;
       try {
@@ -83,6 +88,41 @@ export default {
       }else {
         this.user['userPhoto'] = oldProfileImage;
       }
+    },
+    enableUsernameUpdate(){
+      this.updateUserName= !this.updateUserName;
+      let button= this.$refs.enableUsernameUpdate;
+
+      if (this.updateUserName){
+        button.classList.add('cancel-edit');
+        button.children.item(0).children.item(0).setAttribute("href", "/feather-sprite-v4.29.0.svg#x");
+
+      }else {
+        button.classList.remove('cancel-edit');
+        button.children.item(0).children.item(0).setAttribute("href", "/feather-sprite-v4.29.0.svg#edit-2");
+
+      }
+    },
+    async changeUserName(){
+      console.log("new name "+ this.newUserName);
+      this.errormsg= null;
+
+      try{
+        let response= await this.$axios.put(`/profile`, {
+          newUserName: this.newUserName,
+        },{
+          headers: {Authorization: this.token},
+        });
+
+        if (response.data){
+          this.user['userName']= response.data['userName'];
+        }
+
+      }catch (e){
+        this.errormsg= e.toString();
+      }finally {
+        this.updateUserName= false;
+      }
     }
   },
 }
@@ -106,14 +146,27 @@ export default {
         <button class="user-image-button" type="button" @click="imageUpload()">
           <img v-if="user['userPhoto']" :src="`${user['userPhoto']}` || '/images/def_single.png'" alt="Anteprima" draggable="false">
           <span>
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#edit" /></svg>
             </span>
         </button>
       </div>
       <div v-else-if="user['userPhoto']" class="user-image-container">
-        <img :src="'data:image/png;base64,'+ user['userPhoto']" alt="Profile Image">
+        <img :src="user['userPhoto']" alt="Profile Image" draggable="false">
       </div>
-      <span>{{ user['userName'].substring(0,12) }}{{ user['userName'].length > 12 ? "..." : "" }}</span>
+      <div v-if="user['usrId'] === myUsrId" class="username-container">
+        <input class="update-username" v-model="newUserName" type="text" :placeholder=" updateUserName ? 'Inserisci nome utente' : user['userName']" :disabled="!updateUserName">
+
+        <button v-if="updateUserName" class="edit-username-button" type="button" :disabled="!newNameIsValid" @click="changeUserName">
+          <svg class="feather"> <use href="/feather-sprite-v4.29.0.svg#navigation-2" /></svg>
+        </button>
+
+        <button ref="enableUsernameUpdate" class="edit-username-button" type="button" @click="enableUsernameUpdate">
+          <svg class="feather"> <use href="/feather-sprite-v4.29.0.svg#edit-2" /></svg>
+        </button>
+      </div>
+      <div v-else class="username-container">
+        <span>{{ user['userName'] }}</span>
+      </div>
     </div>
     <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null" />
   </div>
@@ -211,7 +264,6 @@ export default {
   color: white;
 }
 
-
 .user-image-container img {
   width: 20vh;
   height: 20vh;
@@ -220,21 +272,103 @@ export default {
   user-select: none;
 }
 
-.user-info span{
+.username-container{
+  flex: 1;
+  width: 100%;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.username-container input {
+  width: 70%;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  border-radius: 5%, 5%, 5%, 5%;
+  border: none;
+  align-items: center;
+}
+
+.username-container input:disabled {
+  background: none;
+}
+
+.username-container span {
+  user-select: none;
+  font-size: 7vh;
+  color: #333;
+
+  max-width: 80%;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.update-username{
   flex: 1;
   user-select: none;
   font-size: 7vh;
   color: #333;
+
+  max-width: 80%;
 }
 
+.edit-username-button {
+  width: 10%;
+  aspect-ratio: 1/1;
 
-.send-message {
+  margin: 5px;
+
+  border-radius: 10px;
+  border: 2px dashed lightseagreen;
+
   display: flex;
   flex-direction: column;
-
+  justify-content: center;
   align-items: center;
 
-  width: 80%;
-  height: fit-content;
+  text-decoration: none;
+  color: white;
+  background-color: lightseagreen;
+  cursor: pointer;
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+  transition: .4s;
+}
+
+.edit-username-button:not(:disabled):hover {
+  transition: .4s;
+  border: 2px dashed lightseagreen;
+  background-color: white;
+  color: lightseagreen;
+}
+
+.edit-username-button:active {
+  background-color: lightseagreen;
+}
+
+.edit-username-button:disabled{
+  background-color: lightgray;
+  border: 2px solid lightgray;
+  cursor: default;
+}
+
+.cancel-edit {
+  border: 2px dashed red;
+  color: black;
+  background-color: red;
+}
+
+.cancel-edit:not(:disabled):hover {
+  transition: .4s;
+  border: 2px dashed red;
+  background-color: white;
+  color: red;
+}
+
+.cancel-edit:active {
+  background-color: red;
 }
 </style>
