@@ -14,6 +14,7 @@ export default {
       required: true
     }
   },
+  emits: ['respondMessage', 'forwardMessage'],
   data: function () {
     return{
       status: "minus",
@@ -54,16 +55,16 @@ export default {
     prepMessage() {
       switch (this.message['deliveryStatus']) {
         case 'sent':
-          this.status = 'minus';
+          this.status = 'clock';
           break;
         case 'received':
-          this.status = 'chevron-up';
+          this.status = 'chevron-down';
           break;
         case 'read':
-          this.status = 'chevrons-up';
+          this.status = 'chevrons-down';
           break;
         default:
-          this.status = 'minus';
+          this.status = 'clock';
       }
 
 
@@ -82,19 +83,22 @@ export default {
         this.date= formattedDate +" "+ formattedTime;
       }
     },
+    async forwardMessage(){
+
+    }
   }
 };
 </script>
 
 <template>
   <div class="message-div" :style="dynamicMessageSide">
-    <MessageDropdownMenu v-if="usrId === message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" />
+    <MessageDropdownMenu v-if="usrId === message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
     <div class="message-container">
       <div class="message-info">
         <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-id">{{ senderName }}</div>
         <div class="message-status">
           <span class="timestamp">{{ date }}</span>
-          <svg v-if="message['senderId'] === usrId" class="feather"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
+          <svg v-if="message['senderId'] === usrId" class="feather delivery-status"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
         </div>
       </div>
       <div class="message-content">
@@ -173,25 +177,29 @@ export default {
   width: fit-content;
 }
 
-.message-status span {
-  margin-right: 3px;
+.timestamp {
+  margin-left: auto;
+  margin-right: 2px;
+  user-select: none;
 }
 
-.message-status svg{
+.delivery-status{
   border: 1px black solid;
   border-radius: 50%;
   margin-left: auto;
+
   width: 15px;
   height: 15px;
-  fill: currentColor;
+
+
   transition: fill 0.3s ease;
   user-select: none;
 }
 
-.message-status span {
-  margin-left: auto;
-  user-select: none;
+.delivery-status{
+  transform: rotate(300deg);
 }
+
 /* fine container info stato messaggio */
 
 
