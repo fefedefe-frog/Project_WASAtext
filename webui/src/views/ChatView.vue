@@ -239,7 +239,7 @@ export default {
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
           <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= !addParticipantPanel">
-            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#plus" /></svg> Aggiungi Partecipante
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user-plus" /></svg> Aggiungi Partecipante
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="$router.replace('/chats')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
@@ -259,14 +259,14 @@ export default {
       <div class="messages-container">
         <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" />
       </div>
-      <transition name="add-participant-panel">
-        <div class="add-participant-panel" v-if="addParticipantPanel">
-          <div class="select-participant">
-            <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
-          </div>
-        </div>
-      </transition>
     </div>
+    <transition name="add-participant-panel">
+      <div class="add-participant-panel bobby" v-if="addParticipantPanel">
+        <div class="select-participant">
+          <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -378,10 +378,12 @@ export default {
 /* aggiungere partecipante */
 .add-participant-panel{
   position: absolute;
-  top: 0;
-  right: 0;
   width: 30%;
-  height: 50%;
+  height: 52%;
+
+  top: 25%;
+  right: 0.5%;
+
   background: white;
   box-shadow: -2px 0 6px rgba(0,0,0,0.2);
   z-index: 999;
