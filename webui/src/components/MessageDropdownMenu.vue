@@ -1,15 +1,6 @@
 <script>
 export default {
-  props: {
-    messageId: {
-      type: Number,
-      required: true
-    },
-    senderId: {
-      type: String,
-      required: true
-    }
-  },
+  emits: ['respondTo', 'forwardMessage'],
   data: function () {
     return{
       usrId: '',
@@ -34,8 +25,20 @@ export default {
       }
     }
   },
+  methods: {
+    closeIfClickOutside(event) {
+      if(this.$refs.menu && !this.$refs.menu.contains(event.target)) {
+        this.show= false;
+      }
+    }
+  },
   mounted() {
     this.usrId= sessionStorage.getItem('usrId');
+
+    document.addEventListener('click', this.closeIfClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.closeIfClickOutside);
   }
 }
 </script>
@@ -49,15 +52,15 @@ export default {
 
     <!-- Options menu -->
     <transition name="slideDown">
-      <div v-if="show" class="dropdown-list" :style="dynamicMenuSide">
+      <div v-if="show" ref="menu" class="dropdown-list" :style="dynamicMenuSide">
 
-        <button @click="console.log('1')" class="dropdown-item" >
+        <button @click="$emit('forwardMessage')" class="dropdown-item" >
           <span>Inoltra</span>
           <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
         </button>
 
 
-        <button @click="console.log('2')" class="dropdown-item">
+        <button @click="$emit('respondMessage')" class="dropdown-item">
           <span>Rispondi</span>
           <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-left" /></svg>
         </button>
