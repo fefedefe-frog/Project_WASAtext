@@ -124,6 +124,12 @@ export default {
       @banner-clicked="bannerClicked"
     />
   </div>
+
+  <div class="list-footer">
+    <button type="button" class="btn btn-sm btn-primary shadow-none" @click="items === 'users' ? getUsers : getChats">
+      <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica {{ items === 'users' ? "utenti" : "chat" }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
@@ -158,5 +164,18 @@ export default {
 
   overflow: hidden;
   overflow-y: scroll;
+}
+
+.list-footer{
+  border-top: 2px solid gray;
+  width: 85%;
+  height: 10%;
+  margin-bottom: 0;
+  margin-top: auto;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
 }
 </style>
