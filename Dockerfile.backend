@@ -1,0 +1,29 @@
+# Creo l'immagine con golang per buildare il codice
+
+# Go builder
+FROM golang:1.19.1 AS builder
+
+# Creo(e mi sposto) una dir dove copiare il codice
+WORKDIR /src/
+
+# Copio il contenuto del codice nella workdir
+COPY . .
+
+# Compilo il backend
+RUN go build -o /app/webapi ./cmd/webapi
+
+
+# Creo il container finale che conterrà il backend
+FROM debian:bookworm
+
+# Dico al docker che porte usare per
+EXPOSE 3000
+
+# Mi sposto nella dir dove copiare l'eseguibile ed eseguirlo
+WORKDIR /app/
+
+# Copio l'eseguibile generato nel container precedente
+COPY --from=builder /app/webapi ./
+
+# Avvio il backend
+CMD ["/app/webapi"]
