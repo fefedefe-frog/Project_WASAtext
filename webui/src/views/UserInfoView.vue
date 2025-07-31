@@ -74,7 +74,7 @@ export default {
         // Faccio la richiesta per modificare l'immagine al backend
         // Preparo il formData per la richiesta
         const requestFormData= new FormData();
-        requestFormData.append('newUserPhoto', newProfileImage);
+        requestFormData.append('newUserPhoto', file);
 
         this.errormsg= null;
         try{
