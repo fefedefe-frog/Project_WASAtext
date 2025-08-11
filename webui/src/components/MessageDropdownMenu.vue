@@ -1,5 +1,15 @@
 <script>
 export default {
+  props: {
+    senderId: {
+      type: String,
+      required: true,
+    },
+    messageId: {
+      type: Number,
+      required: true,
+    }
+  },
   emits: ['respondTo', 'forwardMessage'],
   data: function () {
     return{
@@ -27,7 +37,13 @@ export default {
   },
   methods: {
     closeIfClickOutside(event) {
-      if(this.$refs.menu && !this.$refs.menu.contains(event.target)) {
+      event.stopPropagation();
+
+
+      // Controllo se il click è avennuto fuori dal menù dropdown e fuori dal pulsante per mostrarlo
+      let clickedOnButt= this.$refs.hamburgerButton.contains(event.target)
+
+      if(!this.$refs.menu.contains(event.target) && !clickedOnButt) {
         this.show= false;
       }
     }
@@ -46,27 +62,29 @@ export default {
 <template>
   <div class="message-hamburger">
     <!-- Toggle button -->
-    <button class="showMenu" @click="show = !show">
+    <button class="showMenu" ref="hamburgerButton" @click="show = !show">
       <svg class="feather" :style="dynamicTransformDirection"><use href="/feather-sprite-v4.29.0.svg#more-vertical" /></svg>
     </button>
 
     <!-- Options menu -->
-    <transition name="slideDown">
-      <div v-if="show" ref="menu" class="dropdown-list" :style="dynamicMenuSide">
+    <div class="dropdown-list-container" :style="dynamicMenuSide">
+      <transition name="slideDown">
+        <div v-show="show" ref="menu" class="dropdown-list">
 
-        <button @click="$emit('forwardMessage')" class="dropdown-item" >
-          <span>Inoltra</span>
-          <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
-        </button>
+          <button @click="$emit('forwardMessage')" class="dropdown-item" >
+            <span>Inoltra</span>
+            <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
+          </button>
 
 
-        <button @click="$emit('respondMessage')" class="dropdown-item">
-          <span>Rispondi</span>
-          <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-left" /></svg>
-        </button>
+          <button @click="$emit('respondMessage')" class="dropdown-item">
+            <span>Rispondi</span>
+            <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-left" /></svg>
+          </button>
 
-      </div>
-    </transition>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
@@ -74,6 +92,8 @@ export default {
 /* puntini button */
 .message-hamburger{
   position: relative;
+  width: fit-content;
+  height: fit-content;
 }
 
 .showMenu{
@@ -97,13 +117,21 @@ export default {
 }
 /* Fine puntini button */
 
-/* Menù a tendina */
-.dropdown-list{
+.dropdown-list-container{
   position: absolute;
   top: 22px;
   z-index: 10;
 
   width: 100px;
+  height: fit-content;
+
+  overflow: hidden;
+}
+
+/* Menù a tendina */
+.dropdown-list{
+  position: relative;
+  width: 100%;
 
   display: flex;
   flex-direction: column;
@@ -159,12 +187,12 @@ export default {
 /* Transition per menù a tendina */
 .slideDown-enter-from,
 .slideDown-leave-to {
-  transform: translateY(-25%); /* quando non cliccato */
+  transform: translateY(-100%); /* quando non cliccato */
 }
 
 .slideDown-enter-to,
 .slideDown-leave-from {
-  transform: translateY(25%); /* normalmente visibile */
+  transform: translateY(0); /* normalmente visibile */
 }
 
 .slideDown-enter-active,
