@@ -62,6 +62,14 @@ export default {
           this.updateParticipantNamesDict();
         }
       }
+    },
+    'this.respondTo': {
+      immediate: true,
+      handler(newResponde, oldRespond){
+        if(newResponde !== oldRespond){
+          console.log("risposta al messaggio: "+ newResponde);
+        }
+      }
     }
   },
   methods: {
@@ -257,7 +265,7 @@ export default {
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" />
+        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" @respondMessage="this.respondTo"/>
       </div>
     </div>
     <transition name="add-participant-panel">

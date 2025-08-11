@@ -92,7 +92,7 @@ export default {
 
 <template>
   <div class="message-div" :style="dynamicMessageSide">
-    <MessageDropdownMenu v-if="usrId === message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
+    <MessageDropdownMenu v-if="usrId === message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
     <div class="message-container">
       <div class="message-info">
         <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-id">{{ senderName }}</div>
@@ -110,7 +110,7 @@ export default {
         </div>
       </div>
     </div>
-    <MessageDropdownMenu v-if="usrId !== message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" />
+    <MessageDropdownMenu v-if="usrId !== message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
   </div>
 </template>
 
@@ -194,10 +194,6 @@ export default {
 
   transition: fill 0.3s ease;
   user-select: none;
-}
-
-.delivery-status{
-  transform: rotate(300deg);
 }
 
 /* fine container info stato messaggio */
