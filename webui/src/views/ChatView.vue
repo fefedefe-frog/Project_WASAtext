@@ -18,7 +18,9 @@ export default {
       lastMsgId: -1,
       prevLastMsgId: -1,
       messages: [],
+
       respondTo: -1,
+      respondMessageData: {},
 
       getChatInfoIntervalId: null,
       getMessagesIntervalId: null,
@@ -34,15 +36,16 @@ export default {
     this.loading= true;
     await this.getChatInfo();
     this.updateParticipantNamesDict();
-    
+
 
     this.getChatInfoIntervalId= setInterval( async () => {
       await this.getChatInfo();
       this.updateParticipantNamesDict();
     }, 30000);
 
+
     // Funzione per avviare un nuovo intervallo di ricezione dei messaggi
-    this.getMessagesSetInterval();
+    await this.getMessagesSetInterval();
   },
   beforeUnmount() {
     clearInterval(this.getChatInfoIntervalId);
@@ -63,14 +66,22 @@ export default {
         }
       }
     },
-    'this.respondTo': {
-      immediate: true,
-      handler(newResponde, oldRespond){
-        if(newResponde !== oldRespond){
-          console.log("risposta al messaggio: "+ newResponde);
+    respondTo(newId, oldId){
+      if (newId !== oldId && newId !== -1){
+        let respondMessage= this.messages.filter(message => message['msgId'] === newId)[0];
+
+        if (respondMessage){
+          this.respondMessageData= {
+            senderName: this.participantNames[respondMessage['senderId']],
+            textContent: respondMessage['textContent'],
+            photoContent: respondMessage['photoContent'],
+          };
+        }else {
+          this.respondTo= -1;
         }
       }
     }
+
   },
   methods: {
     async getMessagesSetInterval(){
@@ -176,12 +187,13 @@ export default {
         this.errormsg= e.toString();
       }finally {
         this.respondTo= -1;
+        this.respondMessageData= {};
       }
 
     },
     async leaveChat() {
       try {
-        let response= await this.$axios.delete(`/chats/${this.chat['chatId']}/users`, {
+        await this.$axios.delete(`/chats/${this.chat['chatId']}/users`, {
           headers: {Authorization: this.token}
         });
       }catch(e) {
@@ -211,8 +223,21 @@ export default {
           this.errormsg= e.toString();
         }
       }
+      this.addParticipantPanel= false;
+    },
+    respondMessageContentPrep(msgId){
+      let respondMessage= this.messages.filter(message => message['msgId'] === msgId)[0];
 
+      let resultData= null;
 
+      if (respondMessage){
+        resultData= {
+          senderName: this.participantNames[respondMessage['senderId']],
+          textContent: respondMessage['textContent'],
+          photoContent: respondMessage['photoContent'],
+        };
+      }
+      return resultData;
     },
     updateParticipantNamesDict(){
       this.participantNames= {};
@@ -260,12 +285,25 @@ export default {
     </div>
 
     <div class="message-sender">
-      <messageForm @prep-message="sendMessage" />
+      <div v-if="respondTo !== -1" class="respond-message-content">
+        <RespondMsgContent v-if="respondMessageData" :key="respondMessageData['msgId']" :message-data="respondMessageData" />
+      </div>
+
+      <div class="message-form">
+        <messageForm @prep-message="sendMessage" />
+      </div>
     </div>
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage v-for="message in messages" :key="`${message['msgId']}-${message['deliveryStatus']}`" :message-data="message" :sender-name="participantNames[message['senderId']]" :chat-is-group="chat['isGroup']" @respondMessage="this.respondTo"/>
+        <ChatMessage
+            v-for="message in messages"
+            :key="`${message['msgId']}-${message['deliveryStatus']}`"
+            :message-data="message"
+            :respond-message-data="respondMessageContentPrep(message['respondTo'])"
+            :sender-name="participantNames[message['senderId']]"
+            :chat-is-group="chat['isGroup']"
+            @respondMessage="(msgId) => respondTo= msgId"/>
       </div>
     </div>
     <transition name="add-participant-panel">
@@ -354,11 +392,37 @@ export default {
 
 /* invio messaggio */
 .message-sender{
-  height: 60px;
+  height: 65px;
   max-height: 100px;
-  width: 50%;
+  width: 95%;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: right;
+
 
   margin: 0 5px 0 auto;
+  padding: 2px 0 2px 0;
+
+  border: 1px solid violet;
+
+}
+
+.message-form{
+  width: 50%;
+  height: 100%;
+}
+
+.respond-message-content{
+  width: 50%;
+  height: 90%;
+  margin: 2px;
+
+  display: flex;
+  flex-direction: row;
+
+  justify-content: center;
+  align-items: center;
 }
 /* fine invio messaggio */
 
@@ -407,6 +471,7 @@ export default {
   align-items: center;
 
   width: 100%;
+  height: 100%;
   padding: 4px;
 
   overflow: hidden;
