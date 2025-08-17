@@ -167,7 +167,6 @@ export default {
 }
 
 .list-footer{
-  border-top: 2px solid gray;
   width: 85%;
   height: 10%;
   margin-bottom: 0;
@@ -177,5 +176,11 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+
+  border-top: 2px solid gray;
+}
+
+.btn{
+  height: 90%;
 }
 </style>
