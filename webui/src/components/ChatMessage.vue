@@ -5,6 +5,10 @@ export default {
       type: Object,
       required: true
     },
+    respondMessageData: {
+      type: Object,
+      required: false,
+    },
     senderName: {
       type: String,
       required: true
@@ -31,8 +35,9 @@ export default {
         photoContent: [],
         timestamp: "",
         comments: [],
-      }
+      },
 
+      respondToData: {}
     }
   },
   computed: {
@@ -46,6 +51,9 @@ export default {
     this.usrId= sessionStorage.getItem('usrId');
     this.message= this.messageData;
 
+    if (this.message['respondTo'] !== -1 && this.respondMessageData){
+      this.respondToData= this.respondMessageData;
+    }
     this.prepMessage();
   },
   beforeUnmount() {
@@ -84,22 +92,18 @@ export default {
       }
     },
     async forwardMessage(){
-
+      //TODO
     }
   }
-};
+}
 </script>
 
 <template>
   <div class="message-div" :style="dynamicMessageSide">
     <MessageDropdownMenu v-if="usrId === message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
     <div class="message-container">
-      <div class="message-info">
-        <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-id">{{ senderName }}</div>
-        <div class="message-status">
-          <span class="timestamp">{{ date }}</span>
-          <svg v-if="message['senderId'] === usrId" class="feather delivery-status"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
-        </div>
+      <div v-if="message['respondTo'] !== -1" class="respond-message">
+        <RespondMsgContent v-if="respondToData" :sender-name="respondToData['senderName']" :message-data="respondToData" />
       </div>
       <div class="message-content">
         <div v-if="message['photoContent'].length === 0" class="message-content-text-container">
@@ -107,6 +111,13 @@ export default {
         </div>
         <div v-if="message['photoContent'].length > 0" class="message-content-image-container">
           <img :src="'data:image/png;base64,'+message['photoContent']" alt="Image" draggable="false">
+        </div>
+      </div>
+      <div class="message-info">
+        <div v-if="chatIsGroup && message['senderId'] !== usrId" class="sender-name">{{ senderName }} </div>
+        <div class="message-status">
+          <span class="timestamp">{{ date }}</span>
+          <svg v-if="message['senderId'] === usrId" class="feather delivery-status"><use :href="'/feather-sprite-v4.29.0.svg#'+ status" /></svg>
         </div>
       </div>
     </div>
@@ -148,18 +159,31 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.respond-message{
+  width: 96%;
+  height: 40px;
+
+  margin: 2px 2% 2px 2%;
+  padding-bottom: 2px;
+  border-bottom: 1px black solid;
+}
 
 /* container info stato messaggio */
 .message-info {
+  width: 100%;
+  height: 10%;
+
+  margin-top: 2px;
+
   display: flex;
   flex-direction: row;
   align-items: center;
-  width: 100%;
-  border-bottom: 1px black solid;
+
   user-select: none;
+  border-top: 1px black solid;
 }
 
-.sender-id {
+.sender-name {
   margin-left: 2px;
   margin-right: 10px;
   font-size: 1.1em;
