@@ -10,7 +10,7 @@ export default {
       required: true,
     }
   },
-  emits: ['respondTo', 'forwardMessage'],
+  emits: ['respondTo', 'forwardMessage', 'commentMessage'],
   data: function () {
     return{
       usrId: '',
@@ -71,17 +71,24 @@ export default {
       <transition name="slideDown">
         <div v-show="show" ref="menu" class="dropdown-list">
 
-          <button @click="$emit('forwardMessage')" class="dropdown-item" >
+          <button @click="$emit('forwardMessage'); show= false" class="dropdown-item" >
             <span>Inoltra</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
           </button>
 
+          <span class="dropdown-spacer"></span>
 
-          <button @click="$emit('respondMessage')" class="dropdown-item">
+          <button @click="$emit('respondTo'); show= false" class="dropdown-item">
             <span>Rispondi</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-left" /></svg>
           </button>
 
+          <span class="dropdown-spacer"></span>
+
+          <button @click="$emit('commentMessage'); show= false" class="dropdown-item" >
+            <span>Commenta</span>
+            <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#smile" /></svg>
+          </button>
         </div>
       </transition>
     </div>
@@ -117,6 +124,8 @@ export default {
 }
 /* Fine puntini button */
 
+
+/* Menù a tendina */
 .dropdown-list-container{
   position: absolute;
   top: 22px;
@@ -128,7 +137,6 @@ export default {
   overflow: hidden;
 }
 
-/* Menù a tendina */
 .dropdown-list{
   position: relative;
   width: 100%;
@@ -174,6 +182,11 @@ export default {
   color: steelblue;
 }
 
+.dropdown-spacer{
+  width: 90%;
+  margin-top: 1px;
+  border-bottom: 2px solid cornflowerblue;
+}
 
 .feather-mod{
   width: 20px;
