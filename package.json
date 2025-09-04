@@ -1,0 +1,28 @@
+{
+  "name": "project_wasatext",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Doct0rDuc/Project_WASAtext.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Doct0rDuc/Project_WASAtext/issues"
+  },
+  "homepage": "https://github.com/Doct0rDuc/Project_WASAtext#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "eslint": "^9.34.0",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.3.0"
+  }
+}
