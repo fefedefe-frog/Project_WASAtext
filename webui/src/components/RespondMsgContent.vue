@@ -48,16 +48,16 @@ export default {
 
 <style scoped>
 .respond-container {
-  height: 100%;
+  height: fit-content;
   width: 100%;
 
   border-radius: 8px;
   border: 1px steelblue solid;
 
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
 
   background-color: cadetblue;
@@ -67,26 +67,34 @@ export default {
 
 /* contenuto del messaggio */
 .respond-to-name {
-  width: 20%;
+  width: fit-content;
+  max-width: 90%;
+  height: 10%;
 
-  margin-left: 2px;
+  margin-left: 3px;
   margin-right: auto;
+  margin-bottom: 2px;
 
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-style: italic;
+  font-weight: bold;
+
   color: #333;
+
 
   overflow: hidden;
   text-overflow: ellipsis;
+
+  border-bottom: 1px solid black;
 }
 
 /* Stile in caso di testo */
 .respond-content-text-container {
-  width: 80%;
-  height: 95%;
+  width: 96%;
+  height: 90%;
 
-  margin-right: 5px;
-
+  margin-right: 2%;
+  margin-left: 2%;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
   padding: 2px;
