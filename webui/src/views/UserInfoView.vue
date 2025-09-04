@@ -16,6 +16,11 @@ export default {
       newUserName: "",
     }
   },
+  computed: {
+    newNameIsValid(){
+      return (this.newUserName.length >= 3 && this.newUserName.length <= 16 && ((/^\S.*\S$/).test(this.newUserName)));
+    }
+  },
   async mounted () {
     this.user['usrId']= this.$route.params.usr_id;
 
@@ -24,11 +29,6 @@ export default {
 
     this.loading= true;
     await this.getUserInfo();
-  },
-  computed: {
-    newNameIsValid(){
-      return (this.newUserName.length >= 3 && this.newUserName.length <= 16 && ((/^\S.*\S$/).test(this.newUserName)));
-    }
   },
   methods: {
     async getUserInfo(){
@@ -142,15 +142,15 @@ export default {
         <button class="user-image-button" type="button" @click="imageUpload()">
           <img v-if="user['userPhoto']" :src="`${user['userPhoto']}` || '/images/def_single.png'" alt="Anteprima" draggable="false">
           <span>
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#edit" /></svg>
-            </span>
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#edit" /></svg>
+          </span>
         </button>
       </div>
       <div v-else-if="user['userPhoto']" class="user-image-container">
         <img :src="user['userPhoto']" alt="Profile Image" draggable="false">
       </div>
       <div v-if="user['usrId'] === myUsrId" class="username-container">
-        <input class="update-username" v-model="newUserName" type="text" :placeholder=" updateUserName ? 'Inserisci nome utente' : user['userName']" :disabled="!updateUserName">
+        <input v-model="newUserName" class="update-username" type="text" :placeholder=" updateUserName ? 'Inserisci nome utente' : user['userName']" :disabled="!updateUserName">
 
         <button v-if="updateUserName" class="edit-username-button" type="button" :disabled="!newNameIsValid" @click="changeUserName">
           <svg class="feather"> <use href="/feather-sprite-v4.29.0.svg#navigation-2" /></svg>
@@ -164,7 +164,7 @@ export default {
         <span>{{ user['userName'] }}</span>
       </div>
     </div>
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
   </div>
 </template>
 

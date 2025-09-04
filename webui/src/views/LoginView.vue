@@ -66,7 +66,7 @@ export default {
       </form>
     </div>
     <!-- Mostra messaggi di errore -->
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
 
     <!-- Spinner di caricamento -->
     <LoadingSpinner :loading="loading" :loading-text="'Benvenuto/a '+ username +'! Caricamento in corso'" />

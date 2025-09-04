@@ -267,26 +267,28 @@ export default {
         </div>
       </div>
       <!-- Sezione per il messaggio iniziale (COME DOVREBBE ESSERE) -->
-<!--      <div class="initial-message">-->
-<!--        <div class="mess-form">-->
-<!--          <textarea v-if="!initialMessage['photoContent']" v-model="initialMessage['textContent']" class="textarea-content" placeholder="Scrivi un messaggio..." rows="2" :maxlength="1024" />-->
-<!--          <div v-if="initialMessage['photoContent']" class="image-name">-->
-<!--            <button class="form-buttons delete-button" type="button" @click="initialMessage['photoContent']=null; initialMessage['photoName']= ''">-->
-<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>-->
-<!--            </button>-->
-<!--            <span>{{ initialMessage['photoName'] }}</span>-->
-<!--          </div>-->
-<!--          <div class="buttom-column">-->
-<!--            <button class="form-buttons" type="button" @click="imageUpload('messagePhoto')">-->
-<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>-->
-<!--            </button>-->
+      <!--
+      <div class="initial-message">
+        <div class="mess-form">
+          <textarea v-if="!initialMessage['photoContent']" v-model="initialMessage['textContent']" class="textarea-content" placeholder="Scrivi un messaggio..." rows="2" :maxlength="1024" />
+          <div v-if="initialMessage['photoContent']" class="image-name">
+            <button class="form-buttons delete-button" type="button" @click="initialMessage['photoContent']=null; initialMessage['photoName']= ''">
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
+            </button>
+            <span>{{ initialMessage['photoName'] }}</span>
+          </div>
+          <div class="buttom-column">
+            <button class="form-buttons" type="button" @click="imageUpload('messagePhoto')">
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+            </button>
 
-<!--            <button class="form-buttons" type="submit" :disabled="!isFormSendable">-->
-<!--              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>-->
-<!--            </button>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
+            <button class="form-buttons" type="submit" :disabled="!isFormSendable">
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      -->
       <!-- TEST -->
       <div class="initial-message">
         <div class="mess-form">
@@ -296,7 +298,7 @@ export default {
         </div>
       </div>
     </form>
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
   </div>
 </template>
 

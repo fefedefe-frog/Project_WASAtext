@@ -1,11 +1,12 @@
 <script>
 export default {
-  name: "ForwardMessage"
 }
 </script>
 
 <template>
-
+  <div>
+    test
+  </div>
 </template>
 
 <style scoped>

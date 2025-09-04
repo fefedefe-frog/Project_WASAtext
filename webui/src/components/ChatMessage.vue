@@ -98,13 +98,13 @@ export default {
 <template>
   <div class="message-div" :style="dynamicMessageSide">
     <MessageDropdownMenu
-        v-if="usrId === message['senderId']"
-        :message-id="message['msgId']"
-        :sender-id="message['senderId']"
-        @respond-to="$emit('respondMsg', message['msgId'])"
-        @forward-msg="$emit('forwardMsg', message['msgId'])"
-        @comment-msg="console.log('TODO')"
-        @delete-msg="$emit('deleteMsg', message['msgId'])"
+      v-if="usrId === message['senderId']"
+      :message-id="message['msgId']"
+      :sender-id="message['senderId']"
+      @respond-to="$emit('respondMsg', message['msgId'])"
+      @forward-msg="$emit('forwardMsg', message['msgId'])"
+      @comment-msg="console.log('TODO')"
+      @delete-msg="$emit('deleteMsg', message['msgId'])"
     />
     <div class="message-container">
       <div v-if="message['respondTo'] !== -1" class="respond-message">
@@ -127,13 +127,13 @@ export default {
       </div>
     </div>
     <MessageDropdownMenu
-        v-if="usrId === message['senderId']"
-        :message-id="message['msgId']"
-        :sender-id="message['senderId']"
-        @respond-to="$emit('respondMsg', message['msgId'])"
-        @forward-msg="$emit('forwardMsg', message['msgId'])"
-        @comment-msg="console.log('TODO')"
-        @delete-msg="$emit('deleteMsg', message['msgId'])"
+      v-if="usrId === message['senderId']"
+      :message-id="message['msgId']"
+      :sender-id="message['senderId']"
+      @respond-to="$emit('respondMsg', message['msgId'])"
+      @forward-msg="$emit('forwardMsg', message['msgId'])"
+      @comment-msg="console.log('TODO')"
+      @delete-msg="$emit('deleteMsg', message['msgId'])"
     />
   </div>
 </template>

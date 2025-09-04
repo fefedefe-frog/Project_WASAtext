@@ -34,7 +34,7 @@ export default {
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home" /></svg>
           </RouterLink>
         </div>
-        <div class="spacer"></div>
+        <div class="spacer" />
         <div class="navmenu-submenu">
           <button class="navmenu-button" @click="myProfile">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user" /></svg>

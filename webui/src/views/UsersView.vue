@@ -34,7 +34,7 @@ export default {
       <RouterView :key="$route.fullPath" />
     </div>
 
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
   </div>
 </template>
 

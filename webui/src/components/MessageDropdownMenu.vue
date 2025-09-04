@@ -35,6 +35,14 @@ export default {
       }
     }
   },
+  mounted() {
+    this.usrId= sessionStorage.getItem('usrId');
+
+    document.addEventListener('click', this.closeIfClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.closeIfClickOutside);
+  },
   methods: {
     closeIfClickOutside(event) {
       event.stopPropagation();
@@ -47,14 +55,6 @@ export default {
         this.show= false;
       }
     }
-  },
-  mounted() {
-    this.usrId= sessionStorage.getItem('usrId');
-
-    document.addEventListener('click', this.closeIfClickOutside);
-  },
-  beforeUnmount() {
-    document.removeEventListener('click', this.closeIfClickOutside);
   }
 }
 </script>
@@ -62,7 +62,7 @@ export default {
 <template>
   <div class="message-hamburger">
     <!-- Toggle button -->
-    <button class="showMenu" ref="hamburgerButton" @click="show = !show">
+    <button ref="hamburgerButton" class="showMenu" @click="show = !show">
       <svg class="feather" :style="dynamicTransformDirection"><use href="/feather-sprite-v4.29.0.svg#more-vertical" /></svg>
     </button>
 
@@ -70,29 +70,28 @@ export default {
     <div class="dropdown-list-container" :style="dynamicMenuSide">
       <transition name="slideDown">
         <div v-show="show" ref="menu" class="dropdown-list">
-
-          <button @click="$emit('forwardMsg'); show= false" class="dropdown-item" >
+          <button class="dropdown-item" @click="$emit('forwardMsg'); show= false">
             <span>Inoltra</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
           </button>
 
-          <span class="dropdown-spacer"></span>
+          <span class="dropdown-spacer" />
 
-          <button @click="$emit('respondTo'); show= false" class="dropdown-item">
+          <button class="dropdown-item" @click="$emit('respondTo'); show= false">
             <span>Rispondi</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-left" /></svg>
           </button>
 
-          <span class="dropdown-spacer"></span>
+          <span class="dropdown-spacer" />
 
-          <button @click="$emit('commentMsg'); show= false" class="dropdown-item" >
+          <button class="dropdown-item" @click="$emit('commentMsg'); show= false">
             <span>Commenta</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#smile" /></svg>
           </button>
 
-          <span v-if="this.usrId === this.senderId" class="dropdown-spacer"></span>
+          <span v-if="usrId === senderId" class="dropdown-spacer" />
 
-          <button v-if="this.usrId === this.senderId" @click="$emit('deleteMsg'); show= false" class="dropdown-item" >
+          <button v-if="usrId === senderId" class="dropdown-item" @click="$emit('deleteMsg'); show= false">
             <span>Elimina</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
           </button>

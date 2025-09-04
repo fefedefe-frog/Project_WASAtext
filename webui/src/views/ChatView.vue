@@ -32,6 +32,27 @@ export default {
       newGroupName: "",
     }
   },
+  computed: {
+    groupNameIsValid() {
+      const name=  this.newGroupName;
+      return (name.length >= 3 && name.length <= 16 && ((/^\S.*\S$/).test(name)));
+    },
+  },
+  watch: {
+    '$route.params.chat_id': {
+      immediate: true,
+      async handler(newChatId, oldChatId){
+        if (newChatId !== oldChatId){
+          if (this.token === "") this.token= sessionStorage.getItem('authToken');
+
+          this.loading= true;
+          this.chat['chatId']= newChatId;
+
+          await this.getChatInfo();
+          this.updateParticipantNamesDict();
+        }
+      }
+    },
   async mounted(){
     this.chat['chatId']= this.$route.params.chat_id;
     this.usrId= sessionStorage.getItem('usrId')
@@ -55,21 +76,6 @@ export default {
     clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
   },
-  watch: {
-    '$route.params.chat_id': {
-      immediate: true,
-      async handler(newChatId, oldChatId){
-        if (newChatId !== oldChatId){
-          if (this.token === "") this.token= sessionStorage.getItem('authToken');
-
-          this.loading= true;
-          this.chat['chatId']= newChatId;
-
-          await this.getChatInfo();
-          this.updateParticipantNamesDict();
-        }
-      }
-    },
     respondTo(newId, oldId){
       if (newId !== oldId && newId !== -1){
         let respondMessage= this.messages.filter(message => message['msgId'] === newId)[0];
@@ -85,12 +91,6 @@ export default {
         }
       }
     }
-  },
-  computed: {
-    groupNameIsValid() {
-      const name=  this.newGroupName;
-      return (name.length >= 3 && name.length <= 16 && ((/^\S.*\S$/).test(name)));
-    },
   },
   methods: {
     async getMessagesSetInterval(){
@@ -350,7 +350,7 @@ export default {
 <template>
   <LoadingSpinner :loading="loading" loading-text="Caricando la chat... " />
   <div v-if="!loading" class="chat-container">
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
     <div class="chat-info-container">
       <div class="chat-image-container">
         <img :src="'data:image/png;base64,'+ chat['chatPhoto']" alt="Chat Image" draggable="false">
@@ -395,21 +395,21 @@ export default {
     <div class="messages-main">
       <div class="messages-container">
         <ChatMessage
-            v-for="message in messages"
-            :key="`${message['msgId']}-${message['deliveryStatus']}`"
-            :message-data="message"
-            :respond-message-data="respondMessageContentPrep(message['respondTo'])"
-            :sender-name="participantNames[message['senderId']]"
-            :chat-is-group="chat['isGroup']"
-            @respond-msg="(msgId) => respondTo= msgId"
-            @forward-msg="console.log('TODO')"
-            @delete-msg="deleteMessage"
+          v-for="message in messages"
+          :key="`${message['msgId']}-${message['deliveryStatus']}`"
+          :message-data="message"
+          :respond-message-data="respondMessageContentPrep(message['respondTo'])"
+          :sender-name="participantNames[message['senderId']]"
+          :chat-is-group="chat['isGroup']"
+          @respond-msg="(msgId) => respondTo= msgId"
+          @forward-msg="console.log('TODO')"
+          @delete-msg="deleteMessage"
         />
       </div>
     </div>
 
     <transition name="add-participant-panel">
-      <div class="add-participant-panel bobby" v-if="addParticipantPanel">
+      <div v-if="addParticipantPanel" class="add-participant-panel bobby">
         <div class="select-participant">
           <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
         </div>
@@ -417,7 +417,7 @@ export default {
     </transition>
 
     <transition name="change-group-info-panel">
-      <div class="change-group-info-panel bobby" v-if="changeGroupInfo">
+      <div v-if="changeGroupInfo" class="change-group-info-panel bobby">
         <div class="update-group-photo">
           <button class="chat-image-button" type="button" @click="imageUpload">
             <img :src="'data:image/png;base64,'+ chat['chatPhoto'] || '/images/def_group.png'" alt="Anteprima" draggable="false">

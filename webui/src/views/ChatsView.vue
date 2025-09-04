@@ -31,10 +31,10 @@ export default {
       <SidebarList items="chats" :banner-component="'ChatBanner'" @banner-data="loadChat" @error="componentsErrorHandler" />
     </div>
     <div class="chat-container bobby">
-      <RouterView :key="$route.fullPath"/>
+      <RouterView :key="$route.fullPath" />
     </div>
 
-    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="this.errormsg= null"/>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" @close="errormsg= null" />
   </div>
 </template>
 

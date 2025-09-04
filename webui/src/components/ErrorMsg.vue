@@ -13,7 +13,7 @@ export default {
 <template>
   <div class="alert alert-danger error-div" role="alert">
     <span>{{ msg }}</span>
-    <button class="close-button" @click="this.$emit('close')">Close</button>
+    <button class="close-button" @click="$emit('close')">Close</button>
   </div>
 </template>
 
