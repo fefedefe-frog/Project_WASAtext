@@ -20,6 +20,7 @@ export default {
 <style scoped>
 .error-div {
   position: absolute;
+  z-index: 1000;
 
   top: 2%;
   left: 50%;
