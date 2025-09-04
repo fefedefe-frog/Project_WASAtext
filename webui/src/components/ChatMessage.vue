@@ -127,7 +127,7 @@ export default {
       </div>
     </div>
     <MessageDropdownMenu
-      v-if="usrId === message['senderId']"
+      v-if="usrId !== message['senderId']"
       :message-id="message['msgId']"
       :sender-id="message['senderId']"
       @respond-to="$emit('respondMsg', message['msgId'])"
