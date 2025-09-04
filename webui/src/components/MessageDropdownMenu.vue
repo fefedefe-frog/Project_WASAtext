@@ -10,7 +10,7 @@ export default {
       required: true,
     }
   },
-  emits: ['respondTo', 'forwardMessage', 'commentMessage'],
+  emits: ['respondTo', 'forwardMsg', 'commentMsg', 'deleteMsg'],
   data: function () {
     return{
       usrId: '',
@@ -71,7 +71,7 @@ export default {
       <transition name="slideDown">
         <div v-show="show" ref="menu" class="dropdown-list">
 
-          <button @click="$emit('forwardMessage'); show= false" class="dropdown-item" >
+          <button @click="$emit('forwardMsg'); show= false" class="dropdown-item" >
             <span>Inoltra</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#corner-up-right" /></svg>
           </button>
@@ -85,9 +85,16 @@ export default {
 
           <span class="dropdown-spacer"></span>
 
-          <button @click="$emit('commentMessage'); show= false" class="dropdown-item" >
+          <button @click="$emit('commentMsg'); show= false" class="dropdown-item" >
             <span>Commenta</span>
             <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#smile" /></svg>
+          </button>
+
+          <span v-if="this.usrId === this.senderId" class="dropdown-spacer"></span>
+
+          <button v-if="this.usrId === this.senderId" @click="$emit('deleteMsg'); show= false" class="dropdown-item" >
+            <span>Elimina</span>
+            <svg class="feather feather-mod"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
           </button>
         </div>
       </transition>

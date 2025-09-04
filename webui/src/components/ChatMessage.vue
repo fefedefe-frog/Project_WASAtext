@@ -18,7 +18,7 @@ export default {
       required: true
     }
   },
-  emits: ['respondMessage', 'forwardMessage'],
+  emits: ['respondMsg', 'forwardMsg', 'deleteMsg'],
   data: function () {
     return{
       status: "minus",
@@ -91,16 +91,21 @@ export default {
         this.date= formattedDate +" "+ formattedTime;
       }
     },
-    async forwardMessage(){
-      //TODO
-    }
   }
 }
 </script>
 
 <template>
   <div class="message-div" :style="dynamicMessageSide">
-    <MessageDropdownMenu v-if="usrId === message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
+    <MessageDropdownMenu
+        v-if="usrId === message['senderId']"
+        :message-id="message['msgId']"
+        :sender-id="message['senderId']"
+        @respond-to="$emit('respondMsg', message['msgId'])"
+        @forward-msg="$emit('forwardMsg', message['msgId'])"
+        @comment-msg="console.log('TODO')"
+        @delete-msg="$emit('deleteMsg', message['msgId'])"
+    />
     <div class="message-container">
       <div v-if="message['respondTo'] !== -1" class="respond-message">
         <RespondMsgContent v-if="respondToData" :sender-name="respondToData['senderName']" :message-data="respondToData" />
@@ -121,7 +126,15 @@ export default {
         </div>
       </div>
     </div>
-    <MessageDropdownMenu v-if="usrId !== message['senderId']" :message-id="message['msgId']" :sender-id="message['senderId']" @respond-to="$emit('respondMessage', message['msgId'])" @forward-message="forwardMessage" />
+    <MessageDropdownMenu
+        v-if="usrId === message['senderId']"
+        :message-id="message['msgId']"
+        :sender-id="message['senderId']"
+        @respond-to="$emit('respondMsg', message['msgId'])"
+        @forward-msg="$emit('forwardMsg', message['msgId'])"
+        @comment-msg="console.log('TODO')"
+        @delete-msg="$emit('deleteMsg', message['msgId'])"
+    />
   </div>
 </template>
 
@@ -161,7 +174,7 @@ export default {
 
 .respond-message{
   width: 96%;
-  height: 40px;
+  height: 10%;
 
   margin: 2px 2% 2px 2%;
   padding-bottom: 2px;
@@ -226,6 +239,7 @@ export default {
 /* contenuto del messaggio */
 .message-content {
   width: 100%;
+  height: 80%;
   margin-top: 2px;
 }
 
