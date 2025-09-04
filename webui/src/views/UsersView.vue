@@ -18,8 +18,8 @@ export default {
     showUserInfo(bannerData){
       this.$router.replace(`/users/${bannerData['usrId']}`);
     },
-    componentsErrorHandler(error){
-      this.errormsg= error;
+    componentsErrorHandler(e){
+      this.errormsg= e;
     },
   }
 }

@@ -1,4 +1,5 @@
 <script>
+
 export default {
   props: {
     items: {
@@ -75,10 +76,16 @@ export default {
           }
         }
       }catch(e) {
-        if (e.status === 404){
+        if (e.response.status === 404){
           this.users= [];
         }else {
-          this.$emit('error', e);
+          let error_string= ""
+          if (e.response.status === 401 || e.response.status === 500){
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{
+            error_string= `Internal axios error: ${e}`
+          }
+          this.$emit('error', error_string);
         }
       }
     },

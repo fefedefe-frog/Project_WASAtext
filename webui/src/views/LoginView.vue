@@ -44,9 +44,16 @@ export default {
               this.$router.push('/home'); // Redirigi alla schermata principale delle chat
             }, 1000); // Attendi 2 secondi
           }
-        } catch (e) {
-          // Gestisci errori di rete o di altro tipo
-          this.errormsg = e.toString();
+        } catch(e) {
+          let error_string= ""
+          if (e.response.status === 400 ||  //Bad request
+              e.response.status === 500){   //Internal server error
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{  //Axios error
+            error_string= `Internal axios error: ${e}`
+            console.log(e)
+          }
+          this.errormsg= error_string;
         }
       }
     },

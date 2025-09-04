@@ -21,16 +21,16 @@ export default {
     <main v-if="$route.name !== 'login'" class="app-main">
       <div class="navmenu bobby">
         <div class="navmenu-submenu">
-          <RouterLink to="/users" class="navmenu-button">
+          <RouterLink to="/users" class="navmenu-button" draggable="false">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#users" /></svg>
           </RouterLink>
-          <RouterLink to="/chats" class="navmenu-button">
+          <RouterLink to="/chats" class="navmenu-button" draggable="false">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#message-circle" /></svg>
           </RouterLink>
-          <RouterLink to="/newChat" class="navmenu-button">
+          <RouterLink to="/newChat" class="navmenu-button" draggable="false">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#plus-circle" /></svg>
           </RouterLink>
-          <RouterLink to="/home" class="navmenu-button">
+          <RouterLink to="/home" class="navmenu-button" draggable="false">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home" /></svg>
           </RouterLink>
         </div>

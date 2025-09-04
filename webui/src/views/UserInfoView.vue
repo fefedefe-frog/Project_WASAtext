@@ -43,7 +43,17 @@ export default {
           this.user['userPhoto']= `data:image/png;base64,${this.user['userPhoto']}`;
         }
       }catch(e) {
-        this.errormsg= e.toString();
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }finally {
         this.loading= false
       }
@@ -77,8 +87,19 @@ export default {
           if (response.data){
             this.user['userPhoto']= response.data['userPhoto']
           }
-        }catch (e){
-          this.errormsg= e.toString();
+        }catch(e) {
+          let error_string= ""
+          if (e.response.status === 400 ||  //Bad request
+              e.response.status === 401 ||  //Unauthorized
+              e.response.status === 403 ||  //Forbidden
+              e.response.status === 404 ||  //Not found
+              e.response.status === 500){   //Internal server error
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{  //Axios error
+            error_string= `Internal axios error: ${e}`
+            console.log(e)
+          }
+          this.errormsg= error_string;
           this.user['userPhoto']= oldProfileImage;
         }
       }else {
@@ -114,8 +135,19 @@ export default {
           this.user['userName']= response.data['userName'];
         }
 
-      }catch (e){
-        this.errormsg= e.toString();
+      }catch(e) {
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }finally {
         this.updateUserName= false;
       }

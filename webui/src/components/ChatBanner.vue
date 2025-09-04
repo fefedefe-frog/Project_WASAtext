@@ -11,10 +11,8 @@ export default {
   ],
   data() {
     return {
-      errormsg: null,
       token: "",
       usrId: "",
-
 
       chat: {
         chatId: -1,

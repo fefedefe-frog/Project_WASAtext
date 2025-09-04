@@ -91,10 +91,11 @@ export default {
 /* Stile in caso di testo */
 .respond-content-text-container {
   width: 96%;
-  height: 90%;
+  height: 88%;
 
   margin-right: 2%;
   margin-left: 2%;
+  margin-bottom: 2%;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
   padding: 2px;

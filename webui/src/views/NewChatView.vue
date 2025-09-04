@@ -80,10 +80,19 @@ export default {
           }
         }
       }catch(e) {
-        if (e.status === 404){
+        if (e.response.status === 404){
           this.users= [];
         }else {
-          this.errormsg = e.toString();
+          let error_string= ""
+          if (e.response.status === 400 ||  //Bad request
+              e.response.status === 401 ||  //Unauthorized
+              e.response.status === 500){   //Internal server error
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{  //Axios error
+            error_string= `Internal axios error: ${e}`
+            console.log(e)
+          }
+          this.errormsg= error_string;
         }
       }
     },
@@ -116,7 +125,7 @@ export default {
       let textContent= this.initialMessage['textContent'];
       let photoContent= new Blob([], {type: 'image/png'});
 
-      // Come dovrei fare secondo la consegna
+      // Come avevo pensato di fare
       // if (this.initialMessage['photoContent']){
       //   textContent= "";
       //   photoContent= this.initialMessage['photoContent'];
@@ -125,7 +134,7 @@ export default {
       // requestFormData.append('messageTextContent', textContent);
       // requestFormData.append('messagePhotoContent', photoContent);
 
-      // Test per vedere se la chat può essere creata senza messaggio....
+      // Test per vedere se la chat può essere creata senza messaggio dell'utente
       textContent= `Chat creata da ${this.usrId}`
       requestFormData.append('messageTextContent', textContent);
       requestFormData.append('messagePhotoContent', photoContent);
@@ -138,17 +147,22 @@ export default {
         });
 
         if(response.data){
-          let newChat= {
-            chatId: response.data['chatId'],
-            isGroup: response.data['isGroup'],
-            chatName: response.data['chatName'],
-            chatPhoto: response.data['chatPhoto'],
-            participants: response.data['participants']
-          }
-          setTimeout(this.$router.push(`/chats/${newChat['chatId']}`), 500);
+          let newChat= response.data
+          setTimeout(()=> {
+            this.$router.push(`/chats/${newChat['chatId']}`)
+          }, 500);
         }
-      }catch (e){
-        this.errormsg= e.toString();
+      }catch(e) {
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }
     },
     imageUpload(target) {
@@ -220,8 +234,8 @@ export default {
       this.initialMessage['photoContent']= null;
       this.initialMessage['photoName']= "";
     },
-    componentsErrorHandler(error){
-      this.errormsg= error.toString();
+    componentsErrorHandler(e){
+      this.errormsg= e;
     },
   }
 }

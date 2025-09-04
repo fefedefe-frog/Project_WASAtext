@@ -19,7 +19,7 @@ export default {
       this.$router.replace(`/chats/${chatId}`)
     },
     componentsErrorHandler(e){
-      this.errormsg= e.toString();
+      this.errormsg= e;
     },
   }
 }
