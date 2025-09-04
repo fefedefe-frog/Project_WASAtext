@@ -41,18 +41,34 @@ export default {
   watch: {
     '$route.params.chat_id': {
       immediate: true,
-      async handler(newChatId, oldChatId){
-        if (newChatId !== oldChatId){
-          if (this.token === "") this.token= sessionStorage.getItem('authToken');
+      async handler(newChatId, oldChatId) {
+        if (newChatId !== oldChatId) {
+          if (this.token === "") this.token = sessionStorage.getItem('authToken');
 
-          this.loading= true;
-          this.chat['chatId']= newChatId;
+          this.loading = true;
+          this.chat['chatId'] = newChatId;
 
           await this.getChatInfo();
           this.updateParticipantNamesDict();
         }
       }
     },
+    respondTo(newId, oldId){
+      if (newId !== oldId && newId !== -1){
+        let respondMessage= this.messages.filter(message => message['msgId'] === newId)[0];
+
+        if (respondMessage){
+          this.respondMessageData= {
+            senderName: this.participantNames[respondMessage['senderId']],
+            textContent: respondMessage['textContent'],
+            photoContent: respondMessage['photoContent'],
+          };
+        }else {
+          this.respondTo= -1;
+        }
+      }
+    }
+  },
   async mounted(){
     this.chat['chatId']= this.$route.params.chat_id;
     this.usrId= sessionStorage.getItem('usrId')
@@ -75,22 +91,6 @@ export default {
   beforeUnmount() {
     clearInterval(this.getChatInfoIntervalId);
     clearInterval(this.getMessagesIntervalId);
-  },
-    respondTo(newId, oldId){
-      if (newId !== oldId && newId !== -1){
-        let respondMessage= this.messages.filter(message => message['msgId'] === newId)[0];
-
-        if (respondMessage){
-          this.respondMessageData= {
-            senderName: this.participantNames[respondMessage['senderId']],
-            textContent: respondMessage['textContent'],
-            photoContent: respondMessage['photoContent'],
-          };
-        }else {
-          this.respondTo= -1;
-        }
-      }
-    }
   },
   methods: {
     async getMessagesSetInterval(){
@@ -118,8 +118,19 @@ export default {
           this.chat['isGroup']= response.data['isGroup'];
           this.chat['participants']= response.data['participants'];
         }
-      } catch (e) {
-        this.errormsg= e.toString();
+      } catch(e) {
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       } finally {
         this.loading= false;
       }
@@ -150,7 +161,18 @@ export default {
           }
         }
       }catch(e) {
-        this.errormsg= e.toString();
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }
       this.getMessagesIsRunning= false;
     },
@@ -170,11 +192,21 @@ export default {
         await this.$axios.delete(`/chats/${this.chat['chatId']}/messages/${msgId}`, {
           headers: {Authorization: this.token}
         });
-
         this.messages= this.messages.filter(message => message['msgId'] !== msgId)
 
       }catch(e) {
-        this.errormsg= e.toString();
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }
     },
     async updateReadStatus() {
@@ -189,7 +221,18 @@ export default {
           throw new Error("unable to update the messages status");
         }
       }catch(e) {
-        this.errormsg= e.toString();
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }
 
       this.prevLastMsgId= this.lastMsgId;
@@ -215,8 +258,19 @@ export default {
             this.lastMsgId= response.data['message']['msgId'];
           }
         }
-      }catch (e){
-        this.errormsg= e.toString();
+      }catch(e) {
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }finally {
         this.respondTo= -1;
         this.respondMessageData= {};
@@ -229,7 +283,18 @@ export default {
           headers: {Authorization: this.token}
         });
       }catch(e) {
-        this.errormsg= e.toString();
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }finally {
         this.$router.replace('/chats');
       }
@@ -252,7 +317,18 @@ export default {
             this.updateParticipantNamesDict();
           }
         }catch(e) {
-          this.errormsg= e.toString();
+          let error_string= ""
+          if (e.response.status === 400 ||  //Bad request
+              e.response.status === 401 ||  //Unauthorized
+              e.response.status === 403 ||  //Forbidden
+              e.response.status === 404 ||  //Not found
+              e.response.status === 500){   //Internal server error
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{  //Axios error
+            error_string= `Internal axios error: ${e}`
+            console.log(e)
+          }
+          this.errormsg= error_string;
         }
       }
       this.addParticipantPanel= false;
@@ -290,8 +366,19 @@ export default {
           if (response.data){
             this.chat['chatPhoto']= response.data['chatPhoto']
           }
-        }catch (e){
-          this.errormsg= e.toString();
+        }catch(e) {
+          let error_string= ""
+          if (e.response.status === 400 ||  //Bad request
+              e.response.status === 401 ||  //Unauthorized
+              e.response.status === 403 ||  //Forbidden
+              e.response.status === 404 ||  //Not found
+              e.response.status === 500){   //Internal server error
+            error_string= `Error: ${e.response.status}. ${e.response.data}`
+          }else{  //Axios error
+            error_string= `Internal axios error: ${e}`
+            console.log(e)
+          }
+          this.errormsg= error_string;
           this.chat['chatPhoto']= oldGroupPhoto;
         }
       }else {
@@ -316,8 +403,19 @@ export default {
         if (response.data){
           this.chat['chatName']= response.data['chatName']
         }
-      }catch (e){
-        this.errormsg= e.toString();
+      }catch(e) {
+        let error_string= ""
+        if (e.response.status === 400 ||  //Bad request
+            e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
+            e.response.status === 404 ||  //Not found
+            e.response.status === 500){   //Internal server error
+          error_string= `Error: ${e.response.status}. ${e.response.data}`
+        }else{  //Axios error
+          error_string= `Internal axios error: ${e}`
+          console.log(e)
+        }
+        this.errormsg= error_string;
       }
     },
     respondMessageContentPrep(msgId){
@@ -341,7 +439,7 @@ export default {
       });
     },
     errorHandler(e){
-      this.errormsg = e.toString();
+      this.errormsg = e;
     },
   }
 }
