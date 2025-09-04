@@ -57,19 +57,11 @@ export default {
       input.click();
     },
     async changeUserPhoto(event){
-      let newProfileImage= null;
       let oldProfileImage= this.user['userPhoto'];
 
       const file= event.target.files[0];
 
       if (file && file.type.startsWith("image/")) {
-        const reader= new FileReader();
-
-        reader.onload= (e) => {
-          newProfileImage= file;
-          this.user['userPhoto']= e.target.result;
-        };
-        reader.readAsDataURL(file);
 
         // Faccio la richiesta per modificare l'immagine al backend
         // Preparo il formData per la richiesta
@@ -81,6 +73,10 @@ export default {
           let response= await this.$axios.put('/profile/propic', requestFormData, {
             headers: {Authorization: this.token},
           });
+
+          if (response.data){
+            this.user['userPhoto']= response.data['userPhoto']
+          }
         }catch (e){
           this.errormsg= e.toString();
           this.user['userPhoto']= oldProfileImage;

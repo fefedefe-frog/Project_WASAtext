@@ -92,6 +92,7 @@ export default {
 
       if (this.chatInfo['participantsId'].length < 1){
         this.errormsg= new Error("numero di partecipanti non valido");
+        return
       }
 
       // Preparo il formData per la richiesta
