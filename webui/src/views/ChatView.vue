@@ -2,6 +2,7 @@
 export default {
   data: function () {
     return {
+      usrId: '',
       token: '',
       errormsg: null,
       loading: false,
@@ -27,10 +28,13 @@ export default {
       getMessagesIsRunning: false,
 
       addParticipantPanel: false,
+      changeGroupInfo: false,
+      newGroupName: "",
     }
   },
   async mounted(){
     this.chat['chatId']= this.$route.params.chat_id;
+    this.usrId= sessionStorage.getItem('usrId')
     this.token= sessionStorage.getItem('authToken');
 
     this.loading= true;
@@ -81,7 +85,12 @@ export default {
         }
       }
     }
-
+  },
+  computed: {
+    groupNameIsValid() {
+      const name=  this.newGroupName;
+      return (name.length >= 3 && name.length <= 16 && ((/^\S.*\S$/).test(name)));
+    },
   },
   methods: {
     async getMessagesSetInterval(){
@@ -144,6 +153,29 @@ export default {
         this.errormsg= e.toString();
       }
       this.getMessagesIsRunning= false;
+    },
+    async forwardMessage(msgId){
+      //TODO
+    },
+    async deleteMessage(msgId){
+
+      // Recupero il messaggio dalla lista di messaggi
+      let msg= this.messages.filter(message => message['msgId'] === msgId)[0];
+      if (this.usrId !== msg['senderId']) {
+        this.errormsg= "non puoi eliminare il messaggio di un altro utente"
+        return;
+      }
+
+      try {
+        await this.$axios.delete(`/chats/${this.chat['chatId']}/messages/${msgId}`, {
+          headers: {Authorization: this.token}
+        });
+
+        this.messages= this.messages.filter(message => message['msgId'] !== msgId)
+
+      }catch(e) {
+        this.errormsg= e.toString();
+      }
     },
     async updateReadStatus() {
       if (this.prevLastMsgId === this.lastMsgId) return;
@@ -225,6 +257,69 @@ export default {
       }
       this.addParticipantPanel= false;
     },
+    imageUpload() {
+      const input= document.createElement('input');
+      input.type= "file";
+      input.accept= "image/*";
+
+      input.addEventListener("change", async (event) => await this.changeGroupPhoto(event));
+      input.click();
+    },
+    async changeGroupPhoto(event){
+      this.errormsg= null;
+
+      if (!this.chat['isGroup']){
+        this.errormsg= "non puoi cambiare l'immagine profilo di un altro utente";
+        return
+      }
+      let oldGroupPhoto= this.chat['chatPhoto'];
+
+      const file= event.target.files[0];
+      if (file && file.type.startsWith("image/")) {
+
+        // Faccio la richiesta per modificare l'immagine al backend
+        // Preparo il formData per la richiesta
+        const requestFormData= new FormData();
+        requestFormData.append('newGroupPhoto', file);
+
+        try{
+          let response= await this.$axios.put(`/chats/${this.chat['chatId']}/propic`, requestFormData, {
+            headers: {Authorization: this.token},
+          });
+
+          if (response.data){
+            this.chat['chatPhoto']= response.data['chatPhoto']
+          }
+        }catch (e){
+          this.errormsg= e.toString();
+          this.chat['chatPhoto']= oldGroupPhoto;
+        }
+      }else {
+        this.chat['chatPhoto']= oldGroupPhoto;
+      }
+    },
+    async updateGroupName(){
+      this.errormsg= null;
+
+      if (!this.chat['isGroup']){
+        this.errormsg= "non puoi cambiare l'immagine profilo di un altro utente";
+        return
+      }
+
+      try{
+        let response= await this.$axios.put(`/chats/${this.chat['chatId']}`, {
+          newGroupName: this.newGroupName,
+        }, {
+          headers: {Authorization: this.token},
+        });
+
+        if (response.data){
+          this.chat['chatName']= response.data['chatName']
+        }
+      }catch (e){
+        this.errormsg= e.toString();
+      }
+    },
     respondMessageContentPrep(msgId){
       let respondMessage= this.messages.filter(message => message['msgId'] === msgId)[0];
 
@@ -271,8 +366,11 @@ export default {
           <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessagesSetInterval">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
-          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= !addParticipantPanel">
+          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="changeGroupInfo= false; addParticipantPanel= !addParticipantPanel">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user-plus" /></svg> Aggiungi Partecipante
+          </button>
+          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= false; changeGroupInfo= !changeGroupInfo; newGroupName= chat['chatName']">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#menu" /></svg> Modifica info gruppo
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="$router.replace('/chats')">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg> Chiudi
@@ -303,14 +401,40 @@ export default {
             :respond-message-data="respondMessageContentPrep(message['respondTo'])"
             :sender-name="participantNames[message['senderId']]"
             :chat-is-group="chat['isGroup']"
-            @respondMessage="(msgId) => respondTo= msgId"/>
+            @respond-msg="(msgId) => respondTo= msgId"
+            @forward-msg="console.log('TODO')"
+            @delete-msg="deleteMessage"
+        />
       </div>
     </div>
+
     <transition name="add-participant-panel">
       <div class="add-participant-panel bobby" v-if="addParticipantPanel">
         <div class="select-participant">
           <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
         </div>
+      </div>
+    </transition>
+
+    <transition name="change-group-info-panel">
+      <div class="change-group-info-panel bobby" v-if="changeGroupInfo">
+        <div class="update-group-photo">
+          <button class="chat-image-button" type="button" @click="imageUpload">
+            <img :src="'data:image/png;base64,'+ chat['chatPhoto'] || '/images/def_group.png'" alt="Anteprima" draggable="false">
+            <span>
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+            </span>
+          </button>
+        </div>
+        <form class="update-group-name" @submit.prevent="updateGroupName">
+          <span>
+            <label for="chatName">Nome della chat:  <span v-if="!groupNameIsValid && newGroupName" style="color: red; margin-top: 10px;">Nome non valido</span></label>
+            <input id="chatName" v-model="newGroupName" type="text" placeholder="Inserisci il nome" required>
+          </span>
+          <button class="new-group-name-button" type="submit" :disabled="!groupNameIsValid || newGroupName === chat['chatName']">
+            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
+          </button>
+        </form>
       </div>
     </transition>
   </div>
@@ -403,9 +527,6 @@ export default {
 
   margin: 0 5px 0 auto;
   padding: 2px 0 2px 0;
-
-  border: 1px solid violet;
-
 }
 
 .message-form{
@@ -478,6 +599,137 @@ export default {
 }
 /* fine aggiunta partecipante */
 
+/* modifica info gruppo */
+.change-group-info-panel{
+  position: absolute;
+  width: 25%;
+  height: 50%;
+
+  top: 25%;
+  right: 0.5%;
+
+  background: white;
+  box-shadow: -2px 0 6px rgba(0,0,0,0.2);
+  z-index: 999;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+}
+
+.update-group-photo {
+  height: 50%;
+  aspect-ratio: 1/1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-bottom: 1px solid black;
+}
+
+.chat-image-button {
+  height: 90%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+
+  padding: 0;
+  border: none;
+  background: lightgray;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-image-button img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+.chat-image-button:not(:disabled):hover {
+  filter: brightness(0.6);
+  transition: filter 0.2s ease-in-out;
+}
+
+.chat-image-button span {
+  position: absolute;
+  width: 40%;
+  height: 40%;
+
+  border-radius: 50%;
+  padding: 10px;
+
+  top: 50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.chat-image-button svg {
+  width: 100%;
+  height: 100%;
+}
+
+.update-group-name {
+  width: 90%;
+  height: fit-content;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.new-group-name-button {
+  width: 25px;
+  height: 25px;
+
+  margin: 1px 5px 2px 0;
+
+  border-radius: 25%;
+  border: 2px dashed lightseagreen;
+
+
+  color: white;
+  background-color: lightseagreen;
+  cursor: pointer;
+
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+  transition: .4s;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.new-group-name-button:not(:disabled):hover {
+  transition: .4s;
+  border: 2px dashed lightseagreen;
+  background-color: white;
+  color: lightseagreen;
+}
+
+.new-group-name-button:active {
+  background-color: lightseagreen;
+}
+
+.new-group-name-button:disabled{
+  background-color: gray;
+  border: 2px solid gray;
+  cursor: default;
+}
+/* fine modifica info gruppo */
+
 /* Transition per il pannello dei partecipanti */
 .add-participant-panel-enter-from,
 .add-participant-panel-leave-to {
@@ -494,4 +746,21 @@ export default {
   transition: transform 0.3s ease;
 }
 /* Fine transition per il pannello dei partecipanti */
+
+/* Transition per il pannello delle info del gruppo */
+.change-group-info-panel-enter-from,
+.change-group-info-panel-leave-to {
+  transform: translateX(100%); /* fuori dallo schermo a destra */
+}
+
+.change-group-info-panel-enter-to,
+.change-group-info-panel-leave-from {
+  transform: translateX(0); /* posizione normale, visibile */
+}
+
+.change-group-info-panel-enter-active,
+.change-group-info-panel-leave-active {
+  transition: transform 0.3s ease;
+}
+/* Fine transition per il pannello delle info del gruppo */
 </style>
