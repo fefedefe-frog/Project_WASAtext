@@ -81,7 +81,6 @@ export default {
 
   color: #333;
 
-
   overflow: hidden;
   text-overflow: ellipsis;
 
@@ -96,14 +95,21 @@ export default {
   margin-right: 2%;
   margin-left: 2%;
   margin-bottom: 2%;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
   padding: 2px;
 
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+
+  display: flex;
+  flex-direction: row;
+
+  overflow: hidden;
   overflow-y: auto;
 }
 
 .respond-content-text-container p {
+  width: 100%;
+  height: 100%;
   padding: 0 2px 0 3px;
 
   white-space: normal;
