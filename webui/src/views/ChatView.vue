@@ -1,5 +1,9 @@
 <script>
+
+import ForwardMessage from "../components/ForwardMessage.vue";
+
 export default {
+  components: {ForwardMessage},
   data: function () {
     return {
       usrId: '',
@@ -23,12 +27,16 @@ export default {
       respondTo: -1,
       respondMessageData: {},
 
+      forwardMsgId: -1,
+
       getChatInfoIntervalId: null,
       getMessagesIntervalId: null,
       getMessagesIsRunning: false,
 
       addParticipantPanel: false,
       changeGroupInfo: false,
+      forwardMessagePanel: false,
+
       newGroupName: "",
     }
   },
@@ -56,7 +64,6 @@ export default {
     respondTo(newId, oldId){
       if (newId !== oldId && newId !== -1){
         let respondMessage= this.messages.filter(message => message['msgId'] === newId)[0];
-
         if (respondMessage){
           this.respondMessageData= {
             senderName: this.participantNames[respondMessage['senderId']],
@@ -66,6 +73,14 @@ export default {
         }else {
           this.respondTo= -1;
         }
+      }
+    },
+    forwardMsgId(newId, oldId){
+      if (newId !== oldId && newId !== -1){
+        this.addParticipantPanel= false;
+        this.changeGroupInfo= false;
+
+        this.forwardMessagePanel= true;
       }
     }
   },
@@ -125,10 +140,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       } finally {
@@ -167,17 +182,14 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }
       this.getMessagesIsRunning= false;
-    },
-    async forwardMessage(msgId){
-      //TODO
     },
     async deleteMessage(msgId){
 
@@ -201,10 +213,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }
@@ -227,10 +239,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }
@@ -265,10 +277,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }finally {
@@ -289,10 +301,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }finally {
@@ -323,10 +335,10 @@ export default {
               e.response.status === 403 ||  //Forbidden
               e.response.status === 404 ||  //Not found
               e.response.status === 500){   //Internal server error
-            error_string= `Error: ${e.response.status}. ${e.response.data}`
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
           }else{  //Axios error
-            error_string= `Internal axios error: ${e}`
-            console.log(e)
+            error_string= `Internal axios error: ${e}`;
+            console.log(e);
           }
           this.errormsg= error_string;
         }
@@ -401,7 +413,7 @@ export default {
         });
 
         if (response.data){
-          this.chat['chatName']= response.data['chatName']
+          this.chat['chatName']= response.data['chatName'];
         }
       }catch(e) {
         let error_string= ""
@@ -410,10 +422,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }
@@ -464,10 +476,10 @@ export default {
           <button type="button" class="btn btn-sm btn-outline-primary shadow-none" @click="getMessagesSetInterval">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica Messaggi
           </button>
-          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="changeGroupInfo= false; addParticipantPanel= !addParticipantPanel">
+          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="changeGroupInfo= false; forwardMessagePanel= false; addParticipantPanel= !addParticipantPanel">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#user-plus" /></svg> Aggiungi Partecipante
           </button>
-          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= false; changeGroupInfo= !changeGroupInfo; newGroupName= chat['chatName']">
+          <button v-if="chat['isGroup']" type="button" class="btn btn-sm btn-outline-dark shadow-none" @click="addParticipantPanel= false; forwardMessagePanel= false; changeGroupInfo= !changeGroupInfo; newGroupName= chat['chatName']">
             <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#menu" /></svg> Modifica info gruppo
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger shadow-none" @click="$router.replace('/chats')">
@@ -482,7 +494,10 @@ export default {
 
     <div class="message-sender">
       <div v-if="respondTo !== -1" class="respond-message-content">
-        <RespondMsgContent v-if="respondMessageData" :key="respondMessageData['msgId']" :message-data="respondMessageData" />
+        <button v-if="respondTo !== -1" class="cancel-respond-to" type="button" @click="respondTo= -1">
+          <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#x" /></svg>
+        </button>
+        <RespondMsgContent v-if="respondMessageData" :key="respondMessageData['msgId'] +'-'+ Math.floor(Math.random() * 10)" :message-data="respondMessageData" />
       </div>
 
       <div class="message-form">
@@ -492,49 +507,58 @@ export default {
 
     <div class="messages-main">
       <div class="messages-container">
-        <ChatMessage
-          v-for="message in messages"
-          :key="`${message['msgId']}-${message['deliveryStatus']}`"
-          :message-data="message"
-          :respond-message-data="respondMessageContentPrep(message['respondTo'])"
-          :sender-name="participantNames[message['senderId']]"
-          :chat-is-group="chat['isGroup']"
-          @respond-msg="(msgId) => respondTo= msgId"
-          @forward-msg="console.log('TODO')"
-          @delete-msg="deleteMessage"
-        />
+        <div class="messages">
+          <ChatMessage
+            v-for="message in messages"
+            :key="`${message['msgId']}-${message['deliveryStatus']}`"
+            :message-data="message"
+            :respond-message-data="respondMessageContentPrep(message['respondTo'])"
+            :sender-name="participantNames[message['senderId']]"
+            :chat-is-group="chat['isGroup']"
+            @respond-msg="(msgId) => respondTo= msgId"
+            @forward-msg="(msgId) => forwardMsgId= msgId"
+            @delete-msg="deleteMessage"
+          />
+        </div>
       </div>
+
+      <transition name="add-participant-panel">
+        <div v-if="addParticipantPanel" class="add-participant-panel bobby">
+          <div class="select-participant">
+            <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
+          </div>
+        </div>
+      </transition>
+
+      <transition name="change-group-info-panel">
+        <div v-if="changeGroupInfo" class="change-group-info-panel bobby">
+          <div class="update-group-photo">
+            <button class="chat-image-button" type="button" @click="imageUpload">
+              <img :src="'data:image/png;base64,'+ chat['chatPhoto'] || '/images/def_group.png'" alt="Anteprima" draggable="false">
+              <span>
+                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
+              </span>
+            </button>
+          </div>
+          <form class="update-group-name" @submit.prevent="updateGroupName">
+            <span>
+              <label for="new-chatname">Nome della chat:  <span v-if="!groupNameIsValid && newGroupName" style="color: red; margin-top: 10px;">Nome non valido</span></label>
+              <input id="new-chatname" v-model="newGroupName" type="text" placeholder="Inserisci il nome" required>
+            </span>
+            <button class="new-group-name-button" type="submit" :disabled="!groupNameIsValid || newGroupName === chat['chatName']">
+              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
+            </button>
+          </form>
+        </div>
+      </transition>
+
+      <transition name="forward-message-panel">
+        <div v-if="forwardMessagePanel" class="forward-message-panel bobby">
+          <forward-message :chat-id="this.chat['chatId']" :msg-id="forwardMsgId" @close="forwardMessagePanel= false; forwardMsgId= -1" @error="errorHandler" />
+        </div>
+      </transition>
     </div>
 
-    <transition name="add-participant-panel">
-      <div v-if="addParticipantPanel" class="add-participant-panel bobby">
-        <div class="select-participant">
-          <sidebarList :banner-component="'userBanner'" items="users" @error="errorHandler" @banner-data="addParticipant" />
-        </div>
-      </div>
-    </transition>
-
-    <transition name="change-group-info-panel">
-      <div v-if="changeGroupInfo" class="change-group-info-panel bobby">
-        <div class="update-group-photo">
-          <button class="chat-image-button" type="button" @click="imageUpload">
-            <img :src="'data:image/png;base64,'+ chat['chatPhoto'] || '/images/def_group.png'" alt="Anteprima" draggable="false">
-            <span>
-              <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#image" /></svg>
-            </span>
-          </button>
-        </div>
-        <form class="update-group-name" @submit.prevent="updateGroupName">
-          <span>
-            <label for="chatName">Nome della chat:  <span v-if="!groupNameIsValid && newGroupName" style="color: red; margin-top: 10px;">Nome non valido</span></label>
-            <input id="chatName" v-model="newGroupName" type="text" placeholder="Inserisci il nome" required>
-          </span>
-          <button class="new-group-name-button" type="submit" :disabled="!groupNameIsValid || newGroupName === chat['chatName']">
-            <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#navigation" /></svg>
-          </button>
-        </form>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -550,6 +574,7 @@ export default {
 }
 
 .chat-info-container {
+  height: 25%;
   width: 100%;
 
   display: flex;
@@ -614,8 +639,7 @@ export default {
 
 /* invio messaggio */
 .message-sender{
-  height: 65px;
-  max-height: 100px;
+  height: 15%;
   width: 95%;
 
   display: flex;
@@ -634,7 +658,7 @@ export default {
 
 .respond-message-content{
   width: 50%;
-  height: 90%;
+  height: 100%;
   margin: 2px;
 
   display: flex;
@@ -642,6 +666,31 @@ export default {
 
   justify-content: center;
   align-items: center;
+
+  border: 1px solid black;
+  overflow: hidden;
+}
+
+.cancel-respond-to{
+  height: 30%;
+  aspect-ratio: 1/1;
+
+  margin: 0px 2px 0px 2px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  border: 1px solid darkred;
+  border-radius: 25%;
+  background: red;
+  color: white;
+
+}
+.cancel-respond-to:hover{
+  opacity: 0.5;
+  transition: opacity 0.3 ease;
 }
 /* fine invio messaggio */
 
@@ -649,14 +698,22 @@ export default {
 .messages-main {
   position: relative;
   width: 100%;
+  height: 65%;
+  overflow: hidden;
+}
+
+.messages-container {
+  position: relative;
   height: 100%;
+  width: 100%;
 
   overflow: hidden;
   overflow-y: auto;
 }
 
-.messages-container {
-  height: fit-content;
+.messages {
+  position: relative;
+  height: 100%;
   width: 100%;
 
   display: flex;
@@ -670,9 +727,9 @@ export default {
 .add-participant-panel{
   position: absolute;
   width: 30%;
-  height: 52%;
+  height: 70%;
 
-  top: 25%;
+  top: 15%;
   right: 0.5%;
 
   background: white;
@@ -703,12 +760,11 @@ export default {
   width: 25%;
   height: 50%;
 
-  top: 25%;
-  right: 0.5%;
+  top: 1%;
+  left: 0.5%;
 
   background: white;
   box-shadow: -2px 0 6px rgba(0,0,0,0.2);
-  z-index: 999;
 
   display: flex;
   flex-direction: column;
@@ -784,8 +840,13 @@ export default {
 
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+}
+
+#new-chatname{
+  width: 90%;
 }
 
 .new-group-name-button {
@@ -828,6 +889,25 @@ export default {
 }
 /* fine modifica info gruppo */
 
+/* Panel per inoltrare un messaggio */
+.forward-message-panel{
+  position: absolute;
+  width: 30%;
+  height: 80%;
+
+  top: 10%;
+  right: 40%;
+
+  background: white;
+  box-shadow: -2px 0 6px rgba(0,0,0,0.2);
+  z-index: 999;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Fine panel per inoltrare un messaggio */
+
 /* Transition per il pannello dei partecipanti */
 .add-participant-panel-enter-from,
 .add-participant-panel-leave-to {
@@ -848,12 +928,12 @@ export default {
 /* Transition per il pannello delle info del gruppo */
 .change-group-info-panel-enter-from,
 .change-group-info-panel-leave-to {
-  transform: translateX(100%); /* fuori dallo schermo a destra */
+  transform: translateY(-100%); /* fuori dallo schermo a destra */
 }
 
 .change-group-info-panel-enter-to,
 .change-group-info-panel-leave-from {
-  transform: translateX(0); /* posizione normale, visibile */
+  transform: translateY(0); /* posizione normale, visibile */
 }
 
 .change-group-info-panel-enter-active,
@@ -861,4 +941,21 @@ export default {
   transition: transform 0.3s ease;
 }
 /* Fine transition per il pannello delle info del gruppo */
+
+/* Transition per il pannello che inoltra un messaggio */
+.forward-message-panel-enter-from,
+.forward-message-panel-leave-to {
+  transform: translateY(100%); /* fuori dallo schermo a destra */
+}
+
+.forward-message-panel-enter-to,
+.forward-message-panel-leave-from {
+  transform: translateY(0); /* posizione normale, visibile */
+}
+
+.forward-message-panel-enter-active,
+.forward-message-panel-leave-active {
+  transition: transform 0.3s ease;
+}
+/* Fine transition per il pannello che inoltra un messaggio */
 </style>
