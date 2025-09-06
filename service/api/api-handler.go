@@ -17,9 +17,9 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/profile/propic", rt.wrap(rt.BearerAuth(rt.setUserPhoto))) // fatto
 
 	// Chat operations
-	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getMyConversations)))          // TODO	controllare che funzioni tutto
-	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))               // TODO	controllare che funzioni tutto
-	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))        // TODO	controllare che funzioni tutto
+	rt.router.GET("/chats", rt.wrap(rt.BearerAuth(rt.getMyConversations)))          // fatt0
+	rt.router.POST("/chats", rt.wrap(rt.BearerAuth(rt.startNewChat)))               // fatto
+	rt.router.GET("/chats/:chat_id", rt.wrap(rt.BearerAuth(rt.getChatInfo)))        // fatto
 	rt.router.DELETE("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.leaveChat))) // fatto
 
 	// Group operations
@@ -28,8 +28,8 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/chats/:chat_id/users", rt.wrap(rt.BearerAuth(rt.addToGroup)))    // fatto
 
 	// Message operations
-	rt.router.PUT("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getConversation)))                                    // TODO	controllare che funzioni tutto
-	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))                                       // TODO	controllare che funzioni tutto
+	rt.router.PUT("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.getConversation)))                                    // fatto
+	rt.router.POST("/chats/:chat_id/messages", rt.wrap(rt.BearerAuth(rt.sendMessage)))                                       // fatto
 	rt.router.DELETE("/chats/:chat_id/messages/:msg_id", rt.wrap(rt.BearerAuth(rt.deleteMessage)))                           // fatto
 	rt.router.PUT("/chats/:chat_id/messages/:msg_id", rt.wrap(rt.BearerAuth(rt.setMessageStatusToRead)))                     // fatto
 	rt.router.POST("/chats/:chat_id/messages/:msg_id", rt.wrap(rt.BearerAuth(rt.forwardMessage)))                            // fatto
