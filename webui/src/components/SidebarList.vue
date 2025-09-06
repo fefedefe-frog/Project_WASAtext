@@ -30,7 +30,7 @@ export default {
         searchPool= this.users;
         searchKey= 'userName';
       }else {
-        searchPool= this.chats;
+        searchPool= this.orderedChats;
         searchKey= 'chatName';
       }
 
@@ -38,25 +38,40 @@ export default {
       if (query === ''){
         return searchPool;
       }
-      return searchPool.filter(item =>
-          item[searchKey].toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
+
+      if (this.items === 'users'){
+        return searchPool.filter(item =>
+            item[searchKey].toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      }else {
+        return searchPool.filter(item =>
+            item['chat'][searchKey].toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      }
+
+    },
+    orderedChats(){ //Funzione che restituisce la lista delle chat in modo ordinato in base al timestamp dei messaggi
+      return this.chats.sort((chat_a, chat_b) => {
+        let time_a= new Date(chat_a['lastMsg']['timestamp'] || 0);
+        let time_b= new Date (chat_b['lastMsg']['timestamp'] || 0);
+        return time_b - time_a;
+      });
     }
   },
-  mounted() {
+  async mounted() {
     this.token= sessionStorage.getItem('authToken');
     this.usrId= sessionStorage.getItem('usrId');
 
     if (this.items === 'users'){
-      this.getUsers();
+      await this.getUsers();
       this.setIntervalId= setInterval(async () => {
         await this.getUsers();
-      }, 10000);
+      }, 7000);
     }else {
-      this.getChats();
+      await this.getChats();
       this.setIntervalId= setInterval(async () => {
         await this.getChats();
-      }, 10000);
+      }, 7000);
     }
   },
   beforeUnmount() {
@@ -81,9 +96,9 @@ export default {
         }else {
           let error_string= ""
           if (e.response.status === 401 || e.response.status === 500){
-            error_string= `Error: ${e.response.status}. ${e.response.data}`
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
           }else{
-            error_string= `Internal axios error: ${e}`
+            error_string= `Internal axios error: ${e}`;
           }
           this.$emit('error', error_string);
         }
@@ -105,41 +120,89 @@ export default {
         if (e.status === 404){
           this.chats= [];
         }else {
-          this.$emit('error', e);
+          let error_string= ""
+          if (e.response.status === 401 || e.response.status === 500){
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
+          }else{
+            error_string= `Internal axios error: ${e}`;
+          }
+          this.$emit('error', error_string);
         }
       }
     },
     bannerClicked(bannerData){
       this.$emit('bannerData', bannerData);
     },
+    async getChatsLastMsg(){
+
+      await Promise.all(
+          this.chats.map(async (chatData) => {
+            try {
+              let response= await this.$axios.put(`/chats/${chatData['chat']['chatId']}/messages`, {
+                msgId: chatData['lastMsgId']
+              }, {
+                headers: {Authorization: this.token},
+              });
+
+              if (response.data) {
+                if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
+                  chatData['lastMsg']= response.data['messages'][response.data['messages'].length-1];
+                }
+              }
+            }catch(e) {
+              let error_string= ""
+              if (e.response.status === 401 ||
+                  e.response.status === 403 ||
+                  e.response.status === 404 ||
+                  e.response.status === 500){
+                error_string= `Error: ${e.response.status}. ${e.response.data}`;
+              }else{
+                error_string= `Internal axios error: ${e}`;
+              }
+              this.$emit('error', error_string);
+            }
+          })
+      );
+    },
   }
 }
 </script>
 
 <template>
-  <div class="search-box">
-    <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#search" /></svg>
-    <input v-model="searchQuery" type="text" :placeholder="items === 'users' ? 'cerca utente' : 'cerca chat'" required>
-  </div>
+  <div class="sidebare-container">
+    <div class="search-box">
+      <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#search" /></svg>
+      <input v-model="searchQuery" type="text" :placeholder="items === 'users' ? 'cerca utente' : 'cerca chat'" required>
+    </div>
 
-  <div class="banner-lists">
-    <component
-      :is="bannerComponent"
-      v-for="item in filteredResult"
-      :key="item[items === 'users' ? 'usrId' : 'chatId'] + '-' + Math.floor(Math.random() * 10) "
-      :input-data="item"
-      @banner-clicked="bannerClicked"
-    />
-  </div>
+    <div class="banner-lists">
+      <component
+        :is="bannerComponent"
+        v-for="item in filteredResult"
+        :key="items === 'users' ? item['usrId'] : item['chat']['chatId'] + '-' + Math.floor(Math.random() * 10) "
+        :input-data="item"
+        @banner-clicked="bannerClicked"
+      />
+    </div>
 
-  <div class="list-footer">
-    <button type="button" class="btn btn-sm btn-primary shadow-none" @click="items === 'users' ? getUsers : getChats">
-      <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica {{ items === 'users' ? "utenti" : "chat" }}
-    </button>
+    <div class="list-footer">
+      <button type="button" class="btn btn-sm btn-primary shadow-none" @click="items === 'users' ? getUsers : getChats">
+        <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#rotate-cw" /></svg> Ricarica {{ items === 'users' ? "utenti" : "chat" }}
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.sidebare-container{
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 .search-box {
   position: relative;
   width: 100%;
