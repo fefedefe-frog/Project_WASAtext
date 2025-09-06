@@ -33,6 +33,7 @@ export default {
         respondTo: -1,
         textContent: "",
         photoContent: [],
+        isForwarded: false,
         timestamp: "",
         comments: [],
       },
@@ -50,7 +51,6 @@ export default {
   mounted () {
     this.usrId= sessionStorage.getItem('usrId');
     this.message= this.messageData;
-
     if (this.message['respondTo'] !== -1 && this.respondMessageData){
       this.respondToData= this.respondMessageData;
     }
@@ -107,6 +107,9 @@ export default {
       @delete-msg="$emit('deleteMsg', message['msgId'])"
     />
     <div class="message-container">
+      <div v-if="message['isForwarded']" class="message-forwarded-status">
+        <span><svg class="feather"><use href="/feather-sprite-v4.29.0.svg#corner-down-right" /></svg> inoltrato</span>
+      </div>
       <div v-if="message['respondTo'] !== -1" class="respond-message">
         <RespondMsgContent v-if="respondToData" :sender-name="respondToData['senderName']" :message-data="respondToData" />
       </div>
@@ -170,6 +173,18 @@ export default {
 
   background-color: lightskyblue;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.message-forwarded-status{
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+
+  font-style: italic;
+  font-weight: bold;
 }
 
 .respond-message{
