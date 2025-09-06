@@ -37,6 +37,7 @@ export default {
 
             // Salvo il token e usrId
             sessionStorage.setItem('authToken', token);
+            sessionStorage.setItem('userName', this.username)
             sessionStorage.setItem('usrId', response.data['user']['usrId']);
 
             // Ritarda la redirezione per consentire il caricamento
@@ -48,10 +49,10 @@ export default {
           let error_string= ""
           if (e.response.status === 400 ||  //Bad request
               e.response.status === 500){   //Internal server error
-            error_string= `Error: ${e.response.status}. ${e.response.data}`
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
           }else{  //Axios error
-            error_string= `Internal axios error: ${e}`
-            console.log(e)
+            error_string= `Internal axios error: ${e}`;
+            console.log(e);
           }
           this.errormsg= error_string;
         }

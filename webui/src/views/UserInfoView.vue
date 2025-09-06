@@ -48,10 +48,10 @@ export default {
             e.response.status === 401 ||  //Unauthorized
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }finally {
@@ -94,10 +94,10 @@ export default {
               e.response.status === 403 ||  //Forbidden
               e.response.status === 404 ||  //Not found
               e.response.status === 500){   //Internal server error
-            error_string= `Error: ${e.response.status}. ${e.response.data}`
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
           }else{  //Axios error
-            error_string= `Internal axios error: ${e}`
-            console.log(e)
+            error_string= `Internal axios error: ${e}`;
+            console.log(e);
           }
           this.errormsg= error_string;
           this.user['userPhoto']= oldProfileImage;
@@ -133,6 +133,7 @@ export default {
 
         if (response.data){
           this.user['userName']= response.data['userName'];
+          sessionStorage.setItem('userName'. this.user['userName']);
         }
 
       }catch(e) {
@@ -142,10 +143,10 @@ export default {
             e.response.status === 403 ||  //Forbidden
             e.response.status === 404 ||  //Not found
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }finally {
