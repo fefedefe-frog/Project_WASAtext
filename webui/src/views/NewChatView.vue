@@ -138,7 +138,7 @@ export default {
       // requestFormData.append('messagePhotoContent', photoContent);
 
       // Test per vedere se la chat può essere creata senza messaggio dell'utente
-      textContent= `Chat creata da ${this.userName}`
+      textContent= `Chat creata da ${this.userName}`;
       requestFormData.append('messageTextContent', textContent);
       requestFormData.append('messagePhotoContent', photoContent);
 
