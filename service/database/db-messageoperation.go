@@ -22,7 +22,7 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 		}
 	}()
 
-	// Procedo ad aggiornare lo stato di tutti i messaggi ceh vengono ricevuti a partire dall'ultimo messaggio già ricevuto
+	// Procedo ad aggiornare lo stato di tutti i messaggi che vengono ricevuti a partire dall'ultimo messaggio già ricevuto
 	query :=
 		`	UPDATE message_status_table
 			SET status = 'received'
@@ -93,6 +93,68 @@ func (db *appdbimpl) GetChatMessages(chatId int, usrId string, msgId int) ([]Mes
 	}
 
 	return messages, err
+}
+
+func (db *appdbimpl) GetChatLastMessage(chatId int, usrId string) (Message, error) {
+	var message Message
+	tx, err := db.c.Begin()
+	if err != nil {
+		return Message{}, err
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				// Se il rollback fallisce, logghiamo l'errore di rollback
+				logrus.WithError(rbErr).Error("Errore durante il rollback")
+			}
+		}
+	}()
+
+	// Procedo ad aggiornare lo stato di tutti i messaggi che vengono ricevuti a partire dall'ultimo messaggio già ricevuto
+	query :=
+		`	UPDATE message_status_table
+			SET status = 'received'
+			WHERE msgId IN (
+				SELECT ms.msgId
+				FROM message_status_table ms
+						 JOIN messages_table m ON ms.msgId = m.msgId
+				WHERE ms.receiverId = ?
+				  AND ms.status = 'not_received'
+				  AND m.timestamp > COALESCE((
+					SELECT MIN(m2.timestamp)
+					FROM message_status_table ms2
+							 JOIN messages_table m2 ON ms2.msgId = m2.msgId
+					WHERE ms2.receiverId = ?
+					  AND m2.chatId = ?
+					  AND ms2.status = 'read'
+				), '0001-01-01T23:59:59'))
+			AND receiverId= ?;`
+
+	_, err = tx.Exec(query, usrId, usrId, chatId, usrId)
+	if err != nil {
+		return Message{}, err
+	}
+
+	var isForwardedInt int
+	var respondTo sql.NullInt64
+	query = `SELECT msgId, senderId, respondTo, textContent, photoContent, deliveryStatus, timestamp, isForwarded FROM messages_table WHERE chatId = ? ORDER BY timestamp DESC, msgId LIMIT 1;`
+	err = tx.QueryRow(query, chatId).Scan(&message.MsgId, &message.SenderId, &respondTo, &message.TextContent, &message.PhotoContent, &message.DeliveryStatus, &message.Timestamp, &isForwardedInt)
+	if err != nil {
+		return Message{}, err
+	}
+
+	if respondTo.Valid {
+		message.RespondTo = int(respondTo.Int64)
+	} else {
+		message.RespondTo = -1
+	}
+
+	message.IsForwarded = isForwardedInt != 0
+
+	if err := tx.Commit(); err != nil {
+		return Message{}, err
+	}
+	return message, nil
 }
 
 func (db *appdbimpl) InsertMessage(message Message, chatId int) (int, string, error) {
@@ -181,6 +243,7 @@ func (db *appdbimpl) ForwardMessage(forwarderId string, msgId int, chatIdToForwa
 
 	// Imposto il nuovo senderId del messaggio, e aggiorno il valore di isForwarded a true
 	message.SenderId = forwarderId
+	message.DeliveryStatus = "sent"
 	message.RespondTo = -1
 	message.IsForwarded = true
 

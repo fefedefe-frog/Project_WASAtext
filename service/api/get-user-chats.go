@@ -19,7 +19,7 @@ func (rt *_router) getMyConversations(writer http.ResponseWriter, _ *http.Reques
 			chats = nil
 		} else {
 			context.Logger.WithError(err).WithField("usrId", usrId).Error("Error getting user chats")
-			http.Error(writer, "Internal server error - Unable to retrive info", http.StatusInternalServerError)
+			http.Error(writer, "Internal server error - Unable to retrive one or more conversation/s", http.StatusInternalServerError)
 			return
 		}
 	}

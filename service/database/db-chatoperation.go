@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
+func (db *appdbimpl) GetChatsOfUser(usrId string) ([]ChatAndMess, error) {
 
 	/*
 		In questa query eseguo il primo join per ottenere tutte le info delle chat di cui fa parte l'utente
@@ -85,9 +85,18 @@ func (db *appdbimpl) GetChatsOfUser(usrId string) ([]Chat, error) {
 	}
 
 	// Converto la mappa in array di Chat
-	var userChats []Chat
+	var userChats []ChatAndMess
 	for _, chat := range chatMap {
-		userChats = append(userChats, *chat)
+		var chatMess ChatAndMess
+		chatMess.Chat = *chat
+
+		var lastMessage Message
+		lastMessage, err = db.GetChatLastMessage(chatMess.Chat.ChatId, usrId)
+		if err != nil {
+			return nil, err
+		}
+		chatMess.LastMsg = lastMessage
+		userChats = append(userChats, chatMess)
 	}
 
 	// Controllo se ci sono stati errori sulle righe

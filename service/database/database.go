@@ -37,6 +37,11 @@ type Message struct {
 	IsForwarded    bool                   `json:"isForwarded"`    // Bool value that say if the message is forwarded or not
 }
 
+type ChatAndMess struct {
+	Chat    Chat    `json:"chat"`
+	LastMsg Message `json:"lastMsg"`
+}
+
 type Comment struct {
 	CommentId   int    `json:"commentId"`   // Comment id
 	CommenterId string `json:"commenterId"` // User id of the commenter
@@ -67,7 +72,7 @@ type AppDatabase interface {
 	// Chat operations
 
 	// GetChatsOfUser Chat, retrive the chats of a user by passing its usrId
-	GetChatsOfUser(usrId string) ([]Chat, error)
+	GetChatsOfUser(usrId string) ([]ChatAndMess, error)
 	// InsertNewChat int, add a new chat in the db, the function receive an array of users that are in the chat
 	InsertNewChat(participants []string, chat Chat, messageTextContent string, messagePhotoContent []byte) (int, error)
 	// DeleteChat error, remove a chat from the db, also remove all the message of that chat from the db
@@ -97,6 +102,8 @@ type AppDatabase interface {
 
 	// GetChatMessages Message, retrive the messages starting from a specified msgId of a chat
 	GetChatMessages(chatId int, usrId string, msgId int) ([]Message, error)
+	// GetChatLastMessage Message, error retrive the last message of a chat
+	GetChatLastMessage(chatId int, usrId string) (Message, error)
 	// InsertMessage error, insert a message in the database, return it's msgId and the timestamp
 	InsertMessage(message Message, chatId int) (int, string, error)
 	// RemoveMessage error, remove a message from the database
