@@ -4,6 +4,7 @@ export default {
     return {
       token: '',
       usrId: '',
+      userName: '',
       errormsg: null,
       users: [],
 
@@ -53,6 +54,7 @@ export default {
   mounted() {
     this.token= sessionStorage.getItem('authToken');
     this.usrId= sessionStorage.getItem('usrId');
+    this.userName= sessionStorage.getItem('userName');
 
     this.getUsers();
     this.setIntervalId= setInterval(async () => {
@@ -86,11 +88,12 @@ export default {
           let error_string= ""
           if (e.response.status === 400 ||  //Bad request
               e.response.status === 401 ||  //Unauthorized
+              e.response.status === 403 ||  //Forbidden
               e.response.status === 500){   //Internal server error
-            error_string= `Error: ${e.response.status}. ${e.response.data}`
+            error_string= `Error: ${e.response.status}. ${e.response.data}`;
           }else{  //Axios error
-            error_string= `Internal axios error: ${e}`
-            console.log(e)
+            error_string= `Internal axios error: ${e}`;
+            console.log(e);
           }
           this.errormsg= error_string;
         }
@@ -135,7 +138,7 @@ export default {
       // requestFormData.append('messagePhotoContent', photoContent);
 
       // Test per vedere se la chat può essere creata senza messaggio dell'utente
-      textContent= `Chat creata da ${this.usrId}`
+      textContent= `Chat creata da ${this.userName}`
       requestFormData.append('messageTextContent', textContent);
       requestFormData.append('messagePhotoContent', photoContent);
 
@@ -149,7 +152,7 @@ export default {
         if(response.data){
           let newChat= response.data
           setTimeout(()=> {
-            this.$router.push(`/chats/${newChat['chatId']}`)
+            this.$router.push(`/chats/${newChat['chatId']}`);
           }, 500);
         }
       }catch(e) {
@@ -157,10 +160,10 @@ export default {
         if (e.response.status === 400 ||  //Bad request
             e.response.status === 401 ||  //Unauthorized
             e.response.status === 500){   //Internal server error
-          error_string= `Error: ${e.response.status}. ${e.response.data}`
+          error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
-          error_string= `Internal axios error: ${e}`
-          console.log(e)
+          error_string= `Internal axios error: ${e}`;
+          console.log(e);
         }
         this.errormsg= error_string;
       }
