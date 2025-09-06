@@ -64,7 +64,7 @@ export default {
 
 .user-info-container {
   height: 100%;
-  width: 70%;
+  width: 75%;
 
   display: flex;
   justify-content: center;

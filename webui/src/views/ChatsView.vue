@@ -62,7 +62,7 @@ export default {
 
 .chat-container {
   height: 100%;
-  width: 70%;
+  width: 75%;
 
   display: flex;
   justify-content: center;
