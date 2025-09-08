@@ -133,37 +133,6 @@ export default {
     bannerClicked(bannerData){
       this.$emit('bannerData', bannerData);
     },
-    async getChatsLastMsg(){
-
-      await Promise.all(
-          this.chats.map(async (chatData) => {
-            try {
-              let response= await this.$axios.put(`/chats/${chatData['chat']['chatId']}/messages`, {
-                msgId: chatData['lastMsgId']
-              }, {
-                headers: {Authorization: this.token},
-              });
-
-              if (response.data) {
-                if (Array.isArray(response.data['messages']) && response.data['messages'].length > 0){
-                  chatData['lastMsg']= response.data['messages'][response.data['messages'].length-1];
-                }
-              }
-            }catch(e) {
-              let error_string= ""
-              if (e.response.status === 401 ||
-                  e.response.status === 403 ||
-                  e.response.status === 404 ||
-                  e.response.status === 500){
-                error_string= `Error: ${e.response.status}. ${e.response.data}`;
-              }else{
-                error_string= `Internal axios error: ${e}`;
-              }
-              this.$emit('error', error_string);
-            }
-          })
-      );
-    },
   }
 }
 </script>
