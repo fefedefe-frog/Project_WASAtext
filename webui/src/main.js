@@ -11,9 +11,12 @@ import ChatBanner from './components/ChatBanner.vue';
 import UserBanner from './components/UserBanner.vue';
 
 import ChatMessage from './components/ChatMessage.vue';
-import RespondMsgContent from "./components/RespondMsgContent.vue";
-import MessageForm from "./components/MessageForm.vue";
 import MessageDropdownMenu from "./components/MessageDropdownMenu.vue";
+import ReactionEmojiMenu from "./components/ReactionEmojiMenu.vue";
+
+import MessageForm from "./components/MessageForm.vue";
+import RespondMsgContent from "./components/RespondMsgContent.vue";
+
 
 import './assets/dashboard.css'
 import './assets/main.css'
@@ -29,9 +32,11 @@ app.component("ChatBanner", ChatBanner);
 app.component("UserBanner", UserBanner);
 
 app.component("ChatMessage", ChatMessage);
-app.component("RespondMsgContent", RespondMsgContent);
-app.component("MessageForm", MessageForm);
 app.component("MessageDropdownMenu", MessageDropdownMenu);
+app.component("ReactionEmojiMenu", ReactionEmojiMenu);
+
+app.component("MessageForm", MessageForm);
+app.component("RespondMsgContent", RespondMsgContent);
 
 app.use(router)
 app.mount('#app')
