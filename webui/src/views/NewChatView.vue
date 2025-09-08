@@ -159,6 +159,7 @@ export default {
         let error_string= ""
         if (e.response.status === 400 ||  //Bad request
             e.response.status === 401 ||  //Unauthorized
+            e.response.status === 403 ||  //Forbidden
             e.response.status === 500){   //Internal server error
           error_string= `Error: ${e.response.status}. ${e.response.data}`;
         }else{  //Axios error
