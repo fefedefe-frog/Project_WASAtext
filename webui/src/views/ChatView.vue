@@ -666,8 +666,7 @@ export default {
 
   justify-content: center;
   align-items: center;
-
-  border: 1px solid black;
+  
   overflow: hidden;
 }
 
