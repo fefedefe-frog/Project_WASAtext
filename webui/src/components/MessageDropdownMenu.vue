@@ -141,6 +141,7 @@ export default {
   height: fit-content;
 
   overflow: hidden;
+  z-index: 9;
 }
 
 .dropdown-list{
