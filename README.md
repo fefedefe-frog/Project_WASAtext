@@ -34,6 +34,8 @@ Il progetto è sviluppato nell'ambito dell'esame WASA e richiede di:
 
 ## Struttura della repository
 
+La struttura del progetto è basata sul template ufficiale del corso [fantastic-coffee-decaffeinated](https://github.com/sapienzaapps/fantastic-coffee-decaffeinated), fornito dal professore come punto di partenza consigliato.
+
 ```
 Project_WASAtext/
 ├── cmd/
