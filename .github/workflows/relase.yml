@@ -9,6 +9,10 @@ jobs:
   release:
     runs-on: ubuntu-latest  # GitHub usa una macchina virtuale Ubuntu pulita
 
+    # Permessi necessari per creare release e caricare file
+    permissions:
+      contents: write
+
     steps:
 
       # 1. CHECKOUT
