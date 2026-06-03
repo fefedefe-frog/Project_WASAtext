@@ -104,20 +104,29 @@ Tutti gli `operationId` richiesti dalla consegna sono presenti nella specifica O
 ---
 
 ## Sviluppi futuri / possibili miglioramenti
-
-Le seguenti funzionalità sono richieste dalla specifica ma potrebbero essere incomplete o assenti:
-
-### Funzionalità frontend
-- **Reply a un messaggio**: la consegna richiede di poter rispondere a un messaggio specifico con riferimento visivo al messaggio originale.
-- **Preview corretta nella lista conversazioni**: ogni elemento deve mostrare testo del messaggio (snippet) oppure un'icona per messaggi foto — distinguere i due casi visivamente.
-- **Ordine cronologico inverso**: sia la lista conversazioni che i messaggi all'interno di una chat devono essere ordinati dal più recente al più vecchio.
-- **Checkmark stato messaggio**: un checkmark = messaggio consegnato a tutti; due checkmark = messaggio letto da tutti. La logica di tracking "letto da tutti" nei gruppi è complessa.
+ 
+Le seguenti funzionalità presentano problemi noti o sono parzialmente implementate:
+ 
+### Bug e funzionalità incomplete
+- **Lista conversazioni**: la proprietà computed `orderedChats` contiene un side effect inatteso — la logica di ordinamento andrebbe spostata in un metodo separato o gestita tramite un getter puro.
+- **Invio messaggi**: non è possibile inviare testo e foto contemporaneamente nello stesso messaggio; i due tipi di contenuto sono mutuamente esclusivi - sistemare visualizzazione grafica del messaggio e riattivare l'opzione già implementata nel backend.
+- **Forward**: l'inoltro di un messaggio funziona solo verso conversazioni già esistenti — andrebbe esteso alla possibilità di inoltrare a qualsiasi utente, mostrando la lista degli utenti totali invece che delle chat già esistenti.
+- **Reazioni**: la funzionalità di aggiunta e rimozione emoticon sui messaggi non funziona correttamente e va corretta - implemetare la funzionalità lato frontend e completarne il funzionamento nel backend per la parte del database.
 
 ### Funzionalità backend / logica
-- **Autorizzazione gruppi**: verificare che un utente non possa accedere a gruppi di cui non fa parte (né visualizzarli né cercarne i messaggi).
+- **Autorizzazione gruppi**: verificare che un utente non possa accedere a gruppi di cui non fa parte e quindi anche che non possa visualizzarne i messaggi (al momento della creazione di questo README.md: non ricordo se l'avevo implementata del tutto, mi pare di si)
 - **CORS**: la specifica richiede `Allow-All-Origins` e `Max-Age: 1` secondo (non il default). Verificare che il middleware CORS sia configurato esattamente così.
 
 ### Qualità e documentazione
-- **README**: attualmente vuoto — aggiungere istruzioni di avvio, requisiti e descrizione del progetto.
-- **Gestione errori**: verificare che tutti gli endpoint restituiscano i codici HTTP corretti (400, 401, 404, 500) come da specifica OpenAPI.
-- **Validazione input**: il campo `name` per il login richiede lunghezza 3–16 caratteri — verificare che la validazione sia applicata sia lato frontend che backend.
+- **Gestione errori**: verificare che tutti gli endpoint restituiscano i codici HTTP corretti (400, 401, 404, 500) come da specifica OpenAPI (al momento della creazione di questo README.md: ormai non ricordo se funziona tutto).
+- **Popup operazioni**: creare un semplice componente di popup nella sezione vue da poter usare per mostrare correttamente notifiche quali errori(già implementato), conferme, info.
+
+### Roadmap: progetto → prodotto
+
+I seguenti punti raccolgono le modifiche che ho pensato di poter affrontare per trasformare questo progetto per esame universitario in un'applicazione reale, funzionante, e scalabile.
+
+- **CORS**: ristretto `AllowedOrigins` ai soli domini autorizzati e aumentato `MaxAge` a 86400 (24 ore) per ridurre le richieste OPTIONS superflue.
+- **Sistema di autenticazione**: il login semplificato tramite username senza password è una scelta intenzionale per il progetto, ma in un contesto reale lo sostituirei con un sistema di autenticazione più robusto, o delegando la gestione delle identità a un provider esterno (es. OAuth2/OpenID Connect) o implementando un flusso completo con password, token JWT e refresh token.
+- **Database**: SQLite è adeguato per lo sviluppo e per un singolo nodo, ma soffre di limitazioni nella gestione della concorrenza (locking a livello di file, già causavano problemi per questo progetto, limitati con dei timer nel frontend). Per un'app in produzione con accessi simultanei andrei a sostituito con un database come **MySQL** o **PostgreSQL**, che offrono una gestione nativa delle transazioni concorrenti, migliori performance in lettura/scrittura parallela e supporto a deployment multi-istanza.
+- **Architettura WebSocket**: l'attuale architettura REST richiede che il frontend faccia polling periodico per ricevere nuovi messaggi, il che introduce latenza e spreco di risorse. Per una messaggistica più immediata, si potrebbe passare ad un sistema di long polling, o per un sistema realmente istantaneo bisogna adottare un sistema basato su **WebSocket**, che mantiene una connessione persistente tra client e server e consente al server di inviare messaggi in push non appena disponibili.
+
