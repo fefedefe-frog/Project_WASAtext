@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest  # GitHub usa una macchina virtuale Ubuntu pulita
+
+    steps:
+
+      # 1. CHECKOUT
+      # Scarica il codice della repo nella macchina virtuale
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. SETUP GO
+      # Installa la versione di Go specificata
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      # 3. SETUP NODE
+      # Installa Node.js per poter compilare il frontend Vue
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 4. INSTALLA DIPENDENZE FRONTEND
+      # Installa i pacchetti npm necessari al frontend
+      - name: Install frontend dependencies
+        working-directory: ./webui
+        run: yarn install
+
+      # 5. BUILD FRONTEND
+      # Compila il frontend Vue in file statici pronti per la produzione
+      - name: Build frontend
+        working-directory: ./webui
+        run: yarn run build-prod
+
+      # 6. BUILD BACKEND
+      # Compila il backend Go embeddando il frontend nel binario finale.
+      # Il tag "webui" dice al compilatore Go di includere i file statici
+      # generati nel passo precedente direttamente nell'eseguibile.
+      - name: Build backend with embedded frontend
+        run: go build -tags webui -o wasatext ./cmd/webapi/
+
+      # 7. CREA LA RELEASE
+      # Pubblica automaticamente una release su GitHub con:
+      # - il tag come versione (es. v1.0.0)
+      # - il binario compilato come file scaricabile
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wasatext
+          generate_release_notes: true  # genera automaticamente le note dalla diff dei commit
